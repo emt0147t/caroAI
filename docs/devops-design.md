@@ -1,1 +1,0 @@
-# CaroAI - DevOps Design
