@@ -186,19 +186,18 @@
         <div class="game-logo">#</div>
 
         <h1 class="title">Cờ Caro AI</h1>
-        <p class="subtitle">Thách thức thuật toán Minimax AI thông minh. Hãy chuẩn bị nước đi của bạn!</p>
+        <p class="subtitle">Chọn chế độ chơi. Backend là nguồn sự thật cho game state và luật chơi.</p>
 
         <!-- Lựa chọn chế độ -->
         <div class="option-group">
-            <span class="option-label">Độ khó AI</span>
+            <span class="option-label">Chọn chế độ</span>
             <div class="options-grid">
-                <button class="option-btn">Dễ</button>
-                <button class="option-btn active">Vừa</button>
-                <button class="option-btn">Khó</button>
+                <button class="option-btn active" data-mode="HUMAN_VS_HUMAN">Người vs Người</button>
+                <button class="option-btn" data-mode="HUMAN_VS_AI">Người vs AI</button>
             </div>
         </div>
 
-        <!-- Lựa chọn Quân cờ -->
+        <!-- AI difficulty is selected after the AI contract is implemented. -->
         <div class="option-group">
             <span class="option-label">Chọn quân đi trước</span>
             <div class="options-grid" style="grid-template-columns: repeat(2, 1fr);">
@@ -208,22 +207,31 @@
         </div>
 
         <!-- Nút Bắt đầu ván đấu -->
-        <button class="start-btn">
+        <button id="startBtn" class="start-btn" type="button">
             <span>Bắt Đầu Ván Đấu</span>
             <span>➔</span>
         </button>
 
-        <p class="footer-note">Luật chơi: Tạo chuỗi 5 ô liên tiếp theo hàng ngang, dọc hoặc chéo để thắng.</p>
+        <p class="footer-note">Bàn cờ 15 × 15 · Backend xử lý luật và trạng thái.</p>
     </div>
 
     <!-- Script cập nhật đồng hồ -->
     <script>
+        const buttons = document.querySelectorAll("[data-mode]");
+        const startButton = document.getElementById("startBtn");
+        let selectedMode = "HUMAN_VS_HUMAN";
+        buttons.forEach((button) => button.addEventListener("click", () => {
+            selectedMode = button.dataset.mode;
+            buttons.forEach((item) => item.classList.remove("active"));
+            button.classList.add("active");
+        }));
+        startButton.addEventListener("click", () => {
+            window.location.href = "trong_tran/index.html?mode=" + encodeURIComponent(selectedMode);
+        });
         function updateClock() {
             const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            document.getElementById('realtimeClock').textContent = `${hours}:${minutes}:${seconds}`;
+            document.getElementById("realtimeClock").textContent =
+                [now.getHours(), now.getMinutes(), now.getSeconds()].map((v) => String(v).padStart(2, "0")).join(":");
         }
         setInterval(updateClock, 1000);
         updateClock();
