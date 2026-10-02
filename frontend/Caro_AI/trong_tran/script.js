@@ -1,6 +1,7 @@
 const BOARD_SIZE = 15;
 const API_BASE_URL = window.CAROAI_API_BASE_URL || "";
-const state = { gameId: new URLSearchParams(window.location.search).get("game_id"), game: null, loading: false };
+const params = new URLSearchParams(window.location.search);
+const state = { gameId: params.get("game_id"), game: null, loading: false, lastMove: null };
 
 const boardElement = document.getElementById("board");
 const currentPlayerElement = document.getElementById("currentPlayer");
@@ -12,6 +13,10 @@ const newGameBtn = document.getElementById("newGameBtn");
 const errorBox = document.getElementById("errorBox");
 const errorMessage = document.getElementById("errorMessage");
 const retryBtn = document.getElementById("retryBtn");
+
+if (params.get("mode")) {
+  gameModeSelect.value = params.get("mode");
+}
 
 function setLoading(value, message = "Đang xử lý...") {
   state.loading = value;
@@ -61,7 +66,8 @@ function render() {
       const value = game.board[row]?.[col] || "EMPTY";
       const player = value === "X" || value === "O" ? value : "";
       cell.type = "button";
-      cell.className = "cell " + (player ? player.toLowerCase() : "");
+      cell.className = "cell " + (player ? player.toLowerCase() : "") +
+        (state.lastMove?.row === row && state.lastMove?.col === col ? " last-move" : "");
       cell.textContent = player;
       cell.disabled = state.loading || game.status !== "IN_PROGRESS" || Boolean(player);
       cell.addEventListener("click", () => makeMove(row, col));
@@ -82,6 +88,7 @@ async function createGame(mode) {
   setError(); setLoading(true, "Đang tạo ván...");
   try {
     state.game = await apiRequest("/api/games", { method: "POST", body: JSON.stringify({ mode }) });
+    state.lastMove = null;
     state.gameId = state.game.id;
     history.replaceState({}, "", window.location.pathname + "?game_id=" + encodeURIComponent(state.gameId));
   } catch (error) { state.game = null; setError(friendlyError(error)); }
@@ -93,6 +100,7 @@ async function loadGame(gameId) {
   setError(); setLoading(true, "Đang tải ván...");
   try {
     state.game = await apiRequest("/api/games/" + encodeURIComponent(gameId));
+    state.lastMove = null;
     gameModeSelect.value = state.game.mode;
   } catch (error) { state.game = null; setError(friendlyError(error)); }
   finally { setLoading(false); render(); }
@@ -106,6 +114,7 @@ async function makeMove(row, col) {
       method: "POST", body: JSON.stringify({ row, col })
     });
     state.game = result.game;
+    state.lastMove = result.move || null;
   } catch (error) { setError(friendlyError(error)); }
   finally { setLoading(false); render(); }
 }
