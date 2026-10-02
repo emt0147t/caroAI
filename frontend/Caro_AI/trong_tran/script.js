@@ -1,9 +1,6 @@
 const BOARD_SIZE = 15;
-let boardState = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(""));
-let currentPlayer = "X";
-let isGameOver = false;
-let gameMode = "PvP";
-let lastMoveCell = null;
+const API_BASE_URL = window.CAROAI_API_BASE_URL || "";
+const state = { gameId: new URLSearchParams(window.location.search).get("game_id"), game: null, loading: false };
 
 const boardElement = document.getElementById("board");
 const currentPlayerElement = document.getElementById("currentPlayer");
@@ -11,90 +8,110 @@ const gameStatusElement = document.getElementById("gameStatus");
 const loadingBox = document.getElementById("loadingBox");
 const turnBox = document.getElementById("turnBox");
 const gameModeSelect = document.getElementById("gameMode");
-const restartBtn = document.getElementById("restartBtn");
+const newGameBtn = document.getElementById("newGameBtn");
+const errorBox = document.getElementById("errorBox");
+const errorMessage = document.getElementById("errorMessage");
+const retryBtn = document.getElementById("retryBtn");
 
-function createBoard() {
-    boardElement.innerHTML = "";
-    for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            const cell = document.createElement("div");
-            cell.classList.add("cell");
-            cell.dataset.row = r;
-            cell.dataset.col = c;
-            cell.addEventListener("click", () => handleCellClick(r, c, cell));
-            boardElement.appendChild(cell);
-        }
+function setLoading(value, message = "Đang xử lý...") {
+  state.loading = value;
+  loadingBox.classList.toggle("hidden", !value);
+  loadingBox.lastChild.textContent = " " + message;
+  boardElement.classList.toggle("is-loading", value);
+  newGameBtn.disabled = value;
+  gameModeSelect.disabled = value;
+}
+
+function setError(message = "") {
+  errorBox.classList.toggle("hidden", !message);
+  errorMessage.textContent = message;
+}
+
+async function apiRequest(path, options = {}) {
+  const response = await fetch(API_BASE_URL + path, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+  });
+  let payload = null;
+  try { payload = await response.json(); } catch (_) {}
+  if (!response.ok) {
+    const error = new Error(payload?.detail || ("HTTP " + response.status));
+    error.status = response.status;
+    throw error;
+  }
+  return payload;
+}
+
+function render() {
+  const game = state.game;
+  turnBox.classList.toggle("hidden", !game);
+  if (!game) { boardElement.innerHTML = ""; return; }
+
+  currentPlayerElement.textContent = game.current_player || "-";
+  currentPlayerElement.className = "tag tag-" + String(game.current_player || "x").toLowerCase();
+
+  const labels = { IN_PROGRESS: "", X_WON: "X thắng!", O_WON: "O thắng!", DRAW: "Hòa!" };
+  gameStatusElement.textContent = labels[game.status] || "";
+  gameStatusElement.className = "game-alert " + String(game.status).toLowerCase();
+
+  boardElement.innerHTML = "";
+  for (let row = 0; row < BOARD_SIZE; row++) {
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      const cell = document.createElement("button");
+      const value = game.board[row]?.[col] || "EMPTY";
+      const player = value === "X" || value === "O" ? value : "";
+      cell.type = "button";
+      cell.className = "cell " + (player ? player.toLowerCase() : "");
+      cell.textContent = player;
+      cell.disabled = state.loading || game.status !== "IN_PROGRESS" || Boolean(player);
+      cell.addEventListener("click", () => makeMove(row, col));
+      boardElement.appendChild(cell);
     }
+  }
 }
 
-function handleCellClick(row, col, cellElement) {
-    if (isGameOver || boardState[row][col] !== "") return;
-
-    makeMove(row, col, cellElement, currentPlayer);
-
-    if (gameMode === "PvAI" && !isGameOver && currentPlayer === "O") {
-        triggerAIMove();
-    }
+function friendlyError(error) {
+  if (error?.name === "TypeError") return "Không kết nối được tới backend. Hãy kiểm tra server.";
+  if (error?.status === 400) return "Nước đi không hợp lệ: " + error.message;
+  if (error?.status === 404) return "Không tìm thấy ván đấu. Hãy tạo một ván mới.";
+  if (error?.status === 422) return "Dữ liệu gửi lên không hợp lệ.";
+  return error?.message || "Máy chủ đang gặp sự cố.";
 }
 
-function makeMove(row, col, cellElement, player) {
-    boardState[row][col] = player;
-    cellElement.textContent = player;
-    cellElement.classList.add(player.toLowerCase());
-
-    if (lastMoveCell) lastMoveCell.classList.remove("last-move");
-    cellElement.classList.add("last-move");
-    lastMoveCell = cellElement;
-
-    currentPlayer = currentPlayer === "X" ? "O" : "X";
-    updateTurnUI();
+async function createGame(mode) {
+  setError(); setLoading(true, "Đang tạo ván...");
+  try {
+    state.game = await apiRequest("/api/games", { method: "POST", body: JSON.stringify({ mode }) });
+    state.gameId = state.game.id;
+    history.replaceState({}, "", window.location.pathname + "?game_id=" + encodeURIComponent(state.gameId));
+  } catch (error) { state.game = null; setError(friendlyError(error)); }
+  finally { setLoading(false); render(); }
 }
 
-function updateTurnUI() {
-    currentPlayerElement.textContent = currentPlayer;
-    currentPlayerElement.className = `tag tag-${currentPlayer.toLowerCase()}`;
+async function loadGame(gameId) {
+  if (!gameId) return createGame(gameModeSelect.value);
+  setError(); setLoading(true, "Đang tải ván...");
+  try {
+    state.game = await apiRequest("/api/games/" + encodeURIComponent(gameId));
+    gameModeSelect.value = state.game.mode;
+  } catch (error) { state.game = null; setError(friendlyError(error)); }
+  finally { setLoading(false); render(); }
 }
 
-function triggerAIMove() {
-    turnBox.classList.add("hidden");
-    loadingBox.classList.remove("hidden");
-    
-    setTimeout(() => {
-        loadingBox.classList.add("hidden");
-        turnBox.classList.remove("hidden");
-        
-        let emptyCells = [];
-        for (let r = 0; r < BOARD_SIZE; r++) {
-            for (let c = 0; c < BOARD_SIZE; c++) {
-                if (boardState[r][c] === "") emptyCells.push({r, c});
-            }
-        }
-
-        if (emptyCells.length > 0 && !isGameOver) {
-            const randomMove = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-            const cellElement = document.querySelector(`[data-row='${randomMove.r}'][data-col='${randomMove.c}']`);
-            makeMove(randomMove.r, randomMove.c, cellElement, "O");
-        }
-    }, 500);
+async function makeMove(row, col) {
+  if (!state.gameId || !state.game || state.loading) return;
+  setError(); setLoading(true, "Đang gửi nước đi...");
+  try {
+    const result = await apiRequest("/api/games/" + encodeURIComponent(state.gameId) + "/moves", {
+      method: "POST", body: JSON.stringify({ row, col })
+    });
+    state.game = result.game;
+  } catch (error) { setError(friendlyError(error)); }
+  finally { setLoading(false); render(); }
 }
 
-function resetGame() {
-    boardState = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(""));
-    currentPlayer = "X";
-    isGameOver = false;
-    lastMoveCell = null;
-    gameStatusElement.textContent = "";
-    loadingBox.classList.add("hidden");
-    turnBox.classList.remove("hidden");
-    updateTurnUI();
-    createBoard();
-}
-
-gameModeSelect.addEventListener("change", (e) => {
-    gameMode = e.target.value;
-    resetGame();
-});
-
-restartBtn.addEventListener("click", resetGame);
-
-createBoard();
+gameModeSelect.addEventListener("change", () => createGame(gameModeSelect.value));
+newGameBtn.addEventListener("click", () => createGame(gameModeSelect.value));
+retryBtn.addEventListener("click", () => state.gameId ? loadGame(state.gameId) : createGame(gameModeSelect.value));
+render();
+loadGame(state.gameId);
