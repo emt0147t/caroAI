@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cờ CARO AI</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <main class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand">
+                <span class="logo-icon">♟️</span>
+                <h1 class="app-title">Cờ CARO AI</h1>
+            </div>
+            
+            <div class="header-actions">
+                <div class="select-wrapper">
+                    <select id="gameMode">
+                        <option value="PvP">Người vs Người</option>
+                        <option value="PvAI">Chơi với Máy</option>
+                    </select>
+                </div>
+                <button id="restartBtn" class="btn-primary">Ván mới</button>
+            </div>
+        </header>
+
+        <!-- Status Bar -->
+        <section class="status-bar">
+            <div id="turnBox" class="turn-indicator">
+                Lượt đánh: <span id="currentPlayer" class="tag tag-x">X</span>
+            </div>
+            <div id="loadingBox" class="loading-indicator hidden">
+                <span class="pulse-dot"></span> Đang tính nước đi...
+            </div>
+            <div id="gameStatus" class="game-alert"></div>
+        </section>
+
+        <!-- Game Board Container -->
+        <section class="board-container">
+            <div id="board" class="caro-board"></div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
