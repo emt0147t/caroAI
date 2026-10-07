@@ -1,7 +1,7 @@
 import pytest
 
 from app.ai.adapter import board_from_ai, board_to_ai
-from app.domain.game_state import BOARD_SIZE, GameMode
+from app.domain.game_state import BOARD_SIZE, GameMode, Player
 from app.services import game_service as game_service_module
 from app.services.game_service import GameService, InvalidAIMoveError
 
@@ -130,7 +130,7 @@ def test_ai_service_applies_winning_move_and_marks_o_won(monkeypatch):
 
     state.board[7][7:11] = ["O", "O", "O", "O"]
     state.move_count = 4
-    state.current_player = __import__("app.domain.game_state", fromlist=["Player"]).Player.O
+    state.current_player = Player.O
 
     def fake_ai_move(board, ai_player, difficulty):
         return {"row": 7, "col": 11, "score": 100000000, "elapsed_ms": 1.0}
