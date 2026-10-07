@@ -88,6 +88,20 @@ def test_ai_service_rejects_illegal_ai_move(monkeypatch):
     assert state.move_count == 1
 
 
+def test_ai_service_rejects_invalid_difficulty(monkeypatch):
+    service = GameService()
+    game_id = service.create_game(GameMode.HUMAN_VS_AI)
+    service.make_move(game_id, 7, 7)
+
+    def fail_if_called(*args, **kwargs):
+        pytest.fail("AI engine must not run for an invalid difficulty")
+
+    monkeypatch.setattr(game_service_module, "run_ai_engine", fail_if_called)
+
+    with pytest.raises(InvalidAIMoveError, match="easy, medium, hard"):
+        service.make_ai_move(game_id, "impossible")
+
+
 def test_ai_service_requires_human_vs_ai_mode():
     service = GameService()
     game_id = service.create_game(GameMode.HUMAN_VS_HUMAN)
