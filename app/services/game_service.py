@@ -17,6 +17,8 @@ class InvalidAIMoveError(ValueError):
 class GameService:
     """Application service for managing Caro games."""
 
+    VALID_AI_DIFFICULTIES = frozenset({"easy", "medium", "hard"})
+
     def __init__(self) -> None:
         self._games: dict[str, GameState] = {}
 
@@ -54,6 +56,11 @@ class GameService:
         if state.current_player != Player.O:
             raise InvalidAIMoveError("It is not the AI turn")
 
+        if difficulty not in self.VALID_AI_DIFFICULTIES:
+            raise InvalidAIMoveError(
+                "Difficulty must be one of: easy, medium, hard"
+            )
+
         # Convert to a fresh snapshot so AI search can never mutate Backend state.
         ai_board = board_to_ai(state.board)
         result = run_ai_engine(
@@ -62,10 +69,15 @@ class GameService:
             difficulty=difficulty,
         )
 
+        if not isinstance(result, dict):
+            raise InvalidAIMoveError("AI returned an invalid move response")
+
         row = result.get("row")
         col = result.get("col")
-        if not isinstance(row, int) or not isinstance(col, int):
-            raise InvalidAIMoveError("AI returned an invalid move")
+        if not isinstance(row, int) or isinstance(row, bool):
+            raise InvalidAIMoveError("AI returned an invalid row")
+        if not isinstance(col, int) or isinstance(col, bool):
+            raise InvalidAIMoveError("AI returned an invalid column")
 
         try:
             GameRules.validate_move(state, row, col)
