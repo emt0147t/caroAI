@@ -116,3 +116,105 @@ def test_ai_service_requires_ai_turn():
 
     with pytest.raises(InvalidAIMoveError, match="not the AI turn"):
         service.make_ai_move(game_id, "medium")
+
+
+def _prepare_ai_turn(service, mode=GameMode.HUMAN_VS_AI):
+    game_id = service.create_game(mode)
+    state = service.get_game(game_id)
+    return game_id, state
+
+
+def test_ai_service_applies_winning_move_and_marks_o_won(monkeypatch):
+    service = GameService()
+    game_id, state = _prepare_ai_turn(service)
+
+    state.board[7][7:11] = ["O", "O", "O", "O"]
+    state.move_count = 4
+    state.current_player = __import__("app.domain.game_state", fromlist=["Player"]).Player.O
+
+    def fake_ai_move(board, ai_player, difficulty):
+        return {"row": 7, "col": 11, "score": 100000000, "elapsed_ms": 1.0}
+
+    monkeypatch.setattr(game_service_module, "run_ai_engine", fake_ai_move)
+
+    move = service.make_ai_move(game_id, "medium")
+    state = service.get_game(game_id)
+
+    assert move.player.value == "O"
+    assert (move.row, move.col) == (7, 11)
+    assert state.status.value == "O_WON"
+    assert state.winner.value == "O"
+    assert state.current_player.value == "O"
+
+
+def test_ai_service_applies_blocking_move(monkeypatch):
+    service = GameService()
+    game_id, state = _prepare_ai_turn(service)
+
+    state.board[7][7:11] = ["X", "X", "X", "X"]
+    state.move_count = 4
+    state.current_player = __import__("app.domain.game_state", fromlist=["Player"]).Player.O
+
+    def fake_ai_move(board, ai_player, difficulty):
+        return {"row": 7, "col": 11, "score": 0, "elapsed_ms": 1.0}
+
+    monkeypatch.setattr(game_service_module, "run_ai_engine", fake_ai_move)
+
+    move = service.make_ai_move(game_id, "hard")
+    state = service.get_game(game_id)
+
+    assert move.player.value == "O"
+    assert (move.row, move.col) == (7, 11)
+    assert state.board[7][11] == "O"
+    assert state.status.value == "IN_PROGRESS"
+    assert state.winner is None
+
+
+@pytest.mark.parametrize(
+    "ai_result",
+    [
+        None,
+        {"row": 7},
+        {"col": 7},
+        {"row": 7.0, "col": 7},
+        {"row": True, "col": 7},
+        {"row": 7, "col": False},
+    ],
+)
+def test_ai_service_rejects_malformed_ai_output(monkeypatch, ai_result):
+    service = GameService()
+    game_id = service.create_game(GameMode.HUMAN_VS_AI)
+    service.make_move(game_id, 7, 7)
+
+    monkeypatch.setattr(
+        game_service_module,
+        "run_ai_engine",
+        lambda board, ai_player, difficulty: ai_result,
+    )
+
+    with pytest.raises(InvalidAIMoveError, match="invalid"):
+        service.make_ai_move(game_id, "medium")
+
+
+@pytest.mark.parametrize(
+    "ai_result",
+    [
+        {"row": -1, "col": 7},
+        {"row": 15, "col": 7},
+        {"row": 7, "col": -1},
+        {"row": 7, "col": 15},
+    ],
+)
+def test_ai_service_rejects_out_of_bounds_ai_move(monkeypatch, ai_result):
+    service = GameService()
+    game_id = service.create_game(GameMode.HUMAN_VS_AI)
+    service.make_move(game_id, 7, 7)
+
+    monkeypatch.setattr(
+        game_service_module,
+        "run_ai_engine",
+        lambda board, ai_player, difficulty: ai_result,
+    )
+
+    with pytest.raises(InvalidAIMoveError, match="illegal"):
+        service.make_ai_move(game_id, "medium")
