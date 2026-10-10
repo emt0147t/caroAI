@@ -1,332 +1,50 @@
-# CaroAI API Contract
+# CaroAI Game Domain — Current Implementation
 
-Base path:
+This document describes the domain code currently present in this branch: `app/domain/game_state.py` and `app/domain/game_rules.py`. It does not define API behavior beyond the domain objects, and it does not imply persistence. `GameService` currently keeps each `GameState` in process memory.
 
-```text
-/api
-```
+## Domain concepts
 
-## 1. Health Check
+### Game state
 
-### GET `/health`
+`GameState` contains:
 
-Response `200`:
+- a 15 × 15 board, initialized with the string `EMPTY` in every cell;
+- `current_player`, initially `Player.X`;
+- `mode`, one of `HUMAN_VS_HUMAN` or `HUMAN_VS_AI`;
+- `status`, initially `IN_PROGRESS`;
+- `move_count`, initially zero;
+- `winner`, initially `None`.
 
-```json
-{
-  "status": "ok"
-}
-```
+The implementation currently has no domain fields for a creation/end timestamp or a persisted result record.
 
----
+### Players and moves
 
-## 2. Create Game
+`Player` has values `X` and `O`. A `Move` is an immutable value containing `row`, `col`, the player who placed the mark, and a one-based `move_number`. `GameRules.apply_move` selects the player from `state.current_player`, writes that mark to the board, and increments `move_count`.
 
-### POST `/api/games`
+For a non-terminal move, the next player alternates between X and O. The domain code applies the same turn mechanism regardless of `mode`; selecting `HUMAN_VS_AI` does not itself invoke an AI move.
 
-Request:
+## Implemented rules
 
-```json
-{
-  "mode": "HUMAN_VS_AI"
-}
-```
+- Valid board coordinates are rows and columns `0..14`, inclusive.
+- A move is rejected if either coordinate is outside the board, the target cell is occupied, or the game is no longer `IN_PROGRESS`. These conditions raise `InvalidMoveError`.
+- A player wins when their mark forms a contiguous line of **at least five** through the latest move, horizontally, vertically, or on either diagonal.
+- A winning move sets status to `X_WON` or `O_WON` and sets `winner` to that player.
+- If the move count reaches 225 and that move did not win, status becomes `DRAW`.
+- A terminal game rejects later moves.
 
-Allowed modes:
+`GameRules` evaluates a win from the latest move and does not independently validate the history/legality of a board that callers have manually constructed. A draw is determined from the move count and win check at application time.
 
-```text
-HUMAN_VS_HUMAN
-HUMAN_VS_AI
-```
+## Tests and evidence
 
-Response `201`:
+The current domain regression file is `tests/test_game_rules.py`; it covers initialization, legal/occupied/out-of-bounds moves, four win directions, draw, and post-win rejection. The recorded observed result is 14 passed on Windows CPython 3.13.15. Python 3.11 has not been verified; see [test-plan.md](test-plan.md).
 
-```json
-{
-  "id": "game-id",
-  "mode": "HUMAN_VS_AI",
-  "status": "IN_PROGRESS",
-  "current_player": "X",
-  "move_count": 0,
-  "winner": null,
-  "board": []
-}
-```
+Service and API behavior are covered separately in `tests/test_game_service.py` and `tests/test_games_api.py`. Those layers currently use the same in-memory state and do not establish database persistence.
 
-The actual board must contain 15 × 15 cells.
+## Decisions for M1 review
 
----
+- Confirm whether `HUMAN_VS_AI` should permit the same human move alternation currently used by the domain or should be integrated with a separate AI turn flow.
+- Confirm the authoritative game/result vocabulary and whether domain/runtime state needs `result`, `ended_at`, or other terminal metadata.
+- Confirm whether the current at-least-five rule and full-board draw rule are the intended product rules.
+- Confirm game ID semantics and lifecycle when database persistence is integrated; API/database ID mapping is not defined by this domain module.
 
-## 3. Get Game
-
-### GET `/api/games/{game_id}`
-
-Response `200`:
-
-```json
-{
-  "id": "game-id",
-  "mode": "HUMAN_VS_AI",
-  "status": "IN_PROGRESS",
-  "current_player": "X",
-  "move_count": 3,
-  "winner": null,
-  "board": []
-}
-```
-
-Response `404`:
-
-```json
-{
-  "detail": "Game not found"
-}
-```
-
----
-
-## 4. Make Human Move
-
-### POST `/api/games/{game_id}/moves`
-
-Request:
-
-```json
-{
-  "row": 7,
-  "col": 8
-}
-```
-
-The backend determines the player from `current_player`.
-
-Response `200`:
-
-```json
-{
-  "move": {
-    "row": 7,
-    "col": 8,
-    "player": "X",
-    "move_number": 1
-  },
-  "game": {
-    "id": "game-id",
-    "status": "IN_PROGRESS",
-    "current_player": "O",
-    "move_count": 1,
-    "winner": null,
-    "board": []
-  }
-}
-```
-
-Invalid move response: `400`.
-
-Examples:
-
-```text
-Cell already occupied
-Invalid coordinates
-Game already finished
-Not player's turn
-```
-
----
-
-## 5. Request AI Move
-
-### POST `/api/games/{game_id}/ai-move`
-
-Used only for `HUMAN_VS_AI`.
-
-Request:
-
-```json
-{
-  "difficulty": "medium"
-}
-```
-
-Allowed difficulty values:
-
-```text
-easy
-medium
-hard
-```
-
-Response `200`:
-
-```json
-{
-  "move": {
-    "row": 6,
-    "col": 8,
-    "player": "O",
-    "move_number": 2
-  },
-  "game": {
-    "id": "game-id",
-    "status": "IN_PROGRESS",
-    "current_player": "X",
-    "move_count": 2,
-    "winner": null,
-    "board": []
-  }
-}
-```
-
-The AI service must return a legal move.
-
-The Backend validates the move before applying it.
-
----
-
-## 6. AI Hint
-
-### POST `/api/games/{game_id}/hint`
-
-Request:
-
-```json
-{
-  "difficulty": "medium"
-}
-```
-
-Response `200`:
-
-```json
-{
-  "suggested_move": {
-    "row": 7,
-    "col": 9
-  },
-  "score": 12.5,
-  "model": "minimax"
-}
-```
-
-Hint does not modify the game state.
-
----
-
-## 7. Move Analysis
-
-### POST `/api/games/{game_id}/analysis`
-
-Request:
-
-```json
-{
-  "row": 7,
-  "col": 8
-}
-```
-
-Response `200`:
-
-```json
-{
-  "score": 8.5,
-  "best_move": {
-    "row": 7,
-    "col": 9
-  },
-  "comment": "Move is playable but not optimal."
-}
-```
-
-The exact scoring algorithm is owned by the AI module.
-
----
-
-## 8. Game History
-
-### GET `/api/history`
-
-Response `200`:
-
-```json
-{
-  "games": []
-}
-```
-
-History persistence is backed by PostgreSQL in later implementation.
-
----
-
-# Error Contract
-
-API errors use FastAPI's standard format:
-
-```json
-{
-  "detail": "Human-readable error message"
-}
-```
-
-Common status codes:
-
-```text
-200 - Success
-201 - Resource created
-400 - Invalid game action
-404 - Resource not found
-422 - Request validation error
-500 - Unexpected server error
-```
-
-# Backend Architecture
-
-```text
-Frontend
-   ↓
-API Routes
-   ↓
-Services
-   ↓
-Domain
-   ├── GameState
-   └── GameRules
-   ↓
-AI Service
-   ↓
-Database Repository
-   ↓
-PostgreSQL
-```
-
-Responsibilities:
-
-### Routes
-
-HTTP layer only.
-
-### Services
-
-Application/business orchestration.
-
-### Domain
-
-Pure game rules and state management.
-
-### AI
-
-Move evaluation and move selection.
-
-### Database
-
-Persistence only.
-
-### Important Rule
-
-No Frontend-specific logic inside Domain.
-
-No database-specific logic inside Domain.
-
-No HTTP/FastAPI logic inside Domain.
-
-No AI algorithm inside API routes.
+These are review questions, not additional rules. The domain documentation does not prescribe database schema, API payloads, AI behavior, or persistence.
