@@ -1,5 +1,7 @@
 # CaroAI — Database Design (Sprint 1)
 
+> **Sprint 2 implementation status (2026-10-10):** This design has a SQLAlchemy model foundation, not an integrated persistence layer. `GameService` remains in-memory, `app/db/repository.py` is a placeholder, and no migration tool/schema lifecycle is configured. PostgreSQL model checks are present in the test suite but require an explicitly confirmed disposable test database; their run status is tracked in [`test-plan.md`](test-plan.md).
+
 ## 1. Purpose
 
 This document freezes the Database / QA / Docs technical boundary for Sprint 1. PostgreSQL is the target database and SQLAlchemy is the ORM. Sprint 1 is a design and alignment phase; it does not require production PostgreSQL deployment or database-backed GameService.
@@ -195,3 +197,23 @@ Those belong to implementation/integration work after contract freeze.
 - [x] Database ↔ Backend dependencies documented.
 - [x] runtime implementation boundary documented.
 - [ ] Backend/team must confirm the listed open decisions before Sprint 2 integration.
+
+## 10. Implemented model details and runtime boundary
+
+The current SQLAlchemy metadata implements `games`, `moves`, and `game_analysis`:
+
+- `games.id`, `moves.id`, and `game_analysis.id` are PostgreSQL `BIGINT IDENTITY` primary keys.
+- `moves.game_id` and `game_analysis.game_id` are non-null foreign keys to `games.id`; `game_analysis.move_id` is nullable and references `moves.id`.
+- `moves` enforces player `X`/`O`, row/column `0..14`, positive `move_number`, and unique `(game_id, move_number)`.
+- `game_analysis` enforces each optional best-move coordinate to be null or `0..14`.
+- Timestamp columns use timezone-aware `DateTime` and server `now()` defaults where defined.
+- ORM relationships connect games with moves and analyses. The move relationship does not declare ordering; callers must order moves explicitly. No delete cascade is declared.
+- The schema intentionally does not enforce the proposed game mode/status enums, status/result consistency, ended-at rules, unique occupied cells, analysis/game composite association, or the users entity because those contracts remain open.
+
+`app/db/database.py` reads `DATABASE_URL` only when `get_engine()` is called. It does not load `.env`, initialize tables, or run migrations. `GameService` and the current API do not call the database helper or repository. A successful direct-model test therefore proves schema behavior only, not game API persistence.
+
+PostgreSQL tests use `TEST_DATABASE_URL`, a generated schema per test, and cleanup scoped to that schema. They are gated by `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database` as an explicit operator confirmation, a database name containing a `test` token, and rejection of names containing `prod`/`live`. The name check is a guardrail, not proof of database purpose. The confirmation must only be set after checking the target database; schema creation/drop requires PostgreSQL privileges for those operations.
+
+## 11. Sprint 2 verification scope
+
+The model-level tests exercise fresh-session reads, move order via explicit query ordering, foreign keys, unique move numbers, CHECK constraints, nullable analysis move references, and transaction rollback. They do not assert ORM relationship ordering, cascade semantics, or API persistence. Open decisions in Section 6 remain pending M1/team confirmation.

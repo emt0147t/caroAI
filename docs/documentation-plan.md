@@ -1,5 +1,7 @@
 # CaroAI — Documentation Plan (Sprint 1)
 
+> **Sprint 2 status (2026-10-10):** This planning document is retained for ownership and maintenance guidance. Current project state and verified setup/test commands are documented in the repository README and [`test-plan.md`](test-plan.md). Domain/service and API/health regressions passed in isolated test environments. PostgreSQL, API persistence, and Docker database smoke work remain unverified or dependent on their owners.
+
 > **Trạng thái:** Kế hoạch tài liệu của Member 5 cho Sprint 1. Đây không phải README hoàn chỉnh. Các hướng dẫn chỉ được đưa vào README khi đã xác minh với implementation và Team Guide; những giá trị chưa có contract được ghi là cần member phụ trách xác nhận.
 
 ## 1. Mục tiêu
@@ -32,8 +34,8 @@ docs/
 | `docs/database-design.md` | Thiết kế database Sprint 1 và các quyết định còn chờ xác nhận | M5; đối chiếu database contract với M1 |
 | `docs/test-plan.md` | Kế hoạch unit, API, database, integration, health và Docker smoke tests | M5; API/game contract từ M1, AI contract từ M2, môi trường/deploy từ M4 |
 | `docs/documentation-plan.md` | Cấu trúc tài liệu, kế hoạch README, dependencies và checklist tài liệu | M5 |
-| `docs/api-contract.md` | API request/response, validation, status/error behavior đã thống nhất | M1 sở hữu contract; M5 chỉ liên kết/tổng hợp sau khi M1 cung cấp |
-| `docs/game-domain.md` | Game domain, board, move, trạng thái và rule đã thống nhất | M1 sở hữu; không tự tạo nội dung thay M1 |
+| `docs/api-contract.md` | API request/response, validation, status/error behavior đã thống nhất; trạng thái route cần phân biệt implemented với planned | M1 sở hữu contract; M5 có thể ghi nhận implementation hiện tại và trạng thái test, các contract mới cần M1 xác nhận |
+| `docs/game-domain.md` | Game domain, board, move, trạng thái và rule quan sát được trong implementation; quyết định business còn mở cần được đánh dấu | M1 sở hữu domain contract; M5 ghi nhận implementation hiện tại và chuyển quyết định chưa xác nhận cho M1 review |
 | `docs/ai-design.md` | Thiết kế AI và cấu hình AI theo contract/implementation | M2 sở hữu; không tự tạo nội dung thay M2 |
 | `docs/frontend-design.md` | Thiết kế frontend và cách khởi chạy giao diện | M3 sở hữu; không tự tạo nội dung thay M3 |
 | `docs/devops-design.md` | Hướng dẫn build/run/deploy, Docker và CI/CD theo môi trường thực tế | M4 sở hữu; không tự tạo nội dung thay M4 |
@@ -125,7 +127,7 @@ Không tự đặt tên service, port, volume, health check path khác với con
 
 ## 7. Testing Documentation
 
-README cần hướng dẫn:
+README hướng dẫn hiện hành:
 
 - Cài test dependencies đã được khai báo/chuẩn hóa cho project.
 - Chạy toàn bộ pytest suite.
@@ -133,17 +135,17 @@ README cần hướng dẫn:
 - Chạy một nhóm test nếu project có cấu trúc/marker phù hợp.
 - Hiểu kết quả pass/fail và nơi xem lỗi.
 
-Nội dung phải bám [`test-plan.md`](test-plan.md). Repository hiện chưa có test file hoặc pytest configuration; vì vậy các command cụ thể cho test file/nhóm test chỉ được ghi sau khi test tree, config và command đã tồn tại/được xác nhận. Không trình bày ví dụ command giả định như hướng dẫn chạy hiện hành.
+Nội dung phải bám [`test-plan.md`](test-plan.md). Test tree hiện có domain, service, API, health, AI và PostgreSQL suites; pytest configuration riêng chưa có. PostgreSQL suite chỉ chạy khi có disposable DB đã được kiểm tra và bật safety confirmation.
 
 ## 8. Database Documentation
 
-README cần liên kết tới [`docs/database-design.md`](database-design.md) và mô tả ngắn rằng project dùng PostgreSQL cùng SQLAlchemy để lưu games, moves, game_analysis và persistence. Không chép schema chi tiết vào README.
+README cần liên kết tới [`docs/database-design.md`](database-design.md) và mô tả PostgreSQL/SQLAlchemy là schema foundation. Không được nói gameplay hiện đang lưu bằng PostgreSQL: `GameService` vẫn in-memory và repository chưa triển khai.
 
 Schema implementation, migration command, database reset và test database setup phải lấy từ M1/M4 sau khi chốt; database design hiện tại vẫn là proposal ở những điểm được đánh dấu.
 
 ## 9. API Documentation
 
-README cần liên kết tới FastAPI `/docs` (khi app/docs được triển khai và bật) và `docs/api-contract.md` (sau khi M1 cung cấp contract).
+README liên kết tới FastAPI `/docs` và `docs/api-contract.md`. API contract có một số endpoint dự kiến chưa có implementation; README chỉ khẳng định create/get/move và health hiện có.
 
 Endpoint overview có thể liệt kê các path đã nêu trong Team Guide sau khi M1 xác nhận chúng là contract hiện hành:
 
@@ -244,6 +246,15 @@ Mỗi mục chỉ được nêu dấu hiệu, thông tin cần kiểm tra và c�
 - [ ] M3 frontend design available.
 - [ ] M4 DevOps design available.
 - [ ] README updated according to actual implementation.
+
+### Sprint 2 update
+
+- [x] README setup, test commands, current in-memory boundary, and documentation links synchronized with checked-in implementation.
+- [x] Database design records implemented constraints, runtime boundary, test scope, and open decisions.
+- [x] Test plan records coverage, owners, safety requirements, and actual execution blocker.
+- [ ] Run Python regression suite after installing declared requirements and pytest in the project environment.
+- [ ] Run guarded PostgreSQL tests after provisioning and verifying a disposable test database.
+- [ ] M1/M2/M4 integration work remains with the respective owners; see [`test-plan.md`](test-plan.md).
 
 ## 15. Dependencies / Open Questions
 
