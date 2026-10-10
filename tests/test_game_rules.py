@@ -36,6 +36,12 @@ def test_cannot_play_occupied_cell():
         GameRules.apply_move(state, 7, 7)
 
 
+@pytest.mark.parametrize("row,col", [(-1, 0), (15, 0), (0, -1), (0, 15)])
+def test_rejects_coordinates_outside_board(row, col):
+    with pytest.raises(InvalidMoveError):
+        GameRules.apply_move(GameState(), row, col)
+
+
 def test_horizontal_win():
     state = GameState()
 
@@ -61,6 +67,31 @@ def test_diagonal_win():
         state.board[i][i] = "X"
 
     assert GameRules.has_won(state, 4, 4, Player.X)
+
+
+def test_anti_diagonal_win():
+    state = GameState()
+
+    for i in range(5):
+        state.board[i][4 - i] = "O"
+
+    assert GameRules.has_won(state, 4, 0, Player.O)
+
+
+def test_game_ends_in_draw_when_last_cell_is_filled_without_five_in_a_row():
+    state = GameState(move_count=224)
+    # Alternate each row and use two-cell horizontal runs. No direction has
+    # five consecutive matching cells before the final move.
+    for row in range(15):
+        for col in range(15):
+            state.board[row][col] = "X" if (row + col // 2) % 2 == 0 else "O"
+    state.board[14][14] = "EMPTY"
+    state.current_player = Player.X
+
+    GameRules.apply_move(state, 14, 14)
+
+    assert state.status == GameStatus.DRAW
+    assert state.winner is None
 
 
 def test_game_ends_after_win():

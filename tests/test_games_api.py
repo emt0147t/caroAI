@@ -87,3 +87,37 @@ def test_invalid_coordinates():
     )
 
     assert response.status_code == 422
+
+
+def test_get_unknown_game_returns_not_found():
+    response = client.get("/api/games/does-not-exist")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Game 'does-not-exist' not found"
+
+
+def test_win_is_returned_in_api_game_state_and_later_moves_are_rejected():
+    create_response = client.post("/api/games", json={"mode": "HUMAN_VS_HUMAN"})
+    assert create_response.status_code == 201
+    game_id = create_response.json()["id"]
+    winning_moves = [
+        (0, 0), (1, 0), (0, 1), (1, 1), (0, 2), (1, 2),
+        (0, 3), (1, 3), (0, 4),
+    ]
+
+    for row, col in winning_moves:
+        response = client.post(
+            f"/api/games/{game_id}/moves", json={"row": row, "col": col}
+        )
+        assert response.status_code == 200
+
+    game = response.json()["game"]
+    assert game["status"] == "X_WON"
+    assert game["winner"] == "X"
+    assert game["move_count"] == 9
+
+    after_end = client.post(
+        f"/api/games/{game_id}/moves", json={"row": 2, "col": 2}
+    )
+    assert after_end.status_code == 400
+    assert after_end.json()["detail"] == "Game is already finished"
