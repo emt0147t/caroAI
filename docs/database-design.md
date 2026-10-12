@@ -216,4 +216,4 @@ PostgreSQL tests use `TEST_DATABASE_URL`, a generated schema per test, and clean
 
 ## 11. Sprint 2 verification scope
 
-The model-level tests exercise fresh-session reads, move order via explicit query ordering, foreign keys, unique move numbers, CHECK constraints, nullable analysis move references, and transaction rollback. They do not assert ORM relationship ordering, cascade semantics, or API persistence. Open decisions in Section 6 remain pending M1/team confirmation.
+The model-level suite `tests/test_database_postgres.py` was reported as **11 passed in 6.34s**. It exercises fresh-session reads, move order via explicit query ordering, foreign keys, unique move numbers, CHECK constraints, nullable analysis move references, and transaction rollback through SQLAlchemy sessions. It does not assert ORM relationship ordering, cascade semantics, or persistence/transaction behavior through `GameService` or the API. The available result does not record the run date, database host, or database name. Open decisions in Section 6 remain pending M1/team confirmation.

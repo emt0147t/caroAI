@@ -43,6 +43,8 @@ python -m pytest tests/test_games_api.py -q
 
 PostgreSQL checks in `tests/test_database_postgres.py` are opt-in and create/drop a unique schema. They require a **disposable PostgreSQL test database** with permission to create and drop schemas. Set `TEST_DATABASE_URL` to that database and, only after verifying the target is disposable, set `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`. The fixture also requires the database name to visibly include `test` and rejects names marked `prod` or `live`. Do not point it at production or shared data. No DB tests run without these settings.
 
+The current PostgreSQL suite checks SQLAlchemy models directly through database sessions; it does not verify persistence through `GameService` or the API.
+
 Example PowerShell setup (replace the placeholder with a local disposable test database URL):
 
 ```powershell

@@ -1,6 +1,6 @@
 # CaroAI — Documentation Plan (Sprint 1)
 
-> **Sprint 2 status (2026-10-10):** This planning document is retained for ownership and maintenance guidance. Current project state and verified setup/test commands are documented in the repository README and [`test-plan.md`](test-plan.md). Domain/service and API/health regressions passed in isolated test environments. PostgreSQL, API persistence, and Docker database smoke work remain unverified or dependent on their owners.
+> **Sprint 2 status:** This planning document is retained for ownership and maintenance guidance. Current project state and test evidence are documented in the repository README and [`test-plan.md`](test-plan.md). The PostgreSQL model/session suite is reported as 11 passed; application persistence/transactions and Docker/CI database smoke remain unverified or dependent on M1/M4.
 
 > **Trạng thái:** Kế hoạch tài liệu của Member 5 cho Sprint 1. Đây không phải README hoàn chỉnh. Các hướng dẫn chỉ được đưa vào README khi đã xác minh với implementation và Team Guide; những giá trị chưa có contract được ghi là cần member phụ trách xác nhận.
 
@@ -252,8 +252,11 @@ Mỗi mục chỉ được nêu dấu hiệu, thông tin cần kiểm tra và c�
 - [x] README setup, test commands, current in-memory boundary, and documentation links synchronized with checked-in implementation.
 - [x] Database design records implemented constraints, runtime boundary, test scope, and open decisions.
 - [x] Test plan records coverage, owners, safety requirements, and actual execution blocker.
-- [ ] Run Python regression suite after installing declared requirements and pytest in the project environment.
-- [ ] Run guarded PostgreSQL tests after provisioning and verifying a disposable test database.
+- [ ] Run Python regression suite in the project environment after installing declared requirements and pytest. The consolidated Windows CPython 3.13.15 temporary-environment run passed 36 tests with one Starlette deprecation warning; Python 3.11 is unverified.
+- [x] Run PostgreSQL model/session checks — 11 passed in 6.34s. The available result does not record the interpreter, run date, database host, or database name.
+- [ ] Verify and retain evidence that the PostgreSQL test target was a disposable database.
+- [ ] Verify application-level persistence and transaction behavior through GameService/API after M1 implements repository/session integration.
+- [ ] Run Docker/Compose smoke and CI database job after M4 provides the isolated runtime and test database setup.
 - [ ] M1/M2/M4 integration work remains with the respective owners; see [`test-plan.md`](test-plan.md).
 
 ## 15. Dependencies / Open Questions
