@@ -1,4 +1,4 @@
-import time
+﻿import time
 from typing import List, Dict, Any
 from app.ai.minimax import find_best_move
 
@@ -8,13 +8,14 @@ DIFFICULTY_CONFIG = {
     "HARD": {"depth": 3, "candidate_limit": 14}
 }
 
+
 def get_ai_move(
     board: List[List[int]],
     ai_player: int,
     difficulty: str = "MEDIUM"
 ) -> Dict[str, Any]:
     """
-    Entry point chính của AI Engine để Backend FastAPI gọi tới.
+    Entry point chÃ­nh cá»§a AI Engine Ä‘á»ƒ Backend FastAPI gá»i tá»›i.
     """
     diff_key = difficulty.upper()
     config = DIFFICULTY_CONFIG.get(diff_key, DIFFICULTY_CONFIG["MEDIUM"])

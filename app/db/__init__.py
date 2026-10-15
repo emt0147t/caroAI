@@ -1,4 +1,4 @@
-"""Database foundation for CaroAI.
+﻿"""Database foundation for CaroAI.
 
 Business models and repositories remain intentionally unimplemented until
 their contracts are confirmed.

@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+﻿from fastapi import FastAPI
 
 from app.api.routes_health import router as health_router
 from app.api.routes_games import router as games_router

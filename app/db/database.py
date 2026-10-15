@@ -1,4 +1,4 @@
-"""SQLAlchemy engine and session helpers.
+﻿"""SQLAlchemy engine and session helpers.
 
 The database URL is read from the ``DATABASE_URL`` environment variable.
 This module does not load ``.env`` files; environment loading belongs to the

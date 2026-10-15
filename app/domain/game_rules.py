@@ -1,4 +1,4 @@
-from .game_state import BOARD_SIZE, GameState, GameStatus, Move, Player
+﻿from .game_state import BOARD_SIZE, GameState, GameStatus, Move, Player
 
 
 class InvalidMoveError(ValueError):

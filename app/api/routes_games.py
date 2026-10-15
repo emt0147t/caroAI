@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+﻿from fastapi import APIRouter, HTTPException
 
 from app.domain.game_rules import InvalidMoveError
 from app.schemas.game import (

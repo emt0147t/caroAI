@@ -1,4 +1,4 @@
-from uuid import uuid4
+﻿from uuid import uuid4
 
 from app.domain.game_rules import GameRules
 from app.domain.game_state import GameMode, GameState

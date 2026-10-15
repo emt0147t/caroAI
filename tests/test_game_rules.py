@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 
 from app.domain.game_rules import GameRules, InvalidMoveError
 from app.domain.game_state import GameMode, GameState, GameStatus, Player
