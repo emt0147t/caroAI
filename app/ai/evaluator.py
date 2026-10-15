@@ -13,7 +13,7 @@ SCORE_OPEN_TWO = 500
 SCORE_BLOCKED_TWO = 50
 
 
-def evaluate_line(line: List[int], player: int) -> int:
+def evaluate_line(line: List[int], player: int) -> int:  # noqa: C901
     """
     ÄÃ¡nh giÃ¡ Ä‘iá»ƒm cá»§a má»™t dÃ£y Ã´ (chuá»—i 1D) theo cÃ¡c pattern cá» Caro.
     """
@@ -77,7 +77,7 @@ def evaluate_board(board: List[List[int]], ai_player: int, human_player: int) ->
         ai_score += evaluate_line(line, ai_player)
         human_score += evaluate_line(line, human_player)
 
-    # 3. ÄÆ°á»ng chÃ©o chÃ­nh (\)
+    # 3. ÄÆ°á»ng chÃ©o chÃ­nh (\\)
     for k in range(-BOARD_SIZE + 1, BOARD_SIZE):
         line = [board[r][r - k] for r in range(BOARD_SIZE) if 0 <= r - k < BOARD_SIZE]
         if len(line) >= 5:
@@ -92,5 +92,3 @@ def evaluate_board(board: List[List[int]], ai_player: int, human_player: int) ->
             human_score += evaluate_line(line, human_player)
 
     return int(ai_score - 1.2 * human_score)
-
-
