@@ -50,6 +50,8 @@ def get_game(game_id: str):
     "/{game_id}/moves",
     response_model=MakeMoveResponse,
 )
+
+
 def make_move(game_id: str, request: MoveRequest):
     try:
         move = game_service.make_move(
