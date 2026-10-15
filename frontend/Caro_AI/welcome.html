@@ -186,18 +186,19 @@
         <div class="game-logo">#</div>
 
         <h1 class="title">Cờ Caro AI</h1>
-        <p class="subtitle">Chọn chế độ chơi. Backend là nguồn sự thật cho game state và luật chơi.</p>
+        <p class="subtitle">Thách thức thuật toán Minimax AI thông minh. Hãy chuẩn bị nước đi của bạn!</p>
 
         <!-- Lựa chọn chế độ -->
         <div class="option-group">
-            <span class="option-label">Chọn chế độ</span>
+            <span class="option-label">Độ khó AI</span>
             <div class="options-grid">
-                <button class="option-btn active" data-mode="HUMAN_VS_HUMAN">Người vs Người</button>
-                <button class="option-btn" data-mode="HUMAN_VS_AI">Người vs AI</button>
+                  <button class="option-btn difficulty-btn" data-difficulty="EASY">Dễ</button>
+                  <button class="option-btn difficulty-btn active" data-difficulty="MEDIUM">Vừa</button>
+                  <button class="option-btn difficulty-btn" data-difficulty="HARD">Khó</button>
             </div>
         </div>
 
-        <!-- AI difficulty is selected after the AI contract is implemented. -->
+        <!-- Lựa chọn Quân cờ -->
         <div class="option-group">
             <span class="option-label">Chọn quân đi trước</span>
             <div class="options-grid" style="grid-template-columns: repeat(2, 1fr);">
@@ -207,34 +208,75 @@
         </div>
 
         <!-- Nút Bắt đầu ván đấu -->
-        <button id="startBtn" class="start-btn" type="button">
-            <span>Bắt Đầu Ván Đấu</span>
-            <span>➔</span>
+        <button class="start-btn" id="btn-start-pvai">
+             <span>Bắt Đầu Ván Đấu</span>
+             <span>➔</span>
         </button>
 
-        <p class="footer-note">Bàn cờ 15 × 15 · Backend xử lý luật và trạng thái.</p>
+        <p class="footer-note">Luật chơi: Tạo chuỗi 5 ô liên tiếp theo hàng ngang, dọc hoặc chéo để thắng.</p>
     </div>
 
     <!-- Script cập nhật đồng hồ -->
     <script>
-        const buttons = document.querySelectorAll("[data-mode]");
-        const startButton = document.getElementById("startBtn");
-        let selectedMode = "HUMAN_VS_HUMAN";
-        buttons.forEach((button) => button.addEventListener("click", () => {
-            selectedMode = button.dataset.mode;
-            buttons.forEach((item) => item.classList.remove("active"));
-            button.classList.add("active");
-        }));
-        startButton.addEventListener("click", () => {
-            window.location.href = "trong_tran/index.html?mode=" + encodeURIComponent(selectedMode);
-        });
         function updateClock() {
             const now = new Date();
-            document.getElementById("realtimeClock").textContent =
-                [now.getHours(), now.getMinutes(), now.getSeconds()].map((v) => String(v).padStart(2, "0")).join(":");
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('realtimeClock').textContent = `${hours}:${minutes}:${seconds}`;
         }
         setInterval(updateClock, 1000);
         updateClock();
     </script>
+<!-- Đặt đoạn script này ở cuối file welcome.html -->
+<script>
+  // 1. Biến lưu độ khó mặc định (ví dụ chọn 'MEDIUM' nếu chưa bấm gì)
+  let selectedDifficulty = 'MEDIUM'; 
+
+  // Lấy danh sách các nút chọn độ khó của bạn (giả sử class của các nút là .btn-difficulty hoặc bạn thay id tương ứng)
+  const difficultyButtons = document.querySelectorAll('.difficulty-btn, [data-difficulty]'); 
+  
+  difficultyButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      // Xóa active class ở các nút khác và thêm vào nút hiện tại
+      difficultyButtons.forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      
+      // Cập nhật giá trị độ khó (đọc từ attribute hoặc text)
+      selectedDifficulty = e.target.getAttribute('data-difficulty') || e.target.innerText.toUpperCase();
+    });
+  });
+
+  // 2. Bắt sự kiện khi bấm nút Bắt đầu chơi PvAI
+  const startPvAIButton = document.getElementById('btn-start-pvai'); // Thay bằng id thực tế của nút Bắt đầu trong file của bạn
+  
+  if (startPvAIButton) {
+    startPvAIButton.addEventListener('click', async () => {
+      try {
+        // Gọi API khởi tạo game với Backend thật
+        const response = await fetch('http://localhost:8000/api/games', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            mode: 'pvai', 
+            difficulty: selectedDifficulty 
+          })
+        });
+
+        if (!response.ok) throw new Error('Không thể kết nối tới Server tạo game!');
+
+        const data = await response.json();
+        
+        // Lưu game_id nhận được vào sessionStorage để trang trong_tran đọc lại
+        sessionStorage.setItem('game_id', data.game_id);
+        
+        // Chuyển hướng sang màn hình bàn cờ trong trận
+        window.location.href = './trong_tran/index.html';[cite: 1]
+      } catch (error) {
+        alert('Lỗi khởi tạo ván đấu: ' + error.message);
+      }
+    });
+  }
+</script>
 </body>
 </html>
