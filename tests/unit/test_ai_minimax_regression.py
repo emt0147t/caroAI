@@ -9,7 +9,14 @@ Kiểm tra:
 """
 
 from app.ai.minimax import minimax, find_best_move, INF
-from app.ai.evaluator import evaluate_board, SCORE_FIVE, get_board_raw_scores
+from app.ai.evaluator import (
+    evaluate_board,
+    SCORE_FIVE,
+    get_board_raw_scores,
+    check_win_at,
+    has_five_in_a_row,
+)
+from app.ai.move_generator import get_candidate_moves
 
 BOARD_SIZE = 15
 EMPTY = 0
@@ -76,18 +83,66 @@ def test_evaluate_board_negative_for_human_advantage():
 
 # ── B3.2  Alpha-beta không thay đổi nước tối ưu so với full minimax ──────────
 
-def _minimax_no_pruning(board, depth, is_maximizing, ai_player, human_player, candidate_limit=8):
+def _minimax_no_pruning(
+    board, depth, is_maximizing, ai_player, human_player, candidate_limit=8
+):  # noqa: C901
     """
-    Phiên bản minimax KHÔNG cắt tỉa alpha-beta (alpha=-INF, beta=INF cố định).
-    Dùng để so sánh với phiên bản có pruning.
+    Tham chiếu minimax không cắt tỉa alpha-beta, dùng evaluator đầy đủ.
+    Cố ý độc lập với implementation minimax production để so sánh điểm tối ưu.
     """
-    return minimax(
-        board, depth, alpha=-INF, beta=INF,
-        is_maximizing=is_maximizing,
-        ai_player=ai_player,
-        human_player=human_player,
-        candidate_limit=candidate_limit,
-    )
+    candidates = get_candidate_moves(board, radius=2)
+    if not candidates:
+        return ((7, 7), 0)
+
+    if has_five_in_a_row(board, ai_player):
+        return (None, SCORE_FIVE)
+    if has_five_in_a_row(board, human_player):
+        return (None, -SCORE_FIVE)
+
+    current_player = ai_player if is_maximizing else human_player
+    for r, c in candidates:
+        board[r][c] = current_player
+        won = check_win_at(board, r, c, current_player)
+        board[r][c] = EMPTY
+        if won:
+            return ((r, c), SCORE_FIVE if is_maximizing else -SCORE_FIVE)
+
+    if depth == 0:
+        return (None, evaluate_board(board, ai_player, human_player))
+
+    scored_candidates = []
+    for r, c in candidates:
+        board[r][c] = current_player
+        score = evaluate_board(board, ai_player, human_player)
+        board[r][c] = EMPTY
+        scored_candidates.append(((r, c), score))
+
+    scored_candidates.sort(key=lambda item: item[1], reverse=is_maximizing)
+    limited_candidates = [move for move, _ in scored_candidates[:candidate_limit]]
+
+    best_move = None
+    if is_maximizing:
+        best_score = -INF
+        for r, c in limited_candidates:
+            board[r][c] = ai_player
+            _, score = _minimax_no_pruning(
+                board, depth - 1, False, ai_player, human_player, candidate_limit
+            )
+            board[r][c] = EMPTY
+            if score > best_score:
+                best_score, best_move = score, (r, c)
+        return (best_move, best_score)
+
+    best_score = INF
+    for r, c in limited_candidates:
+        board[r][c] = human_player
+        _, score = _minimax_no_pruning(
+            board, depth - 1, True, ai_player, human_player, candidate_limit
+        )
+        board[r][c] = EMPTY
+        if score < best_score:
+            best_score, best_move = score, (r, c)
+    return (best_move, best_score)
 
 
 def test_alpha_beta_same_score_as_full_search_depth1():
