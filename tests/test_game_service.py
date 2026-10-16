@@ -50,3 +50,15 @@ def test_make_invalid_move():
 
     with pytest.raises(InvalidMoveError):
         service.make_move(game_id, 7, 7)
+
+
+def test_service_keeps_games_isolated():
+    service = GameService()
+    first_id = service.create_game(GameMode.HUMAN_VS_HUMAN)
+    second_id = service.create_game(GameMode.HUMAN_VS_AI)
+
+    service.make_move(first_id, 3, 4)
+
+    assert service.get_game(first_id).board[3][4] == "X"
+    assert service.get_game(second_id).board[3][4] == "EMPTY"
+    assert service.get_game(second_id).move_count == 0

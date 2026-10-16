@@ -1,332 +1,99 @@
-# CaroAI API Contract
+# CaroAI API Contract and Endpoint Status
 
-Base path:
+This document distinguishes routes currently implemented in this branch from proposed interface designs. It is not evidence that planned API or database integration is available. The game API currently delegates to an in-memory `GameService`; game state does not survive process restart.
 
-```text
-/api
-```
+## Implemented endpoints
 
-## 1. Health Check
+### `GET /health`
 
-### GET `/health`
-
-Response `200`:
+Returns HTTP `200` with:
 
 ```json
-{
-  "status": "ok"
-}
+{"status": "ok"}
 ```
 
----
+This is an application health response only; it does not check PostgreSQL.
 
-## 2. Create Game
+### `POST /api/games`
 
-### POST `/api/games`
+Creates an in-memory game. The request accepts a `mode` from `HUMAN_VS_HUMAN` or `HUMAN_VS_AI`; if omitted, the schema default is `HUMAN_VS_HUMAN`.
+
+Returns HTTP `201` and a `GameResponse` containing `id` (string), `mode`, `status`, `current_player`, `move_count`, `winner`, and a 15 × 15 `board`. A new game starts `IN_PROGRESS`, with X to move, zero moves, and no winner.
+
+### `GET /api/games/{game_id}`
+
+Returns the current process-local `GameResponse` with HTTP `200`. An unknown ID returns HTTP `404`:
+
+```json
+{"detail": "Game 'does-not-exist' not found"}
+```
+
+The detail embeds the requested ID, as produced by `GameNotFoundError` in the current implementation.
+
+### `POST /api/games/{game_id}/moves`
+
+Accepts integer `row` and `col`, each validated in the inclusive range `0..14`. The server chooses the player from `current_player`; the request does not accept a player field.
+
+Returns HTTP `200` with `move` (`row`, `col`, `player`, `move_number`) and the updated `game` response. An unknown game returns `404`. A rule violation (occupied cell or finished game) returns `400` with FastAPI's `detail` string. Request validation errors, including out-of-range coordinates, return `422`.
+
+The game rules alternate X/O after a non-terminal move. A run of five or more contiguous marks in any of four directions ends the game with `X_WON` or `O_WON`; filling the final cell without a win ends it with `DRAW`. No further move is accepted after a terminal status.
+
+## Implemented AI move
+
+### `POST /api/games/{game_id}/ai-move`
+
+This endpoint is implemented in the current Backend. It is available only for games created with `mode: "HUMAN_VS_AI"`, and only when it is the AI (O) turn. The request schema defaults `difficulty` to `"medium"` when omitted.
 
 Request:
 
 ```json
-{
-  "mode": "HUMAN_VS_AI"
-}
+{"difficulty":"medium"}
 ```
 
-Allowed modes:
+Allowed values are `easy`, `medium`, and `hard`. Unsupported values or invalid request data return HTTP `422`.
 
-```text
-HUMAN_VS_HUMAN
-HUMAN_VS_AI
-```
-
-Response `201`:
+Successful response: HTTP `200`, using the same `MakeMoveResponse` schema as a human move. Schema excerpt (the actual `game.board` field is a 15 × 15 array and is omitted here for readability):
 
 ```json
 {
-  "id": "game-id",
-  "mode": "HUMAN_VS_AI",
-  "status": "IN_PROGRESS",
-  "current_player": "X",
-  "move_count": 0,
-  "winner": null,
-  "board": []
-}
-```
-
-The actual board must contain 15 × 15 cells.
-
----
-
-## 3. Get Game
-
-### GET `/api/games/{game_id}`
-
-Response `200`:
-
-```json
-{
-  "id": "game-id",
-  "mode": "HUMAN_VS_AI",
-  "status": "IN_PROGRESS",
-  "current_player": "X",
-  "move_count": 3,
-  "winner": null,
-  "board": []
-}
-```
-
-Response `404`:
-
-```json
-{
-  "detail": "Game not found"
-}
-```
-
----
-
-## 4. Make Human Move
-
-### POST `/api/games/{game_id}/moves`
-
-Request:
-
-```json
-{
-  "row": 7,
-  "col": 8
-}
-```
-
-The backend determines the player from `current_player`.
-
-Response `200`:
-
-```json
-{
-  "move": {
-    "row": 7,
-    "col": 8,
-    "player": "X",
-    "move_number": 1
-  },
+  "move": {"row": 6, "col": 8, "player": "O", "move_number": 2},
   "game": {
     "id": "game-id",
-    "status": "IN_PROGRESS",
-    "current_player": "O",
-    "move_count": 1,
-    "winner": null,
-    "board": []
-  }
-}
-```
-
-Invalid move response: `400`.
-
-Examples:
-
-```text
-Cell already occupied
-Invalid coordinates
-Game already finished
-Not player's turn
-```
-
----
-
-## 5. Request AI Move
-
-### POST `/api/games/{game_id}/ai-move`
-
-Used only for `HUMAN_VS_AI`.
-
-Request:
-
-```json
-{
-  "difficulty": "medium"
-}
-```
-
-Allowed difficulty values:
-
-```text
-easy
-medium
-hard
-```
-
-Response `200`:
-
-```json
-{
-  "move": {
-    "row": 6,
-    "col": 8,
-    "player": "O",
-    "move_number": 2
-  },
-  "game": {
-    "id": "game-id",
+    "mode": "HUMAN_VS_AI",
     "status": "IN_PROGRESS",
     "current_player": "X",
     "move_count": 2,
-    "winner": null,
-    "board": []
+    "winner": null
   }
 }
 ```
 
-The AI service must return a legal move.
+The coordinates are illustrative; the actual move is selected by the AI. Unknown game IDs return HTTP `404`. Requests that cannot be applied (wrong game mode, not the AI turn, or illegal AI output) return HTTP `400`. Request-schema validation errors, including an unsupported difficulty, return HTTP `422`. Errors use FastAPI's `{"detail":"..."}` shape.
 
-The Backend validates the move before applying it.
+The AI endpoint changes the in-memory `GameState` only. It does **not** demonstrate PostgreSQL persistence.
 
----
+## Planned interfaces — not confirmed as implemented
 
-## 6. AI Hint
+| Interface | Status |
+|---|---|
+| `POST /api/games/{game_id}/hint` | Not confirmed as implemented in current routes |
+| `POST /api/games/{game_id}/analysis` | Not confirmed as implemented in current routes |
+| `GET /api/history` | Not confirmed as implemented; persistence contract remains open |
 
-### POST `/api/games/{game_id}/hint`
+Do not treat these paths or earlier examples as callable APIs until their owners verify the routes and schemas.
 
-Request:
+## Error response format
 
-```json
-{
-  "difficulty": "medium"
-}
-```
-
-Response `200`:
+Implemented error responses use FastAPI's standard JSON shape:
 
 ```json
-{
-  "suggested_move": {
-    "row": 7,
-    "col": 9
-  },
-  "score": 12.5,
-  "model": "minimax"
-}
+{"detail": "Human-readable error message"}
 ```
 
-Hint does not modify the game state.
+The implemented game routes use `400` for invalid game actions, `404` for missing games, and `422` for request validation. The exact `404` detail includes the requested game ID as shown above.
 
----
+## Runtime boundary
 
-## 7. Move Analysis
+Implemented routes → `GameService` → domain rules/state. `GameService` stores state in a process-local dictionary. The SQLAlchemy models/session helper are not called by these routes; repository methods and PostgreSQL gameplay persistence are not implemented. Proposed AI and history routes are not part of the active route set.
 
-### POST `/api/games/{game_id}/analysis`
-
-Request:
-
-```json
-{
-  "row": 7,
-  "col": 8
-}
-```
-
-Response `200`:
-
-```json
-{
-  "score": 8.5,
-  "best_move": {
-    "row": 7,
-    "col": 9
-  },
-  "comment": "Move is playable but not optimal."
-}
-```
-
-The exact scoring algorithm is owned by the AI module.
-
----
-
-## 8. Game History
-
-### GET `/api/history`
-
-Response `200`:
-
-```json
-{
-  "games": []
-}
-```
-
-History persistence is backed by PostgreSQL in later implementation.
-
----
-
-# Error Contract
-
-API errors use FastAPI's standard format:
-
-```json
-{
-  "detail": "Human-readable error message"
-}
-```
-
-Common status codes:
-
-```text
-200 - Success
-201 - Resource created
-400 - Invalid game action
-404 - Resource not found
-422 - Request validation error
-500 - Unexpected server error
-```
-
-# Backend Architecture
-
-```text
-Frontend
-   ↓
-API Routes
-   ↓
-Services
-   ↓
-Domain
-   ├── GameState
-   └── GameRules
-   ↓
-AI Service
-   ↓
-Database Repository
-   ↓
-PostgreSQL
-```
-
-Responsibilities:
-
-### Routes
-
-HTTP layer only.
-
-### Services
-
-Application/business orchestration.
-
-### Domain
-
-Pure game rules and state management.
-
-### AI
-
-Move evaluation and move selection.
-
-### Database
-
-Persistence only.
-
-### Important Rule
-
-No Frontend-specific logic inside Domain.
-
-No database-specific logic inside Domain.
-
-No HTTP/FastAPI logic inside Domain.
-
-No AI algorithm inside API routes.
+See [game-domain.md](game-domain.md) for the implemented state/rules, [database-design.md](database-design.md) for the schema foundation and open decisions, and [test-plan.md](test-plan.md) for observed test evidence and blockers.
