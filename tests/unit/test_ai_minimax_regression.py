@@ -8,10 +8,8 @@ Kiểm tra:
 - Node-counting (nếu implementation có).
 """
 
-import copy
-import pytest
 from app.ai.minimax import minimax, find_best_move, INF
-from app.ai.evaluator import evaluate_board, SCORE_FIVE, get_board_raw_scores, get_cell_lines_scores
+from app.ai.evaluator import evaluate_board, SCORE_FIVE, get_board_raw_scores
 
 BOARD_SIZE = 15
 EMPTY = 0
@@ -352,7 +350,7 @@ def test_incremental_delta_matches_evaluate_board_across_random_boards():
                 )
 
 
-def test_cumulative_open_fours_do_not_trigger_false_positive_terminal_win():
+def test_cumulative_open_fours_do_not_trigger_false_positive_terminal_win():  # noqa: C901
     """
     Regression test: Kiểm chứng giả thuyết điểm dồn tích các pattern EPPPPE.
     Khi bàn cờ chứa nhiều chuỗi 4 quân mở (10 chuỗi EPPPPE độc lập trên 10 hàng riêng biệt)
