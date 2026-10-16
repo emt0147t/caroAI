@@ -6,7 +6,6 @@ board đầu vào sau khi tìm kiếm.
 """
 
 import copy
-import pytest
 from app.ai.engine import get_ai_move
 from app.ai.minimax import find_best_move
 
