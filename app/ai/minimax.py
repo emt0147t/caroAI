@@ -1,6 +1,5 @@
 from typing import List, Tuple, Optional
 from app.ai.evaluator import (
-    evaluate_board,
     SCORE_FIVE,
     get_board_raw_scores,
     get_cell_lines_scores,
