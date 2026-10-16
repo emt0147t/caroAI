@@ -8,6 +8,7 @@ DIFFICULTY_CONFIG = {
     "HARD": {"depth": 3, "candidate_limit": 14}
 }
 
+
 def get_ai_move(
     board: List[List[int]],
     ai_player: int,
