@@ -57,13 +57,13 @@
 
 ### 1. Đối chiếu mục tiêu thời gian phản hồi (`docs/ai-design.md §1`)
 Tài liệu thiết kế quy định mục tiêu: **Thời gian phản hồi AI < 1.0 giây**.
-- **EASY (depth=1, limit=6):** Đạt 0.000 s – 0.004 s (**ĐẠT**, phản hồi tức thì < 5 ms).
-- **MEDIUM (depth=2, limit=10 - MVP baseline):** Đạt 0.000 s – 0.015 s (**ĐẠT**, < 16 ms).
-- **HARD (depth=3, limit=14):**
-  - Nước thắng/chặn ngay: ~0.000 s – 0.001 s (siêu nhanh nhờ terminal checks).
-  - Bàn cờ mở đầu: 0.014 s (**ĐẠT**).
-  - Thế cờ trung cuộc phức tạp: `mid_game_center_cluster` đạt **0.132 s (131.821 ms)**; `complex_mid_game` đạt **0.172 s (172.179 ms)** (**ĐẠT**, nằm an toàn dưới 0.2 s).
-  - *Kết luận:* Nhờ giải thuật **Incremental 4-Line Delta Evaluation** kết hợp **Tuple Caching (`@lru_cache`)**, toàn bộ 5 fixtures ở cả 3 cấp độ EASY, MEDIUM và HARD đều **ĐẠT XUẤT SẮC** mục tiêu < 1.0 s của tài liệu thiết kế ban đầu bằng 100% Python thuần.
+
+Đánh giá dưới đây chỉ dùng bảng **Standard Benchmark** đã ghi ở trên (5 lần đo, 1 warm-up, trên môi trường Windows 11/Python 3.13.14 được ghi trong báo cáo):
+- **EASY (depth=1, limit=6):** median lớn nhất là **2.566 ms** (`mid_game_center_cluster`) (**ĐẠT**, dưới 1.0 s).
+- **MEDIUM (depth=2, limit=10):** median lớn nhất là **10.447 ms** (`mid_game_center_cluster`) (**ĐẠT**, dưới 1.0 s).
+- **HARD (depth=3, limit=14):** median lớn nhất là **88.369 ms** (`mid_game_center_cluster`) (**ĐẠT**, dưới 1.0 s). `complex_mid_game` ghi nhận 0.103 ms trong bộ fixture này; fixture có một nước chặn chiến thuật tức thì nên có thể thoát sớm.
+
+**Kết luận giới hạn:** các median được ghi trong bảng Standard Benchmark đều dưới mục tiêu < 1.0 s. Đây là kết quả benchmark cục bộ của các fixture cụ thể, không phải bằng chứng cho mọi thế cờ hoặc mọi phần cứng. Quan sát profiling độc lập ở trên chưa được tái lập và không được gộp vào kết luận này. Chưa có benchmark baseline Sprint 1 tương đương, vì vậy chưa thể định lượng mức tăng tốc so với phiên bản cũ.
 
 ### 2. Nguyên nhân biến thiên & Hiện trạng phần cứng
 - **Candidate Ordering:** Đã kiểm tra thực nghiệm: trên cùng bàn cờ, hàm `get_candidate_moves()` với tuple hashing sinh tập hợp đồng nhất; minimax sắp xếp lại bằng `scored_candidates.sort()` nên thứ tự ban đầu không gây ra biến thiên lớn giữa các lần chạy.
