@@ -230,36 +230,45 @@
     </script>
 <!-- Đặt đoạn script này ở cuối file welcome.html -->
 <script>
-  // 1. Biến lưu độ khó mặc định (ví dụ chọn 'MEDIUM' nếu chưa bấm gì)
-  let selectedDifficulty = 'MEDIUM'; 
+  // 1. Quản lý State
+  let selectedDifficulty = 'MEDIUM';
+  let selectedSymbol = 'X'; // X: Human đi trước, O: AI đi trước
 
-  // Lấy danh sách các nút chọn độ khó của bạn (giả sử class của các nút là .btn-difficulty hoặc bạn thay id tương ứng)
-  const difficultyButtons = document.querySelectorAll('.difficulty-btn, [data-difficulty]'); 
-  
+  // Lựa chọn độ khó
+  const difficultyButtons = document.querySelectorAll('.difficulty-btn'); 
   difficultyButtons.forEach(btn => {
     btn.addEventListener('click', (e) => {
-      // Xóa active class ở các nút khác và thêm vào nút hiện tại
       difficultyButtons.forEach(b => b.classList.remove('active'));
       e.target.classList.add('active');
-      
-      // Cập nhật giá trị độ khó (đọc từ attribute hoặc text)
-      selectedDifficulty = e.target.getAttribute('data-difficulty') || e.target.innerText.toUpperCase();
+      selectedDifficulty = e.target.getAttribute('data-difficulty') || 'MEDIUM';
     });
   });
 
-  // 2. Bắt sự kiện khi bấm nút Bắt đầu chơi PvAI
-  const startPvAIButton = document.getElementById('btn-start-pvai'); // Thay bằng id thực tế của nút Bắt đầu trong file của bạn
-  
+  // Lựa chọn Quân cờ (Đi trước / Đi sau) - Bổ sung xử lý sự kiện
+  const sideButtons = document.querySelectorAll('.option-group:nth-of-type(2) .option-btn');
+  sideButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      sideButtons.forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      selectedSymbol = e.target.innerText.includes('X') ? 'X' : 'O';
+    });
+  });
+
+  // 2. Gọi API tạo game
+  const startPvAIButton = document.getElementById('btn-start-pvai');
   if (startPvAIButton) {
     startPvAIButton.addEventListener('click', async () => {
       try {
-        // Gọi API khởi tạo game với Backend thật
-        const response = await fetch('http://localhost:8000/api/games', {
+        startPvAIButton.disabled = true;
+        startPvAIButton.innerText = 'Đang khởi tạo...';
+
+        const response = await fetch('/api/games', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             mode: 'pvai', 
-            difficulty: selectedDifficulty 
+            difficulty: selectedDifficulty,
+            player_symbol: selectedSymbol // Gửi thêm phe người chơi chọn
           })
         });
 
@@ -267,13 +276,16 @@
 
         const data = await response.json();
         
-        // Lưu game_id nhận được vào sessionStorage để trang trong_tran đọc lại
+        // Lưu dữ liệu ván đấu
         sessionStorage.setItem('game_id', data.game_id);
+        sessionStorage.setItem('player_symbol', selectedSymbol);
         
-        // Chuyển hướng sang màn hình bàn cờ trong trận
-        window.location.href = './trong_tran/index.html';[cite: 1]
+        // Chuyển hướng sang màn hình chơi
+        window.location.href = './trong_tran/index.html';
       } catch (error) {
         alert('Lỗi khởi tạo ván đấu: ' + error.message);
+        startPvAIButton.disabled = false;
+        startPvAIButton.innerHTML = '<span>Bắt Đầu Ván Đấu</span> <span>➔</span>';
       }
     });
   }
