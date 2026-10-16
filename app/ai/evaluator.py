@@ -47,7 +47,7 @@ _CELL_NON_ROW_LINES: Tuple[Tuple[Tuple[Tuple[int, int], ...], ...], ...] = tuple
 )
 
 
-def _eval_line_pattern(line: Tuple[int, ...] | List[int], player: int, p_count: int) -> int:
+def _eval_line_pattern(line: Tuple[int, ...] | List[int], player: int, p_count: int) -> int:  # noqa: C901
     """
     Đánh giá pattern trên chuỗi đã biết có p_count >= 2 quân của player.
     """
