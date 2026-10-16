@@ -9,7 +9,6 @@ Kiểm tra:
 - Các trường hợp biên: góc, mép, bàn cờ rỗng, bàn cờ gần đầy.
 """
 
-import pytest
 from app.ai.move_generator import get_candidate_moves, BOARD_SIZE, EMPTY
 
 PLAYER_X = 1
