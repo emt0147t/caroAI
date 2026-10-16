@@ -12,7 +12,6 @@ Luật thắng dự án: >=5 quân liên tiếp cùng màu (được xác nhận
 app/domain/game_rules.py và evaluator.py SCORE_FIVE = 100_000_000).
 """
 
-import pytest
 from app.ai.evaluator import evaluate_board, evaluate_line, SCORE_FIVE
 
 BOARD_SIZE = 15
