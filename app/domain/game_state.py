@@ -7,7 +7,7 @@ BOARD_SIZE = 15
 
 class Player(str, Enum):
     X = "X"
-    O = "O"
+    O = "O"  # noqa: E741
 
 
 class GameMode(str, Enum):

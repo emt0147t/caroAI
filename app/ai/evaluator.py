@@ -12,7 +12,8 @@ SCORE_BLOCKED_THREE = 5_000
 SCORE_OPEN_TWO = 500
 SCORE_BLOCKED_TWO = 50
 
-def evaluate_line(line: List[int], player: int) -> int:
+
+def evaluate_line(line: List[int], player: int) -> int:  # noqa: C901
     """
     Đánh giá điểm của một dãy ô (chuỗi 1D) theo các pattern cờ Caro.
     """
@@ -55,6 +56,7 @@ def evaluate_line(line: List[int], player: int) -> int:
         score += SCORE_BLOCKED_TWO
 
     return score
+
 
 def evaluate_board(board: List[List[int]], ai_player: int, human_player: int) -> int:
     """

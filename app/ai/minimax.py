@@ -6,7 +6,8 @@ BOARD_SIZE = 15
 EMPTY = 0
 INF = 1_000_000_000
 
-def minimax(
+
+def minimax(  # noqa: C901
     board: List[List[int]],
     depth: int,
     alpha: int,
@@ -84,6 +85,7 @@ def minimax(
             if beta <= alpha:
                 break
         return (best_move, min_eval)
+
 
 def find_best_move(
     board: List[List[int]],
