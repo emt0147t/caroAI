@@ -83,9 +83,9 @@ def test_evaluate_board_negative_for_human_advantage():
 
 # ── B3.2  Alpha-beta không thay đổi nước tối ưu so với full minimax ──────────
 
-def _minimax_no_pruning(
+def _minimax_no_pruning(  # noqa: C901
     board, depth, is_maximizing, ai_player, human_player, candidate_limit=8
-):  # noqa: C901
+):
     """
     Tham chiếu minimax không cắt tỉa alpha-beta, dùng evaluator đầy đủ.
     Cố ý độc lập với implementation minimax production để so sánh điểm tối ưu.
