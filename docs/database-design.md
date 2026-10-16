@@ -217,3 +217,22 @@ PostgreSQL tests use `TEST_DATABASE_URL`, a generated schema per test, and clean
 ## 11. Sprint 2 verification scope
 
 The model-level suite `tests/test_database_postgres.py` was reported as **11 passed in 6.34s**. It exercises fresh-session reads, move order via explicit query ordering, foreign keys, unique move numbers, CHECK constraints, nullable analysis move references, and transaction rollback through SQLAlchemy sessions. It does not assert ORM relationship ordering, cascade semantics, or persistence/transaction behavior through `GameService` or the API. The available result does not record the run date, database host, or database name. Open decisions in Section 6 remain pending M1/team confirmation.
+
+
+## Current application persistence boundary (2026-10-16)
+
+The Backend now includes the AI-move endpoint, but `GameService` still stores each `GameState` in the in-process `self._games` dictionary. The service does not call the repository or SQLAlchemy session. The SQLAlchemy models and opt-in PostgreSQL model/session tests are a schema foundation only; they do not establish API persistence, restart persistence, or application transaction semantics. Docker database smoke verification remains with M4.
+
+### Follow-up task — GameService/API persistence integration (not completed)
+
+**Owner:** M1 for application/API integration, with M5 for regression and database QA; coordinate runtime/migrations with M4.
+
+Acceptance criteria:
+
+- Replace the process-local game dictionary as the authoritative store with the agreed repository/session contract.
+- Persist each game and its moves with deterministic move ordering and agreed game-ID mapping.
+- Read the final game state back through a new session, including status/winner/end time.
+- Define transaction boundaries and prove rollback on a failed operation without leaving partial game/move records.
+- Add ordered schema migrations and a reproducible migration command; do not treat `create_all` as a migration lifecycle.
+- Run disposable-PostgreSQL integration tests and a Docker/Compose smoke test proving database readiness and application connectivity.
+- Keep the task open until evidence exists; the current model/session tests alone do not satisfy these criteria.

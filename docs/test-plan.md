@@ -93,3 +93,10 @@ PostgreSQL model suite result: `tests/test_database_postgres.py` → **11 passed
 | Team/M5 — DB test env | Disposable DB provisioning, isolation, credentials, cleanup privileges | Run PostgreSQL suite in isolated disposable DB; retain test output |
 
 No API persistence, migration, AI API, or Docker DB integration should be described as complete until the evidence above exists.
+
+
+## Updated branch / CI evidence note
+
+The opt-in PostgreSQL suite in `tests/test_database_postgres.py` is manual-only unless a CI job explicitly provisions a disposable PostgreSQL service and sets both required environment variables. The ordinary CI workflow does not establish those prerequisites, so a skipped PostgreSQL suite is not PostgreSQL integration evidence. Historical results from Python 3.13 do not establish compatibility on the current Python 3.11 CI target. Record the new commit SHA and actual CI result after this branch is updated; do not claim a Python 3.11 or PostgreSQL pass before the corresponding run completes.
+
+The application persistence boundary remains unchanged: `GameService` stores games in `self._games` and does not call the repository/database session. PostgreSQL model/session checks do not prove API persistence, restart persistence, or transaction rollback through `GameService`.

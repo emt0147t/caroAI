@@ -114,4 +114,3 @@ class GameAnalysis(Base):
     # TODO(M1/Team): Confirm analysis cardinality; intentionally no UNIQUE on
     # move_id and no ORM relationship to Move are defined.
     # TODO(M1): Confirm score/classification types and any allowed value ranges.
-

@@ -2,31 +2,38 @@
 __pycache__/
 *.py[cod]
 *.pyo
+*$py.class
+.Python
 
-# Virtual environment
+# Virtual environments
 .venv/
 venv/
 env/
+ENV/
 
-# Environment variables
+# Local environment files and secrets
 .env
+.env.*
+!.env.example
 
-# IDE
+# IDE / OS
 .vscode/
 .idea/
-
-# OS
 .DS_Store
 Thumbs.db
 
-# Testing
+# Tests and tooling
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .coverage
+.coverage.*
 htmlcov/
 
 # ML artifacts
 *.pkl
 *.joblib
 
-# Logs
+# Logs / frontend dependencies
 *.log
+node_modules/

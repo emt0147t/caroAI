@@ -38,50 +38,49 @@ Returns HTTP `200` with `move` (`row`, `col`, `player`, `move_number`) and the u
 
 The game rules alternate X/O after a non-terminal move. A run of five or more contiguous marks in any of four directions ends the game with `X_WON` or `O_WON`; filling the final cell without a win ends it with `DRAW`. No further move is accepted after a terminal status.
 
-## Planned interfaces — not implemented in this branch
+## Implemented AI move
 
-The following designs are retained for M1/M2 review. They must not be treated as callable routes or finalized contracts until their owners confirm and implement them:
+### `POST /api/games/{game_id}/ai-move`
 
-| Proposed interface | Status / dependency |
+This endpoint is implemented in the current Backend. It is available only for games created with `mode: "HUMAN_VS_AI"`, and only when it is the AI (O) turn. The request schema defaults `difficulty` to `"medium"` when omitted.
+
+Request:
+
+```json
+{"difficulty":"medium"}
+```
+
+Allowed values are `easy`, `medium`, and `hard`. Unsupported values or invalid request data return HTTP `422`.
+
+Successful response: HTTP `200`, using the same `MakeMoveResponse` schema as a human move. Schema excerpt (the actual `game.board` field is a 15 × 15 array and is omitted here for readability):
+
+```json
+{
+  "move": {"row": 6, "col": 8, "player": "O", "move_number": 2},
+  "game": {
+    "id": "game-id",
+    "mode": "HUMAN_VS_AI",
+    "status": "IN_PROGRESS",
+    "current_player": "X",
+    "move_count": 2,
+    "winner": null
+  }
+}
+```
+
+The coordinates are illustrative; the actual move is selected by the AI. Unknown game IDs return HTTP `404`. Requests that cannot be applied (wrong game mode, not the AI turn, or illegal AI output) return HTTP `400`. Request-schema validation errors, including an unsupported difficulty, return HTTP `422`. Errors use FastAPI's `{"detail":"..."}` shape.
+
+The AI endpoint changes the in-memory `GameState` only. It does **not** demonstrate PostgreSQL persistence.
+
+## Planned interfaces — not confirmed as implemented
+
+| Interface | Status |
 |---|---|
-| `POST /api/games/{game_id}/ai-move` | Not implemented. Requires M1 route/game contract and M2 AI integration. |
-| `POST /api/games/{game_id}/hint` | Not implemented. Requires M1/M2 contract and AI integration. |
-| `POST /api/games/{game_id}/analysis` | Not implemented. Requires M1/M2 contract and AI integration. |
-| `GET /api/history` | Not implemented. Persistence and response contract require M1 database integration. |
+| `POST /api/games/{game_id}/hint` | Not confirmed as implemented in current routes |
+| `POST /api/games/{game_id}/analysis` | Not confirmed as implemented in current routes |
+| `GET /api/history` | Not confirmed as implemented; persistence contract remains open |
 
-Previous request/response examples for these interfaces were design sketches only. Their payloads, status codes, difficulty values, persistence behavior, and response fields remain subject to owner review.
-
-The sketches below preserve the earlier design intent; they are **non-normative and unimplemented**:
-
-#### Proposed AI move sketch
-
-`POST /api/games/{game_id}/ai-move` was sketched with a difficulty request and a move plus updated game response:
-
-```json
-{"difficulty": "medium"}
-```
-
-```json
-{"move": {"row": 6, "col": 8, "player": "O", "move_number": 2}, "game": "<proposed GameResponse>"}
-```
-
-#### Proposed hint and analysis sketches
-
-```text
-POST /api/games/{game_id}/hint
-Request sketch:  {"difficulty": "medium"}
-Response sketch: {"suggested_move": {"row": 7, "col": 9}, "score": 12.5, "model": "minimax"}
-
-POST /api/games/{game_id}/analysis
-Request sketch:  {"row": 7, "col": 8}
-Response sketch: {"score": 8.5, "best_move": {"row": 7, "col": 9}, "comment": "Move is playable but not optimal."}
-```
-
-M1 and M2 must confirm whether these paths and fields remain valid before implementation or client use. These examples do not establish current status codes, difficulty validation, scoring behavior, or AI quality criteria.
-
-#### Proposed history and architecture
-
-`GET /api/history` was sketched to return a games collection, but its filtering, ordering, ownership, and persistence contract is not defined. The previous layered diagram (routes → service/domain → AI/repository → PostgreSQL) is a target design only: the implemented game routes currently call the in-memory service and do not call AI or the database.
+Do not treat these paths or earlier examples as callable APIs until their owners verify the routes and schemas.
 
 ## Error response format
 

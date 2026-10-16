@@ -284,3 +284,10 @@ README chưa thể hoàn thiện các mục sau cho tới khi member/team tươn
 - Không ghi secret, API key, password hoặc credential thật.
 - Nội dung phải nhất quán với [`database-design.md`](database-design.md) và [`test-plan.md`](test-plan.md), đồng thời phân biệt rõ proposal với quyết định đã xác nhận.
 
+
+
+### Review update — 2026-10-16
+
+- The AI-move route is implemented after the Backend/AI integration change; keep README and API contract aligned with the actual route and `AIMoveRequest` / `MakeMoveResponse` schemas.
+- The application game state remains in-memory in `GameService`; do not describe PostgreSQL persistence as completed.
+- The PostgreSQL model/session test is opt-in and manual-only unless the CI workflow provisions a disposable PostgreSQL database and supplies the required opt-in environment variables. Historical Python 3.13 test counts are not evidence for the Python 3.11 CI target.

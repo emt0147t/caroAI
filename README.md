@@ -20,7 +20,7 @@ Use Python with pip, then from the repository root:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+python -m pip install -r requirements.txt -r requirements-dev.txt
 ```
 
 Start the API:
@@ -57,9 +57,9 @@ python -m pytest tests/test_database_postgres.py -q
 
 ## Current boundaries
 
-- The game API supports create, get, and human moves in the current implementation.
+- The game API supports create, get, human moves, and `POST /api/games/{game_id}/ai-move`. The AI endpoint is implemented, but game state is still process-local and is not persisted to PostgreSQL.
 - Health reports application availability; it does not check PostgreSQL.
-- AI code and unit tests exist, but an API AI move/hint/analyze flow is not wired into the game routes.
+- AI move is wired into the game routes. Hint and analysis endpoints are not confirmed as implemented.
 - Docker and CI files exist. Their runtime/database smoke behavior is owned by M4 and is not claimed as verified here.
 
 ## Documentation
