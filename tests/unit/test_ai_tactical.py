@@ -8,11 +8,8 @@ Các fixture kiểm tra:
 - Terminal state: bàn cờ gần đầy không crash.
 """
 
-import copy
-import pytest
-from app.ai.engine import get_ai_move
 from app.ai.minimax import find_best_move
-from app.ai.evaluator import evaluate_board, SCORE_FIVE
+from app.ai.evaluator import SCORE_FIVE
 
 BOARD_SIZE = 15
 EMPTY = 0
