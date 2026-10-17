@@ -1,9 +1,12 @@
-from uuid import uuid4
-
+"""Application service for authoritative Caro game behavior."""
 from app.ai.adapter import board_to_ai
 from app.ai.engine import get_ai_move as run_ai_engine
+from app.db.repository import (
+    InMemoryGameRepository,
+    RepositoryGameNotFoundError,
+)
 from app.domain.game_rules import GameRules, InvalidMoveError
-from app.domain.game_state import GameMode, GameState, Player
+from app.domain.game_state import GameMode, GameState, Move, Player
 
 
 class GameNotFoundError(ValueError):
@@ -15,60 +18,55 @@ class InvalidAIMoveError(ValueError):
 
 
 class GameService:
-    """Application service for managing Caro games."""
+    """Application service; storage is injected so production uses PostgreSQL."""
 
     VALID_AI_DIFFICULTIES = frozenset({"easy", "medium", "hard"})
 
-    def __init__(self) -> None:
-        self._games: dict[str, GameState] = {}
+    def __init__(self, repository=None) -> None:
+        # Keep construction without arguments useful for legacy unit tests, but
+        # production routes always inject SQLAlchemyGameRepository explicitly.
+        self._repository = repository or InMemoryGameRepository()
 
     def create_game(self, mode: GameMode) -> str:
-        game_id = str(uuid4())
-        self._games[game_id] = GameState(mode=mode)
-        return game_id
+        with self._repository.transaction() as uow:
+            return uow.create_game(mode)
 
     def get_game(self, game_id: str) -> GameState:
-        state = self._games.get(game_id)
+        try:
+            with self._repository.transaction() as uow:
+                return uow.get_game_state(game_id)
+        except RepositoryGameNotFoundError as exc:
+            raise GameNotFoundError(str(exc)) from exc
 
-        if state is None:
-            raise GameNotFoundError(f"Game '{game_id}' not found")
+    def make_move(self, game_id: str, row: int, col: int) -> Move:
+        try:
+            with self._repository.transaction() as uow:
+                state = uow.get_game_state(game_id, for_update=True)
+                move = GameRules.apply_move(state, row, col)
+                uow.persist_move(game_id, move, state)
+                return move
+        except RepositoryGameNotFoundError as exc:
+            raise GameNotFoundError(str(exc)) from exc
 
-        return state
-
-    def make_move(self, game_id: str, row: int, col: int):
-        state = self.get_game(game_id)
-
-        return GameRules.apply_move(
-            state,
-            row,
-            col,
-        )
-
-    def make_ai_move(self, game_id: str, difficulty: str):
-        """Request an AI decision and apply it through the authoritative game rules."""
-        state = self.get_game(game_id)
-
+    def _choose_ai_coordinates(
+        self, state: GameState, difficulty: str
+    ) -> tuple[int, int]:
         if state.mode != GameMode.HUMAN_VS_AI:
             raise InvalidAIMoveError(
                 "AI move is only available for HUMAN_VS_AI games"
             )
-
         if state.current_player != Player.O:
             raise InvalidAIMoveError("It is not the AI turn")
-
         if difficulty not in self.VALID_AI_DIFFICULTIES:
             raise InvalidAIMoveError(
                 "Difficulty must be one of: easy, medium, hard"
             )
 
-        # Convert to a fresh snapshot so AI search can never mutate Backend state.
-        ai_board = board_to_ai(state.board)
         result = run_ai_engine(
-            board=ai_board,
+            board=board_to_ai(state.board),
             ai_player=2,
             difficulty=difficulty,
         )
-
         if not isinstance(result, dict):
             raise InvalidAIMoveError("AI returned an invalid move response")
 
@@ -85,6 +83,16 @@ class GameService:
             raise InvalidAIMoveError(
                 f"AI returned an illegal move: {exc}"
             ) from exc
+        return row, col
 
-        # Only Backend GameRules may mutate GameState and determine game status.
-        return GameRules.apply_move(state, row, col)
+    def make_ai_move(self, game_id: str, difficulty: str) -> Move:
+        """Compute, validate and persist an AI move in one transaction."""
+        try:
+            with self._repository.transaction() as uow:
+                state = uow.get_game_state(game_id, for_update=True)
+                row, col = self._choose_ai_coordinates(state, difficulty)
+                move = GameRules.apply_move(state, row, col)
+                uow.persist_move(game_id, move, state)
+                return move
+        except RepositoryGameNotFoundError as exc:
+            raise GameNotFoundError(str(exc)) from exc

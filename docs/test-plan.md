@@ -199,7 +199,7 @@ This section records observed status separately from the planned test cases abov
 | PostgreSQL model/session checks | Historical result reported as 11 passed in 6.34s | The suite validates SQLAlchemy models and sessions directly. The available report does not record interpreter, run date, host, or database name. It does not prove GameService/API persistence. |
 | Python 3.11 CI | Previous branch commit passed; rerun after this documentation update | The passing run is recorded below. The next push triggers a fresh workflow run. |
 | PostgreSQL in ordinary CI | Not configured as an integration job | The test fixture skips unless `TEST_DATABASE_URL` and `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database` are set. Ordinary CI does not provision a dedicated PostgreSQL service or set these values; a skip is not a PostgreSQL pass. |
-| API persistence / restart persistence / application transaction rollback | Not implemented / not verified | `GameService` stores state in the in-memory `self._games` dictionary and does not call repository/session helpers. |
+| Service/API persistence and transaction rollback | Backend implementation/tests added in PR #32 (branch) | SQLite-backed tests verify API create/move/get across requests, read-back through a new session and rollback after a staged write failure. PostgreSQL CI/runtime validation remains pending migration and M4's disposable DB job. |
 | Docker database smoke / migration lifecycle | Not verified in this M5 run | Coordinate with M4 for database readiness, application connectivity, and migration strategy. |
 
 ### Recorded CI run — commit 11319012dc086029efb15da175591cf4f170c062
@@ -223,3 +223,14 @@ The URL above is a placeholder, not a real credential. This suite remains manual
 ### Outstanding acceptance criteria — application persistence
 
 M1 and M5 must agree on the repository/session contract and game-ID mapping. Before marking persistence complete, add and run tests that create a game, apply ordered moves, persist terminal status/winner/end time, and read the final state through a new session. Test transaction rollback through the GameService/API path, not only direct SQLAlchemy session rollback. Coordinate ordered migrations and Docker smoke verification with M4.
+
+
+## Sprint 3 backend persistence evidence — 2026-10-17
+
+- PR: https://github.com/emt0147t/caroAI/pull/32
+- Tested head: `7108bea0e917c97199bc66e679c8e9b4888a6204`
+- CI Run #79: https://github.com/emt0147t/caroAI/actions/runs/39039816151
+- Flake8: passed; pytest on CPython 3.11.17: **181 passed, 11 skipped, 1 warning**; frontend syntax/regression, Compose config validation and Docker build passed.
+- The 11 skipped tests are the opt-in PostgreSQL model/session tests because the current workflow does not provision a disposable PostgreSQL service. They are not PostgreSQL integration passes.
+- New SQLite-backed tests exercise service persistence across new sessions, API create/move/get across separate requests, and rollback. This is portable regression evidence, but not a substitute for PostgreSQL CI, schema migration/backfill, or deployed PostgreSQL smoke tests.
+- Database mapping in PR #32: `GameResponse.id` remains UUID-shaped as `games.public_id`; `games.id` stays BIGINT internal. A versioned migration/backfill is required before running against an existing PostgreSQL schema.

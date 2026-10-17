@@ -1,12 +1,13 @@
 import pytest
 
+from app.db.repository import InMemoryGameRepository
 from app.domain.game_rules import InvalidMoveError
 from app.domain.game_state import GameMode, GameStatus, Player
 from app.services.game_service import GameNotFoundError, GameService
 
 
 def test_create_game():
-    service = GameService()
+    service = GameService(InMemoryGameRepository())
 
     game_id = service.create_game(GameMode.HUMAN_VS_AI)
 
@@ -20,14 +21,14 @@ def test_create_game():
 
 
 def test_get_nonexistent_game():
-    service = GameService()
+    service = GameService(InMemoryGameRepository())
 
     with pytest.raises(GameNotFoundError):
         service.get_game("does-not-exist")
 
 
 def test_make_move():
-    service = GameService()
+    service = GameService(InMemoryGameRepository())
 
     game_id = service.create_game(GameMode.HUMAN_VS_HUMAN)
 
@@ -42,7 +43,7 @@ def test_make_move():
 
 
 def test_make_invalid_move():
-    service = GameService()
+    service = GameService(InMemoryGameRepository())
 
     game_id = service.create_game(GameMode.HUMAN_VS_HUMAN)
 
@@ -53,7 +54,7 @@ def test_make_invalid_move():
 
 
 def test_service_keeps_games_isolated():
-    service = GameService()
+    service = GameService(InMemoryGameRepository())
     first_id = service.create_game(GameMode.HUMAN_VS_HUMAN)
     second_id = service.create_game(GameMode.HUMAN_VS_AI)
 

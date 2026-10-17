@@ -1,6 +1,6 @@
 # CaroAI — Database Design (Sprint 1)
 
-> **Sprint 2 implementation status (2026-10-10):** This design has a SQLAlchemy model foundation, not an integrated persistence layer. `GameService` remains in-memory, `app/db/repository.py` is a placeholder, and no migration tool/schema lifecycle is configured. PostgreSQL model checks are present in the test suite but require an explicitly confirmed disposable test database; their run status is tracked in [`test-plan.md`](test-plan.md).
+> **Historical status note (2026-10-10):** The paragraph below records the pre-Sprint-3 baseline. See Section 12 for the Sprint 3 repository implementation and remaining migration/PostgreSQL acceptance gates.
 
 ## 1. Purpose
 
@@ -21,7 +21,7 @@ Required Sprint 1 database scope:
 Current repository status:
 
 - SQLAlchemy foundation exists for games, moves and game_analysis.
-- GameService still uses in-memory storage.
+- Before Sprint 3, GameService used in-memory storage; the Sprint 3 backend branch routes production API requests through the SQLAlchemy repository.
 - No users model is frozen because the application/user contract is not defined.
 - Migration tooling is not frozen yet.
 
@@ -31,7 +31,7 @@ Current repository status:
 
 | Column | Type | Null | Default | Meaning |
 |---|---|---:|---|---|
-| id | BIGINT identity | No | generated | Primary key |
+| id | BIGINT identity | No | generated | Internal primary key, not exposed to the API |\n| public_id | VARCHAR(36) | No | generated UUID | Stable public API game ID; unique and indexed |
 | mode | enum/check | No | — | HUMAN_VS_AI or HUMAN_VS_HUMAN |
 | difficulty | enum/check | Yes | — | EASY, MEDIUM, HARD; nullability depends on mode contract |
 | status | enum/check | No | IN_PROGRESS | IN_PROGRESS, X_WON, O_WON, DRAW |
@@ -161,13 +161,13 @@ Pending team decisions:
 
 Before Sprint 2 database integration, Backend and Database must agree on this mapping:
 
-GameResponse.id ↔ games.id
+GameResponse.id ↔ games.public_id (UUID string)\ngames.id ↔ internal BIGINT identity
 GameState.mode ↔ games.mode
 GameState.status ↔ games.status
 Move(row, col, player, move_number) ↔ moves
 AI analysis output ↔ game_analysis
 
-Current backend exposes GameResponse.id as a string while the proposed persistent identifier is BIGINT. This is an explicit integration decision and must be confirmed before runtime persistence is wired.
+Decision implemented in the Sprint 3 backend branch: preserve GameResponse.id as a UUID-shaped string in games.public_id, and retain games.id BIGINT as the internal primary key. A versioned migration must backfill public_id for pre-existing game rows and apply a unique index/NOT NULL before deploying against an existing database.
 
 Database must not independently rename API fields, alter game enums, or change GameState semantics.
 
@@ -210,7 +210,7 @@ The current SQLAlchemy metadata implements `games`, `moves`, and `game_analysis`
 - ORM relationships connect games with moves and analyses. The move relationship does not declare ordering; callers must order moves explicitly. No delete cascade is declared.
 - The schema intentionally does not enforce the proposed game mode/status enums, status/result consistency, ended-at rules, unique occupied cells, analysis/game composite association, or the users entity because those contracts remain open.
 
-`app/db/database.py` reads `DATABASE_URL` only when `get_engine()` is called. It does not load `.env`, initialize tables, or run migrations. `GameService` and the current API do not call the database helper or repository. A successful direct-model test therefore proves schema behavior only, not game API persistence.
+`app/db/database.py` reads `DATABASE_URL` when the production API dependency creates a repository session. It does not load `.env`, initialize tables, or run migrations. The Sprint 3 branch wires GameService/API through the repository; direct model tests alone still do not prove that integration path.
 
 PostgreSQL tests use `TEST_DATABASE_URL`, a generated schema per test, and cleanup scoped to that schema. They are gated by `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database` as an explicit operator confirmation, a database name containing a `test` token, and rejection of names containing `prod`/`live`. The name check is a guardrail, not proof of database purpose. The confirmation must only be set after checking the target database; schema creation/drop requires PostgreSQL privileges for those operations.
 
@@ -221,15 +221,15 @@ The model-level suite `tests/test_database_postgres.py` was reported as **11 pas
 
 ## Current application persistence boundary (2026-10-16)
 
-The Backend now includes the AI-move endpoint, but `GameService` still stores each `GameState` in the in-process `self._games` dictionary. The service does not call the repository or SQLAlchemy session. The SQLAlchemy models and opt-in PostgreSQL model/session tests are a schema foundation only; they do not establish API persistence, restart persistence, or application transaction semantics. Docker database smoke verification remains with M4.
+The Sprint 3 backend branch replaces the process-local dictionary as the production API's authoritative source with the SQLAlchemy repository/unit-of-work. Game state is rebuilt by replaying moves ordered by `move_number`; writes persist the move and status/result/ended_at in one transaction. SQLite-backed service/API tests cover fresh-session read-back and rollback. PostgreSQL migration, CI and deployed runtime evidence are still required.
 
-### Follow-up task — GameService/API persistence integration (not completed)
+### Sprint 3 implementation — GameService/API persistence (PR #32; full acceptance pending)
 
 **Owner:** M1 for application/API integration, with M5 for regression and database QA; coordinate runtime/migrations with M4.
 
 Acceptance criteria:
 
-- Replace the process-local game dictionary as the authoritative store with the agreed repository/session contract.
+- [x] Production API routes use the repository/session contract in PR #32; finish PostgreSQL-specific integration acceptance after migration and CI wiring.
 - Persist each game and its moves with deterministic move ordering and agreed game-ID mapping.
 - Read the final game state back through a new session, including status/winner/end time.
 - Define transaction boundaries and prove rollback on a failed operation without leaving partial game/move records.
