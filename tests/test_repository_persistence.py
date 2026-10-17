@@ -1,9 +1,9 @@
 """Service/API persistence tests using SQLite as a portable SQLAlchemy target."""
-from sqlalchemy import create_engine, event, func, select
-from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, event, func, select
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.api.dependencies import get_game_service
 from app.db.models import Base, Game, Move
@@ -37,10 +37,6 @@ def database():
         yield engine, session_factory
     finally:
         engine.dispose()
-
-
-def _service(session_factory):
-    return GameService(SQLAlchemyGameRepository(session_factory()))
 
 
 def test_service_persists_game_and_moves_across_sessions(database):
@@ -104,7 +100,7 @@ def test_api_reads_game_created_and_moved_in_previous_requests(database):
 
             reloaded = client.get(f"/api/games/{game_id}")
             assert reloaded.status_code == 200
-            assert reloaded.json()["game_id"] if False else reloaded.json()["id"] == game_id
+            assert reloaded.json()["id"] == game_id
             assert reloaded.json()["move_count"] == 2
             assert reloaded.json()["board"][2][3] == "X"
             assert reloaded.json()["board"][2][4] == "O"

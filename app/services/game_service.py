@@ -2,7 +2,6 @@
 from app.ai.adapter import board_to_ai
 from app.ai.engine import get_ai_move as run_ai_engine
 from app.db.repository import (
-    GamePersistenceError,
     InMemoryGameRepository,
     RepositoryGameNotFoundError,
 )
@@ -49,46 +48,50 @@ class GameService:
         except RepositoryGameNotFoundError as exc:
             raise GameNotFoundError(str(exc)) from exc
 
+    def _choose_ai_coordinates(
+        self, state: GameState, difficulty: str
+    ) -> tuple[int, int]:
+        if state.mode != GameMode.HUMAN_VS_AI:
+            raise InvalidAIMoveError(
+                "AI move is only available for HUMAN_VS_AI games"
+            )
+        if state.current_player != Player.O:
+            raise InvalidAIMoveError("It is not the AI turn")
+        if difficulty not in self.VALID_AI_DIFFICULTIES:
+            raise InvalidAIMoveError(
+                "Difficulty must be one of: easy, medium, hard"
+            )
+
+        result = run_ai_engine(
+            board=board_to_ai(state.board),
+            ai_player=2,
+            difficulty=difficulty,
+        )
+        if not isinstance(result, dict):
+            raise InvalidAIMoveError("AI returned an invalid move response")
+
+        row = result.get("row")
+        col = result.get("col")
+        if not isinstance(row, int) or isinstance(row, bool):
+            raise InvalidAIMoveError("AI returned an invalid row")
+        if not isinstance(col, int) or isinstance(col, bool):
+            raise InvalidAIMoveError("AI returned an invalid column")
+
+        try:
+            GameRules.validate_move(state, row, col)
+        except InvalidMoveError as exc:
+            raise InvalidAIMoveError(
+                f"AI returned an illegal move: {exc}"
+            ) from exc
+        return row, col
+
     def make_ai_move(self, game_id: str, difficulty: str) -> Move:
         """Compute, validate and persist an AI move in one transaction."""
         try:
             with self._repository.transaction() as uow:
                 state = uow.get_game_state(game_id, for_update=True)
-
-                if state.mode != GameMode.HUMAN_VS_AI:
-                    raise InvalidAIMoveError(
-                        "AI move is only available for HUMAN_VS_AI games"
-                    )
-                if state.current_player != Player.O:
-                    raise InvalidAIMoveError("It is not the AI turn")
-                if difficulty not in self.VALID_AI_DIFFICULTIES:
-                    raise InvalidAIMoveError(
-                        "Difficulty must be one of: easy, medium, hard"
-                    )
-
-                # AI receives a fresh snapshot and cannot mutate Backend state.
-                result = run_ai_engine(
-                    board=board_to_ai(state.board),
-                    ai_player=2,
-                    difficulty=difficulty,
-                )
-                if not isinstance(result, dict):
-                    raise InvalidAIMoveError("AI returned an invalid move response")
-
-                row = result.get("row")
-                col = result.get("col")
-                if not isinstance(row, int) or isinstance(row, bool):
-                    raise InvalidAIMoveError("AI returned an invalid row")
-                if not isinstance(col, int) or isinstance(col, bool):
-                    raise InvalidAIMoveError("AI returned an invalid column")
-
-                try:
-                    move = GameRules.apply_move(state, row, col)
-                except InvalidMoveError as exc:
-                    raise InvalidAIMoveError(
-                        f"AI returned an illegal move: {exc}"
-                    ) from exc
-
+                row, col = self._choose_ai_coordinates(state, difficulty)
+                move = GameRules.apply_move(state, row, col)
                 uow.persist_move(game_id, move, state)
                 return move
         except RepositoryGameNotFoundError as exc:

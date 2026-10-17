@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.db.models import Game as GameRecord
 from app.db.models import Move as PersistedMove
 from app.domain.game_rules import GameRules, InvalidMoveError
-from app.domain.game_state import GameMode, GameState, GameStatus, Move, Player
+from app.domain.game_state import GameMode, GameState, GameStatus, Move
 
 
 class RepositoryGameNotFoundError(LookupError):
