@@ -24,11 +24,10 @@ class GamePersistenceError(RuntimeError):
 
 
 def _result_for_state(state: GameState) -> str | None:
-    if state.winner is not None:
-        return state.winner.value
-    if state.status == GameStatus.DRAW:
-        return "DRAW"
-    return None
+    """Persist terminal outcomes using the same values as GameStatus."""
+    if state.status == GameStatus.IN_PROGRESS:
+        return None
+    return state.status.value
 
 
 def _rebuild_state(record: GameRecord, moves: list[PersistedMove]) -> GameState:

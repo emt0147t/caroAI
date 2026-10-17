@@ -10,6 +10,7 @@ from app.db.models import Base, Game, Move
 from app.db.repository import SQLAlchemyGameRepository, SQLAlchemyGameUnitOfWork
 from app.domain.game_state import GameMode, GameStatus, Player
 from app.main import app
+from app.services import game_service as game_service_module
 from app.services.game_service import GameService
 
 
@@ -107,6 +108,65 @@ def test_api_reads_game_created_and_moved_in_previous_requests(database):
     finally:
         app.dependency_overrides.pop(get_game_service, None)
 
+
+
+def test_terminal_result_and_end_time_persist_across_sessions(database):
+    _engine, session_factory = database
+    with session_factory() as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        game_id = service.create_game(GameMode.HUMAN_VS_HUMAN)
+        # X makes a horizontal five; O replies elsewhere without making five.
+        sequence = [
+            (0, 0), (1, 0),
+            (0, 1), (1, 1),
+            (0, 2), (1, 2),
+            (0, 3), (1, 3),
+            (0, 4),
+        ]
+        for row, col in sequence:
+            service.make_move(game_id, row, col)
+
+    with session_factory() as session:
+        state = GameService(SQLAlchemyGameRepository(session)).get_game(game_id)
+        record = session.query(Game).filter_by(public_id=game_id).one()
+        assert state.status == GameStatus.X_WON
+        assert state.winner == Player.X
+        assert state.move_count == 9
+        assert record.status == GameStatus.X_WON.value
+        assert record.result == GameStatus.X_WON.value
+        assert record.ended_at is not None
+
+
+def test_ai_move_is_persisted_and_read_back_across_sessions(database, monkeypatch):
+    _engine, session_factory = database
+
+    def fake_ai_move(board, ai_player, difficulty):
+        assert ai_player == 2
+        assert difficulty == "medium"
+        assert board[7][7] == 1
+        return {"row": 6, "col": 8}
+
+    monkeypatch.setattr(game_service_module, "run_ai_engine", fake_ai_move)
+    with session_factory() as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        game_id = service.create_game(GameMode.HUMAN_VS_AI)
+        service.make_move(game_id, 7, 7)
+        ai_move = service.make_ai_move(game_id, "medium")
+        assert (ai_move.row, ai_move.col, ai_move.player.value) == (6, 8, "O")
+
+    with session_factory() as session:
+        state = GameService(SQLAlchemyGameRepository(session)).get_game(game_id)
+        assert state.move_count == 2
+        assert state.board[7][7] == "X"
+        assert state.board[6][8] == "O"
+        assert state.current_player == Player.X
+        record = session.query(Game).filter_by(public_id=game_id).one()
+        moves = session.scalars(
+            select(Move)
+            .where(Move.game_id == record.id)
+            .order_by(Move.move_number.asc())
+        ).all()
+        assert [(move.player, move.move_number) for move in moves] == [("X", 1), ("O", 2)]
 
 def test_service_transaction_rolls_back_if_move_persistence_fails(database, monkeypatch):
     _engine, session_factory = database

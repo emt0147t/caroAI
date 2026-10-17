@@ -50,7 +50,7 @@ class Game(Base):
     status = Column(
         String(16), nullable=False, server_default=text("'IN_PROGRESS'")
     )
-    # result is NULL while in progress; X/O when that player wins; DRAW on draw.
+    # result is NULL while in progress; terminal values are X_WON, O_WON, or DRAW.
     result = Column(String(16), nullable=True)
     started_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
