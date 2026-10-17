@@ -109,7 +109,6 @@ def test_api_reads_game_created_and_moved_in_previous_requests(database):
         app.dependency_overrides.pop(get_game_service, None)
 
 
-
 def test_terminal_result_and_end_time_persist_across_sessions(database):
     _engine, session_factory = database
     with session_factory() as session:
@@ -167,6 +166,7 @@ def test_ai_move_is_persisted_and_read_back_across_sessions(database, monkeypatc
             .order_by(Move.move_number.asc())
         ).all()
         assert [(move.player, move.move_number) for move in moves] == [("X", 1), ("O", 2)]
+
 
 def test_service_transaction_rolls_back_if_move_persistence_fails(database, monkeypatch):
     _engine, session_factory = database
