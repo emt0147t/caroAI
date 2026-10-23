@@ -5,16 +5,16 @@
 - Issue: [#31 — Persistence API integration QA + release evidence/docs](https://github.com/emt0147t/caroAI/issues/31)
 - Repository: `emt0147t/caroAI`
 - M5 working branch: `feature/m5-sprint3-qa`
-- Latest evidence at the time of this handover: [CI run #203](https://github.com/emt0147t/caroAI/actions/runs/39920038587)
-- Run #203 head SHA: `ccd5c2363acd7043044dfe6b246cf3bd42cd804d`
-- Run #203 result: **SUCCESS — all 5 jobs passed**.
+- Latest evidence at the time of this handover: [CI run #219](https://github.com/emt0147t/caroAI/actions/runs/39920451798)
+- Run #219 head SHA: `b9a87fe0759dfe51074ce71f5e01cfb45f088f36`
+- Run #219 result: **SUCCESS — all 5 jobs passed**.
 - This is evidence on the M5 feature branch. It does not mean the branch has been merged to `develop`.
 
 ## Evidence links
 
 | Evidence | Link | What it establishes |
 |---|---|---|
-| Latest full CI | [Run #203](https://github.com/emt0147t/caroAI/actions/runs/39920038587) | Latest QA matrix commit passed all five CI jobs |
+| Latest full CI | [Run #219](https://github.com/emt0147t/caroAI/actions/runs/39920451798) | Latest handover commit passed all five CI jobs |
 | Python suite detail | [Run #197](https://github.com/emt0147t/caroAI/actions/runs/39918816443) | 194 passed, 11 skipped, 1 warning in 5.00 seconds on code-equivalent preceding commit |
 | PostgreSQL persistence integration | [Run #155](https://github.com/emt0147t/caroAI/actions/runs/39914292428) | Persistence implementation integration checkpoint; later runs also passed PostgreSQL acceptance |
 | Persistence regression test commit | [Commit eeecfe5](https://github.com/emt0147t/caroAI/commit/eeecfe569cc8b12cf5cc0f275ba4d5ced53a4192) | Added draw persistence and four malformed-history rejection cases |
@@ -23,7 +23,7 @@
 
 ## Verified in CI
 
-Run #198 completed successfully for all of these jobs:
+Run #219 completed successfully for all of these jobs:
 
 1. Run tests and lint.
 2. PostgreSQL service/API/migration acceptance.
@@ -60,7 +60,7 @@ The successful Compose smoke is not proof of public deployment, public HTTPS, or
 - [x] Dedicated draw persistence and malformed-history regression tests added.
 - [x] QA matrix reconciled with actual test coverage and evidence.
 - [x] Test plan updated with current CI links and limitations.
-- [x] Latest M5 QA matrix commit passed all five CI jobs in run #203.
+- [x] Latest M5 handover commit passed all five CI jobs in run #219.
 - [ ] Browser E2E evidence collected.
 - [ ] Public deployment/live smoke and deployed restart-persistence evidence collected.
 - [ ] Issue #31 acceptance checklist reviewed with M1/M3/M4 and final owner sign-off recorded.
