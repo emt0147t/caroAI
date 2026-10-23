@@ -84,7 +84,12 @@ test('404 missing game is visible and does not render a fabricated board state',
 
 test('network failure on a move recovers via GET and retry does not replay the human move', async ({ page, request }) => {
   const id = await startGame(page);
-  await page.route('**/api/games/*/moves', route => route.abort('failed'));
+  await page.route('**/api/games/*/moves', async route => {
+    // Let the real backend commit the move, then simulate the response being lost in transit.
+    const response = await route.fetch();
+    await response.body();
+    await route.abort('failed');
+  });
   await page.getByRole('button', { name: 'Đánh hàng 8, cột 8' }).click();
   await expect(page.locator('#errorBox')).toBeVisible();
   await expect(page.locator('#errorMessage')).toContainText('Không kết nối được Backend');
@@ -92,7 +97,8 @@ test('network failure on a move recovers via GET and retry does not replay the h
   await page.locator('#retryBtn').click();
   await expect(page.locator('#errorBox')).toBeHidden();
   const game = await getGame(request, id);
-  expect(game.move_count).toBe(0);
+  expect(game.move_count).toBe(1);
+  expect(game.board[7][7]).toBe('X');
 });
 
 test('AI retry retries only the AI request and never resends the human move', async ({ page, request }) => {
