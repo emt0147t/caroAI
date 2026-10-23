@@ -273,3 +273,91 @@ def test_create_and_move_routes_do_not_read_state_after_write_commit(
             assert moved.json()["game"]["move_count"] == 1
     finally:
         app.dependency_overrides.pop(get_game_service, None)
+
+
+@pytest.mark.parametrize(
+    ("corruption", "expected_message"),
+    [
+        ("non_contiguous_numbers", "not contiguous"),
+        ("wrong_player_turn", "player turns"),
+        ("illegal_occupied_cell", "violates the game rules"),
+        ("status_result_mismatch", "status/result is inconsistent"),
+    ],
+)
+def test_repository_rejects_corrupted_persisted_history(
+    database, corruption, expected_message
+):
+    _engine, session_factory = database
+    with session_factory() as session:
+        game_id = GameService(SQLAlchemyGameRepository(session)).create_game(
+            GameMode.HUMAN_VS_HUMAN
+        )
+        record = session.query(Game).filter_by(public_id=game_id).one()
+
+        if corruption == "non_contiguous_numbers":
+            session.add_all([
+                Move(game_id=record.id, player="X", row=0, col=0, move_number=1),
+                Move(game_id=record.id, player="O", row=1, col=1, move_number=3),
+            ])
+        elif corruption == "wrong_player_turn":
+            session.add(
+                Move(game_id=record.id, player="O", row=0, col=0, move_number=1)
+            )
+        elif corruption == "illegal_occupied_cell":
+            session.add_all([
+                Move(game_id=record.id, player="X", row=0, col=0, move_number=1),
+                Move(game_id=record.id, player="O", row=1, col=1, move_number=2),
+                Move(game_id=record.id, player="X", row=0, col=0, move_number=3),
+            ])
+        else:
+            record.status = GameStatus.X_WON.value
+            record.result = GameStatus.X_WON.value
+        session.commit()
+
+    with session_factory() as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        with pytest.raises(GamePersistenceError, match=expected_message):
+            service.get_game(game_id)
+
+
+def test_draw_status_and_all_moves_persist_across_sessions(database):
+    _engine, session_factory = database
+    size = 15
+    x_cells = []
+    o_cells = []
+
+    # A deterministic 2D pattern with no five-in-a-row in any direction.
+    # Flip two X cells to O so the full 225-cell board has 113 X moves
+    # and 112 O moves, matching alternating turns.
+    for row in range(size):
+        for col in range(size):
+            residue = (row + 2 * col) % 6
+            player = "X" if residue in (0, 1, 2) else "O"
+            if (row, col) in {(0, 0), (0, 1)}:
+                player = "O"
+            (x_cells if player == "X" else o_cells).append((row, col))
+
+    assert len(x_cells) == 113
+    assert len(o_cells) == 112
+
+    with session_factory() as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        game_id = service.create_game(GameMode.HUMAN_VS_HUMAN)
+        for index in range(len(o_cells)):
+            service.make_move(game_id, *x_cells[index])
+            service.make_move(game_id, *o_cells[index])
+        service.make_move(game_id, *x_cells[-1])
+
+    with session_factory() as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        state = service.get_game(game_id)
+        record = session.query(Game).filter_by(public_id=game_id).one()
+        move_count = session.scalar(
+            select(func.count()).select_from(Move).where(Move.game_id == record.id)
+        )
+        assert state.status == GameStatus.DRAW
+        assert state.move_count == size * size
+        assert record.status == GameStatus.DRAW.value
+        assert record.result == GameStatus.DRAW.value
+        assert record.ended_at is not None
+        assert move_count == size * size

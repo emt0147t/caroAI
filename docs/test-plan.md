@@ -1,6 +1,13 @@
 # CaroAI — Test Plan (Sprint 1)
 
-> **Trạng thái:** Kế hoạch kiểm thử, không phải test code. Danh sách endpoint trong tài liệu này lấy từ Team Guide được cung cấp cho Sprint 1. Request/response schema, status code và một số quy tắc vẫn cần M1 xác nhận; tài liệu không tự định nghĩa các contract đó.
+## Latest post-sync validation snapshot — SHA `176ae2b01094c1cc104c3a4e22d0dcb16d274c9e` (2026-10-23)
+
+- PR #38 head after syncing `develop`: `176ae2b01094c1cc104c3a4e22d0dcb16d274c9e`; GitHub comparison reports the branch is **0 commits behind** `develop` and 64 commits ahead.
+- Pull-request CI [run #292](https://github.com/emt0147t/caroAI/actions/runs/39989472844): **SUCCESS** for the required validation jobs: Python tests/lint, PostgreSQL service/API/migration acceptance (including the zero-skips guard), disposable Compose persistence after API restart, frontend syntax/regression, and Docker image build. Production publish/Render verification was **SKIPPED by design**.
+- Frontend Browser E2E [run #46](https://github.com/emt0147t/caroAI/actions/runs/39989472522): **SUCCESS** on this PR validation snapshot. Do not infer a test count unless the run logs explicitly show it.
+- A push-triggered CI run on this exact SHA is not independently confirmed by the available workflow records; do not substitute older push runs as evidence for this SHA.
+- These CI runs validate the code/documentation at the stated snapshot, before the final documentation refresh. After the refresh, verify the newly triggered PR CI and Browser E2E workflows on the new final head before merge.
+- Public image publication/deployment, public HTTPS/live smoke, and persistence after restart/redeploy in the deployed environment remain **NOT RUN**. Compose persistence proves behavior only in a disposable CI stack.
 
 ## 1. Mục tiêu kiểm thử
 
@@ -52,7 +59,8 @@ Các endpoint dưới đây là danh sách từ Team Guide. Với mọi endpoint
 
 | Endpoint | Mục đích | Happy path cần kiểm tra | Invalid input / not found / game kết thúc | Response cần kiểm tra |
 |---|---|---|---|---|
-| `GET /health` | Kiểm tra health của ứng dụng; phạm vi health của database chờ M1 xác nhận | Khi ứng dụng và database hoạt động, endpoint trả success theo contract | Database unavailable: kiểm tra failure chỉ khi health contract hỗ trợ; không giả định status code/body | Success/failure theo schema và status đã được M1 chốt; hiện chờ M1 xác nhận |
+| `GET /health` | Liveness probe: kiểm tra ứng dụng còn phản hồi | Khi process/application hoạt động, endpoint trả trạng thái liveness theo implementation | Không dùng riêng `/health` để kết luận database sẵn sàng | Theo implementation hiện tại; liveness không thay thế database readiness |
+| `GET /ready` | Readiness probe: kiểm tra ứng dụng sẵn sàng phục vụ, bao gồm kết nối database | Khi application và PostgreSQL sẵn sàng, endpoint trả success | Khi database không sẵn sàng, endpoint phải báo readiness failure theo implementation | Kiểm tra kết quả readiness của database; không suy diễn production monitoring hoặc deployment status |
 | `POST /api/games` | Tạo game | Tạo được game cho mode được specification hỗ trợ; giá trị difficulty và điều kiện áp dụng chờ M1 xác nhận | Invalid input theo schema đã chốt; không áp dụng not found; điều kiện tạo game sau khi kết thúc không liên quan nếu chưa có contract | Kiểm tra dữ liệu game được trả về theo schema đã chốt; fields/status code chờ M1 xác nhận |
 | `GET /api/games/{game_id}` | Lấy thông tin game | Lấy game đã tồn tại | `game_id` không tồn tại cần not-found behavior theo contract; invalid ID format chờ M1 | Kiểm tra dữ liệu game theo response schema; không giả định thêm fields |
 | `POST /api/games/{game_id}/moves` | Ghi một move cho game | Gửi move hợp lệ theo request schema đã chốt và xác nhận game/move được xử lý | Tọa độ ngoài bàn, ô đã có quân, game không tồn tại; game đã kết thúc phải bị xử lý theo contract. Status/error response chờ M1 | Kiểm tra move/game data theo response schema đã chốt; không suy diễn fields hoặc status code |
@@ -116,26 +124,35 @@ Luồng kiểm thử dự kiến:
 
 M5 không tự định nghĩa hoặc kiểm thử chiến thuật, độ khó hay chất lượng AI nếu M2 chưa cung cấp behavior/criteria; API request/response thuộc M1 và runtime environment thuộc M4.
 
-## 7. Health Check Test
+## 7. Health and Readiness Check
 
-- Khi application và PostgreSQL hoạt động, gọi `GET /health`; endpoint phải trả success theo contract.
-- Nếu PostgreSQL unavailable, kiểm tra failure chỉ khi health contract quy định kiểm tra database dependency.
-- Không tự đặt status code, body, response fields, timeout hoặc retry behavior. Các chi tiết này chờ M1 xác nhận.
+- `GET /health` là **liveness**: xác nhận ứng dụng còn phản hồi; không coi đây là bằng chứng database đang sẵn sàng.
+- `GET /ready` là **database readiness**: kiểm tra readiness của ứng dụng với PostgreSQL dependency.
+- Khi PostgreSQL không khả dụng, xác minh `/ready` không báo ready; không suy diễn status code/body ngoài implementation hiện tại.
+- Các probe này không chứng minh public deployment, HTTPS hoặc production live smoke.
 
-## 8. Docker Smoke Test
+## 8. Docker Compose Smoke and Persistence Test
 
-CI hiện có job Compose smoke trên một PostgreSQL database dùng riêng cho workflow. Job build và khởi động stack, kiểm tra API/database bằng cách tạo game và một nước đi, restart container API, rồi đọc lại game cùng `GET /api/history`. Job luôn dọn container, network và disposable volume sau khi chạy.
+Repository có `docker-compose.yml`. CI kiểm tra Compose stack và xác nhận persistence sau khi restart API container:
 
-Kết quả smoke mới nhất: PASSED trên source SHA `4e63747430ce372772d8903b7c8cd2004dadad94`, workflow https://github.com/emt0147t/caroAI/actions/runs/39912878999. Đây là runtime evidence của image được build trong CI; nó không chứng minh image đã được publish hoặc deployment công khai đã hoạt động.
+1. Build Docker image.
+2. Khởi động API và PostgreSQL qua Compose.
+3. Tạo game và ghi move qua API.
+4. Restart API container trong khi database volume/service vẫn tồn tại.
+5. Đọc lại game/state/history để xác nhận dữ liệu đã commit còn tồn tại.
+6. Dọn disposable stack sau khi test kết thúc.
+
+Kết quả review-fix head `cc25a0f5eaf075ed1cee58944114b99e0d43971a`: [push CI run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) và [pull_request CI run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) đều passed cả năm job validation cần thiết, bao gồm Compose persistence after API restart. Đây là smoke test trên **disposable CI Compose stack**, không chứng minh public deployment, HTTPS, production health hoặc persistence sau live redeploy.
 
 ## 9. Test Environment
 
 - **Test runner:** `pytest` (đã có trong `requirements.txt`).
 - **API client:** FastAPI `TestClient` hoặc `httpx` (chọn theo implementation/fixture của M1; `httpx` đã có trong `requirements.txt`).
 - **Database:** PostgreSQL tương thích với cấu hình SQLAlchemy của ứng dụng.
-- **Container smoke test:** Docker Compose nếu team cung cấp cấu hình.
-- **Test database/isolation:** Chưa có quyết định trong repository. Team cần chốt database riêng cho test, cách tạo/reset dữ liệu và cách cô lập test song song trước khi thực thi DB/integration tests.
-- **Schema setup:** Migration strategy chưa được chốt; không giả định test tự tạo schema bằng cách nào.
+- **Container smoke test:** Docker Compose stack trong CI; smoke kiểm tra persistence sau restart API trên disposable CI environment.
+- **Test database/isolation:** Dedicated PostgreSQL CI acceptance job dùng disposable test database/schema safeguards. PostgreSQL tests yêu cầu `TEST_DATABASE_URL` và `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`; test setup tạo/dọn schema riêng và không được trỏ tới production/shared database.
+- **Schema setup/migrations:** Repository có versioned migration runner. CI PostgreSQL acceptance bao gồm khởi tạo schema trên database rỗng, backfill public IDs hiện có và kiểm tra chạy migration idempotent.
+- **Historical detailed-count snapshot:** [push CI run #231](https://github.com/emt0147t/caroAI/actions/runs/39921750450) và [pull_request CI run #232](https://github.com/emt0147t/caroAI/actions/runs/39922033030) đều xanh trên SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`; portable suite 216 passed, 11 skipped, 1 warning; dedicated PostgreSQL acceptance 15 passed, zero skipped.
 
 ## 10. Test Data
 
@@ -172,37 +189,40 @@ Test plan Sprint 1 được coi là hoàn tất khi:
 3. **M1 — Difficulty:** Quy tắc null/bắt buộc cho `difficulty` theo `mode`.
 4. **M1 — Game ID:** Kiểu, format và validation của `game_id` trong API so với kiểu ID database.
 5. **M2 — AI:** AI design, AI contract, behavior và criteria cho AI move/legal move/hint/analyze. **M1:** API request/response và game-state contract liên quan. **M4:** runtime/deployment environment nếu cần. M5 chỉ lập test plan/QA coverage theo các contract đã xác nhận, không tự định nghĩa AI behavior.
-6. **Team — Test database:** PostgreSQL integration uses an ephemeral CI service and isolated schemas; use the same isolation rules for manual runs, never production/shared databases.
-7. **Team — Migration:** The branch implements a versioned migration runner and Docker startup migration. M4/reviewer still needs to approve migration ordering and external deployment behavior.
-8. **M1/Team — Transaction:** Keep the write unit-of-work atomic and maintain API/service rollback regression coverage.
-9. **M1 — Database constraints:** Chấp thuận `UNIQUE (game_id, row, col)`, composite FK cho analysis, chính sách cascade và rules khác.
-10. **Team — Docker:** Compose configuration and CI runtime smoke now exist. Published image, deployment, and public HTTPS smoke remain pending.
-11. **M1 — History:** MVP contract is implemented as `GET /api/history?limit=50&offset=0` with newest-first summaries; filtering and user-scoped ownership are outside this MVP.
+6. **M1/Team — Transaction:** Ranh giới transaction, rollback behavior và xử lý lỗi persistence cần được kiểm thử theo implementation/contract đã thống nhất.
+7. **M1 — Database constraints:** Chốt các constraint còn thuộc quyết định nghiệp vụ, gồm `UNIQUE (game_id, row, col)`, composite FK cho analysis, chính sách cascade và rules khác.
+8. **Team — Deployment:** Xác định deployment target và người chịu trách nhiệm public HTTPS/live smoke; đây là release dependency, không phải bằng chứng đã triển khai.
+9. **M1 — History:** Phạm vi dữ liệu, thứ tự, pagination/filtering (nếu có) của `GET /api/history`.
 
 
 
-## 13. Historical implementation and QA snapshot (2026-10-16)
+## 13. Current implementation and QA evidence (updated 2026-10-23)
 
-This section records observed status separately from the planned test cases above.
+This section records observed status separately from planned tests. The detailed matrix is maintained in [sprint-3-qa-matrix.md](sprint-3-qa-matrix.md).
 
 | Area | Current status | Evidence / limitation |
 |---|---|---|
-| Game rules, service, AI unit, game API and health regression | Historical pass on Windows CPython 3.13.15 | 36 passed, 0 failed, 1 Starlette deprecation warning in a consolidated run. This is historical evidence and does not establish Python 3.11 compatibility. |
-| PostgreSQL model/session checks | Historical result reported as 11 passed in 6.34s | The suite validates SQLAlchemy models and sessions directly. The available report does not record interpreter, run date, host, or database name. It does not prove GameService/API persistence. |
-| Python 3.11 CI | Previous branch commit passed; rerun after this documentation update | The passing run is recorded below. The next push triggers a fresh workflow run. |
-| PostgreSQL in ordinary CI | Historical status as of 2026-10-16 | On that snapshot, the ordinary CI job did not provision PostgreSQL. See the current Sprint 3 evidence below for the dedicated PostgreSQL job added later. |
-| Service/API persistence and transaction rollback | Backend implementation/tests added in PR #32 (branch) | SQLite-backed tests verify API create/move/get across requests, read-back through a new session and rollback after a staged write failure. PostgreSQL CI/runtime validation remains pending migration and M4's disposable DB job. |
-| Docker database smoke / migration lifecycle | Historical status as of 2026-10-16 | The current Sprint 3 workflow now runs a disposable PostgreSQL Compose smoke and applies the versioned migration before starting the API; public deployment smoke remains separate. |
+| M5 baseline suite | Historical baseline passed on M5 branch at SHA 2dd55cda274d7112e6d3244a4b457768178e98f8 | 178 passed, 11 skipped, 1 warning on local Windows; exact Python version not recorded. This is not a test result for later commits. |
+| Persistence implementation on M5 branch | INTEGRATED and CI-VERIFIED | M5 commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5 includes SQLAlchemy persistence; run #155 passed. |
+| Earlier M5 review-fix CI snapshot | PASS | Earlier review-fix SHA `cc25a0f5eaf075ed1cee58944114b99e0d43971a`: [push run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) passed all five required validation jobs. Production publish/deploy verification in #251 was skipped by design. |
+| PostgreSQL integration / migrations | PASS | Dedicated PostgreSQL acceptance in runs #231/#232: 15 passed, zero skipped. Disposable test DB/schema safeguards and versioned migration runner are implemented. |
+| Compose persistence after API restart | PASS on M5 CI disposable stack | Runs #231/#232 passed the Compose API/database persistence-after-restart job. This is not public deployment evidence. |
+| Draw persistence and corrupted-history rejection tests | PASS in Python suite | The portable suite in runs #231/#232 passed 216 tests with 11 skipped and 1 warning; dedicated draw persistence and four corrupted-history cases are present in `tests/test_repository_persistence.py`. |
+| Browser E2E | PASSED for PR #38 validation snapshot (13/13); production/live smoke NOT RUN | [PR #38 Browser E2E run #41](https://github.com/emt0147t/caroAI/actions/runs/39978367028) passed 13/13 Playwright tests. Historical PR #34 run #32 and its push-run result remain tied to their own SHA and are not evidence of production/live smoke. |
+| Deployed/live persistence | NOT RUN | Public HTTPS/live smoke and persistence after restart/redeploy in the deployed environment have no evidence. M1/M3/M4 own deployment/live validation; M5 records the evidence and limitation. |
 
-### Recorded CI run — commit 11319012dc086029efb15da175591cf4f170c062
+### Evidence rules
 
-GitHub Actions used CPython 3.11.17. The lint step passed with 0 flake8 findings. The test step reported **178 passed, 11 skipped, 1 warning in 3.78s**. The 11 skips correspond to opt-in PostgreSQL tests without the required disposable-database configuration; they are not PostgreSQL passes. `docker compose config --quiet` passed. The Docker image build was still running when this note was written, so no image-build result is claimed here.
-
-Workflow: https://github.com/emt0147t/caroAI/actions/runs/38903417312
+- Record the exact full commit SHA, command, environment, result, and workflow URL for every run.
+- Historical M1 PR #32 evidence remains pre-merge only. Earlier review-fix CI evidence is [push run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) on SHA `cc25a0f5eaf075ed1cee58944114b99e0d43971a`. Runs #231/#232 on `affbb23a90a12dd14f006d8ef692ffdead1e682c` are the pre-review-cleanup detailed-count snapshot. Run #219 on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36` is historical/pre-sync only.
+- SQLite evidence must not be presented as PostgreSQL evidence.
+- A successful workflow proves only the checks and commit recorded in that run. Runs #250/#251 validate only the earlier review-fix SHA; runs #231/#232 are pre-review-cleanup evidence only.
+- SKIPPED, NOT RUN, BLOCKED and PARTIAL are not PASS.
+- Draw persistence and four malformed-history cases are covered by the current Python suite. PR #38 Browser E2E is recorded as 13/13 passed in run #41; keep production/deployed live smoke open until corresponding evidence is recorded.
 
 ### PostgreSQL test safety and manual command
 
-Only use a disposable PostgreSQL database whose name visibly includes `test`. The test creates and drops a uniquely named schema and requires permission to create/drop schemas. Never point it at production or shared data.
+Only use a disposable PostgreSQL database whose name visibly includes test. The test creates and drops a uniquely named schema and requires permission to create/drop schemas. Never point it at production or shared data.
 
 ```powershell
 $env:TEST_DATABASE_URL = "postgresql+psycopg2://user:password@localhost:5432/caroai_test"
@@ -210,32 +230,13 @@ $env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
 python -m pytest tests/test_database_postgres.py -q
 ```
 
-The URL above is a placeholder, not a real credential. The suite is now invoked from a dedicated CI job that provisions disposable PostgreSQL and sets the opt-in variables. Do not report PostgreSQL coverage from a run where this suite was skipped.
-
-### Outstanding acceptance criteria — application persistence
-
-M1 and M5 must agree on the repository/session contract and game-ID mapping. Before marking persistence complete, add and run tests that create a game, apply ordered moves, persist terminal status/winner/end time, and read the final state through a new session. Test transaction rollback through the GameService/API path, not only direct SQLAlchemy session rollback. Coordinate ordered migrations and Docker smoke verification with M4.
+The URL above is a placeholder, not a real credential. The earlier review-fix snapshot is validated by runs #250/#251; these runs do not validate later commits. The detailed PostgreSQL acceptance count (15 passed, zero skipped) is from pre-review-cleanup runs #231/#232 on SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`. For any additional manual run, use only an explicitly disposable test database.
 
 
-## Sprint 3 backend persistence evidence — 2026-10-17
+## Evidence snapshot clarification (2026-10-23)
 
-- PR: https://github.com/emt0147t/caroAI/pull/32
-- Tested head: `7108bea0e917c97199bc66e679c8e9b4888a6204`
-- CI Run #79: https://github.com/emt0147t/caroAI/actions/runs/39039816151
-- Flake8: passed; pytest on CPython 3.11.17: **181 passed, 11 skipped, 1 warning**; frontend syntax/regression, Compose config validation and Docker build passed.
-- The 11 skipped tests are the opt-in PostgreSQL model/session tests because the current workflow does not provision a disposable PostgreSQL service. They are not PostgreSQL integration passes.
-- New SQLite-backed tests exercise service persistence across new sessions, API create/move/get across separate requests, and rollback. This is portable regression evidence, but not a substitute for PostgreSQL CI, schema migration/backfill, or deployed PostgreSQL smoke tests.
-- Database mapping in PR #32: `GameResponse.id` remains UUID-shaped as `games.public_id`; `games.id` stays BIGINT internal. A versioned migration/backfill is required before running against an existing PostgreSQL schema.
-
-
-## 14. Current Sprint 3 implementation evidence (2026-10-23)
-
-- **Source SHA:** `4e63747430ce372772d8903b7c8cd2004dadad94`
-- **Workflow:** https://github.com/emt0147t/caroAI/actions/runs/39912878999
-- Flake8 and portable pytest: PASSED — 189 passed, 11 skipped, 1 warning. The 11 skips are opt-in PostgreSQL tests inside the generic job, not PostgreSQL passes.
-- Dedicated PostgreSQL 15 acceptance: PASSED — 15 passed, 0 skipped. It covers model constraints, service/API persistence, human and AI moves, terminal results/time, write rollback, migration backfill/idempotency, and empty-database initialization.
-- Compose runtime smoke: PASSED — create game + move, restart API container, then read game/history from persisted PostgreSQL state.
-- Docker image build: PASSED (not pushed to a registry).
-- PostgreSQL driver fix: common `postgres://` and `postgresql://` values are normalized to the installed `psycopg2-binary` driver, preventing the Docker startup failure seen in the first Compose smoke attempt.
-
-This evidence applies to the source SHA and workflow above. Approval/merge, registry publication, public deployment/HTTPS, browser-driven E2E and team-wide release acceptance remain separate gates.
+- Current PR #38 validation snapshot: push #281 and pull-request #282 succeeded, and Browser E2E #41 passed 13/13 for snapshot head `d93124518e1b907bdd1db29b959cd3a15a0c14ff`. Older runs #260/#261 remain historical for their own SHA.
+- Earlier `cc25a0f5eaf075ed1cee58944114b99e0d43971a` / runs #250/#251 are historical. Detailed counts 216 passed, 11 skipped, 1 warning and PostgreSQL acceptance 15 passed, 0 skipped are exclusively from `affbb23a90a12dd14f006d8ef692ffdead1e682c`, runs #231/#232. Run #219 on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36` is historical/pre-sync.
+- Historical M3 PR #34 evidence remains tied to head `4d540c65f4963d154229214dd34e6dec8f679534` and runs #32/#263. Current PR #38 Browser E2E run #41 separately passed 13/13 in the PR validation snapshot. Production/live smoke remains NOT RUN.
+- `docker-compose.yml` exists; PostgreSQL acceptance runs in a dedicated job with a zero-skips guard; versioned migration runner is implemented; `/health` is liveness and `/ready` is database readiness. Compose persistence smoke creates a game/move, restarts the API in a disposable CI Compose stack, and reads persisted state. It is not production redeploy evidence. Docker image build does not establish image publication or deployment.
+- SQLite portable persistence tests and PostgreSQL acceptance tests are distinct suites/environments. Skipped tests are not counted as passed.
