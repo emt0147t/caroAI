@@ -198,9 +198,8 @@ This section records observed status separately from planned tests. The detailed
 | M5 baseline suite | Historical baseline passed on M5 branch at SHA 2dd55cda274d7112e6d3244a4b457768178e98f8 | 178 passed, 11 skipped, 1 warning on local Windows; exact Python version not recorded. This is not a test result for later commits. |
 | PostgreSQL on M5 baseline | NOT RUN | TEST_DATABASE_URL was not configured in the recorded M5 run. |
 | Persistence implementation on M5 branch | BLOCKED / NOT RUN | M1's SQLAlchemy persistence implementation remains on PR #32 and is not yet integrated into the M5 branch. |
-| PR #32 SQLite persistence tests | PR-ONLY evidence | Separate review worktree reported 5 repository persistence tests passed, including new-session readback, API readback, X win, mocked AI move, history and service rollback. |
-| Latest PR #32 CI | ALL JOBS PASSED on PR head 4e63747430ce372772d8903b7c8cd2004dadad94 | Run #131: https://github.com/emt0147t/caroAI/actions/runs/39912882803. Frontend, lint/pytest, PostgreSQL acceptance with zero-skips guard, Compose API/database persistence after API restart, and Docker image build all passed. This is PR-only evidence, not an M5 branch result. |
-| Earlier PR #32 CI run #101 | FAILED, superseded by run #131 | Run #101 failed Flake8 E302 at app/schemas/game.py:49 and tests/test_repository_persistence.py:206; downstream steps were skipped. Keep this as historical evidence only. |
+| PR #32 previous CI run #131 | ALL JOBS PASSED on SHA 4e63747430ce372772d8903b7c8cd2004dadad94 | https://github.com/emt0147t/caroAI/actions/runs/39912882803. Frontend, lint/pytest, PostgreSQL acceptance with zero-skips guard, Compose API/database persistence after API restart, and Docker image build passed. This is PR-only evidence. |
+| PR #32 current CI run #139 | IN PROGRESS at inspected SHA 50435a02bca65e08cace8ad3d0a539981bc4c0d8 | https://github.com/emt0147t/caroAI/actions/runs/39913192666. Do not infer a result until the workflow completes. |
 | Draw persistence and corrupted-history rejection tests | NOT RUN / coverage gap | No dedicated draw persistence test or dedicated test for each malformed persisted-history invariant was identified in the reviewed PR #32 test files. |
 | Browser E2E and deployed/live persistence | NOT RUN | No successful evidence recorded in the M5 matrix. |
 
