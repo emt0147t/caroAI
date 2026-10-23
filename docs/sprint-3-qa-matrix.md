@@ -76,14 +76,15 @@ The reviewed repository implementation has _rebuild_state checks for contiguous 
 
 ## CI evidence and limitations
 
-- Workflow run #101: https://github.com/emt0147t/caroAI/actions/runs/39911965014
-- Frontend job: PASSED.
-- PostgreSQL service/API/migration acceptance job: PASSED; the zero-skipped guard passed.
-- Ordinary test/lint job: FAILED at Flake8 E302 in app/schemas/game.py:49 and tests/test_repository_persistence.py:206. Pytest and Compose config validation in that job were skipped.
-- Docker build: SKIPPED because required jobs did not all pass.
-- The PR workflow file currently defines a Compose smoke job, but the run #101 job list returned by GitHub did not include it. Its result is therefore not verified for run #101.
-- A prior local review reported 5 passed in tests/test_repository_persistence.py and 183 passed, 11 skipped in the full suite. These are historical PR worktree results, not current M5 branch results.
-- A successful PostgreSQL job does not mean the overall workflow passed, nor does it prove browser E2E, published image, public HTTPS or live deployed restart persistence.
+- Current M5 workflow run #155: https://github.com/emt0147t/caroAI/actions/runs/39914292428 — overall SUCCESS on commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5.
+- All five jobs passed: Run tests and lint; PostgreSQL service/API/migration acceptance; Compose API/database persistence after restart; frontend syntax and regression checks; Docker image build.
+- Python suite: 189 passed, 11 skipped, 1 warning in 4.34 seconds. Flake8 reported 0 issues; Docker Compose config validation passed.
+- PostgreSQL acceptance passed with the zero-skips guard. Compose restart smoke passed on a disposable CI stack.
+- The Compose smoke is not evidence of public deployment, public HTTPS, or deployed persistence after restart.
+- One StarletteDeprecationWarning from fastapi.testclient/httpx remains; it did not fail the run.
+- Historical PR #32 runs #131/#139 and run #101 remain historical pre-merge evidence and must not override run #155 for current M5 status.
+- The 11 skipped tests are not counted as passed; inspect their skip reasons before claiming full coverage.
+- Browser E2E and public deployed/live smoke remain NOT RUN.
 
 ## Evidence rules
 
