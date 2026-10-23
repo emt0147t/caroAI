@@ -223,7 +223,7 @@ $env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
 python -m pytest tests/test_database_postgres.py -q
 ```
 
-The URL above is a placeholder, not a real credential. The final review-fix head is validated by runs #250/#251. The detailed PostgreSQL acceptance count (15 passed, zero skipped) is from pre-review-cleanup runs #231/#232 on SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`. For any additional manual run, use only an explicitly disposable test database.
+The URL above is a placeholder, not a real credential. The earlier review-fix snapshot is validated by runs #250/#251; these runs do not validate later commits. The detailed PostgreSQL acceptance count (15 passed, zero skipped) is from pre-review-cleanup runs #231/#232 on SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`. For any additional manual run, use only an explicitly disposable test database.
 
 
 ## Evidence snapshot clarification (2026-10-23)
