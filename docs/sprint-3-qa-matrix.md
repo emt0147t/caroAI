@@ -6,7 +6,9 @@
 - QA branch: feature/m5-sprint3-qa
 - Integrated M5 commit: 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5
 - Integration commit message: merge: integrate develop persistence into M5 QA branch
-- CI workflow run #155: https://github.com/emt0147t/caroAI/actions/runs/39914292428
+- CI workflow run #155 (persistence integration commit): https://github.com/emt0147t/caroAI/actions/runs/39914292428
+- CI workflow run #171 (current M5 branch including QA documentation updates): https://github.com/emt0147t/caroAI/actions/runs/39914848382
+- Run #171 head SHA: b35e8059bb5ecb430214d4176a322385e8ed6688; overall SUCCESS; all five jobs passed.
 - CI head SHA: 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5
 - CI overall conclusion: SUCCESS (completed 2026-10-23)
 - CI jobs all passed: Run tests and lint; PostgreSQL service/API/migration acceptance; Compose API/database persistence after restart; frontend syntax and regression checks; Docker image build.
@@ -76,7 +78,8 @@ The reviewed repository implementation has _rebuild_state checks for contiguous 
 
 ## CI evidence and limitations
 
-- Current M5 workflow run #155: https://github.com/emt0147t/caroAI/actions/runs/39914292428 — overall SUCCESS on commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5.
+- Current M5 persistence-integration workflow run #155: https://github.com/emt0147t/caroAI/actions/runs/39914292428 — overall SUCCESS on commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5.
+- Latest documentation-head workflow run #171: https://github.com/emt0147t/caroAI/actions/runs/39914848382 — overall SUCCESS on commit b35e8059bb5ecb430214d4176a322385e8ed6688; all five jobs passed, so the QA-doc updates also passed CI.
 - All five jobs passed: Run tests and lint; PostgreSQL service/API/migration acceptance; Compose API/database persistence after restart; frontend syntax and regression checks; Docker image build.
 - Python suite: 189 passed, 11 skipped, 1 warning in 4.34 seconds. Flake8 reported 0 issues; Docker Compose config validation passed.
 - PostgreSQL acceptance passed with the zero-skips guard. Compose restart smoke passed on a disposable CI stack.
