@@ -4,17 +4,22 @@
 
 - Repository: emt0147t/caroAI
 - QA branch: feature/m5-sprint3-qa
-- Baseline SHA on M5 branch: 2dd55cda274d7112e6d3244a4b457768178e98f8
-- Baseline result on that SHA: 178 passed, 11 skipped, 1 warning
-- Baseline environment: local Windows; exact Python version not recorded
-- PostgreSQL test run on the M5 baseline: NOT RUN; TEST_DATABASE_URL was not configured
-- Current M5 branch does not yet contain M1's SQLAlchemy persistence implementation; the matrix records PR #32 evidence separately.
-- M1 PR #32 is now MERGED. The merged implementation is present on develop, but not yet integrated into feature/m5-sprint3-qa at this matrix revision. Keep all PR CI evidence separate from M5-branch evidence.
-- Earlier workflow run #101 failed at Flake8 E302. It was superseded by run #131 at the then-current PR head 4e63747430ce372772d8903b7c8cd2004dadad94.
-- Run #131: https://github.com/emt0147t/caroAI/actions/runs/39912882803 — overall SUCCESS for previous SHA 4e63747430ce372772d8903b7c8cd2004dadad94. Run #139 is the newer successful result.
-- PR #32 head SHA before merge: 50435a02bca65e08cace8ad3d0a539981bc4c0d8. Workflow run #139 completed SUCCESS: https://github.com/emt0147t/caroAI/actions/runs/39913192666. All five jobs passed: tests/lint, Compose API/database persistence after restart, PostgreSQL acceptance with zero-skips guard, frontend regression, and Docker image build. PR has since merged; these are pre-merge CI results.
-- The Compose job explicitly built and started a disposable stack, created/moved a game, restarted the API, read persisted state, and cleaned up resources.
-- Important: runs #131 and #139 are evidence for PR #32 before merge, not for feature/m5-sprint3-qa. The M5 branch still has the in-memory GameService and placeholder repository.
+- Integrated M5 commit: 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5
+- Integration commit message: merge: integrate develop persistence into M5 QA branch
+- CI workflow run #155: https://github.com/emt0147t/caroAI/actions/runs/39914292428
+- CI head SHA: 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5
+- CI overall conclusion: SUCCESS (completed 2026-10-23)
+- CI jobs all passed: Run tests and lint; PostgreSQL service/API/migration acceptance; Compose API/database persistence after restart; frontend syntax and regression checks; Docker image build.
+- Python suite: 189 passed, 11 skipped, 1 warning in 4.34 seconds.
+- Flake8: PASS, 0 issues. Docker Compose config validation: PASS.
+- PostgreSQL acceptance job: PASS, including the workflow's zero-skips guard.
+- Compose restart smoke: PASS; the disposable Compose stack created/moved a game, restarted the API, read persisted state, and cleaned up.
+- PostgreSQL migration/API acceptance: PASS on this exact M5 commit.
+- Frontend syntax and regression: PASS.
+- Warning: StarletteDeprecationWarning from fastapi.testclient/httpx integration. Not a test failure.
+- Historical baseline SHA 2dd55cda274d7112e6d3244a4b457768178e98f8: 178 passed, 11 skipped, 1 warning; retained as historical baseline only.
+- PR #32 pre-merge CI runs #131/#139 remain historical PR-head evidence; use run #155 for evidence on the current M5 branch.
+- Browser E2E and public deployed/live smoke are NOT RUN. The Compose restart check is a CI disposable-stack test, not proof of public deployment persistence.
 
 ## Status definitions
 
@@ -33,20 +38,20 @@
 | QA-01 | Game rules | Existing regression suite | M5 BASELINE SUITE PASSED; category-specific result not isolated | M5 | Baseline SHA; 178 passed overall |
 | QA-02 | AI | AI integration/regression tests | M5 BASELINE SUITE PASSED; category-specific result not isolated | M2/M5 | Baseline SHA; detailed test names/results not captured |
 | QA-03 | API regression | Existing API suite | M5 BASELINE SUITE PASSED; category-specific result not isolated | M1/M5 | Baseline SHA; 178 passed overall |
-| QA-04 | Service persistence across sessions | Create game, apply ordered moves, read through new SQLAlchemy session | MERGED-IMPLEMENTATION CI EVIDENCE ONLY; NOT RUN on M5 branch | M1/M5 | PR #32 test_service_persists_game_and_moves_across_sessions |
-| QA-05 | API persistence across requests | API create, two moves, GET restored state | MERGED-IMPLEMENTATION CI EVIDENCE ONLY; NOT RUN on M5 branch | M1/M5 | PR #32 test_api_reads_game_created_and_moved_in_previous_requests, using SQLite |
-| QA-06 | AI move persistence | Persist and reload AI move | MERGED-IMPLEMENTATION CI EVIDENCE ONLY; AI mocked; NOT RUN on M5 branch | M1/M2/M5 | test_ai_move_is_persisted_and_read_back_across_sessions; PostgreSQL suite also has API AI move with mocked engine |
-| QA-07 | Terminal win persistence | Persist status/result/winner/end time and read back | MERGED-IMPLEMENTATION CI EVIDENCE ONLY; X win covered; NOT RUN on M5 branch | M1/M5 | test_terminal_result_and_end_time_persist_across_sessions; PostgreSQL API acceptance test checks X win and ended_at in history |
-| QA-08 | Draw persistence | Persist/reload DRAW status, result and ended_at | NOT RUN; no dedicated draw test identified | M1/M5 | No draw persistence case identified in the reviewed PR #32 tests |
-| QA-09 | Malformed persisted history | Reject non-contiguous move numbers, wrong turn, illegal moves, status/result mismatch | IMPLEMENTATION VALIDATION PRESENT; DEDICATED CORRUPTION TESTS NOT IDENTIFIED | M1/M5 | PR #32 _rebuild_state checks these invariants; no dedicated test per corruption case found in reviewed test files |
-| QA-10 | Service rollback | Inject failure during move persistence and assert no partial move/state | MERGED-IMPLEMENTATION CI EVIDENCE ONLY; SQLite service-level test; NOT RUN on M5 branch | M1/M5 | test_service_transaction_rolls_back_if_move_persistence_fails |
-| QA-11 | API database write failure/rollback | Trigger SQLAlchemy write failure via API and assert HTTP error and no partial rows | MERGED-IMPLEMENTATION CI EVIDENCE ONLY; PostgreSQL acceptance passed in run #139; NOT RUN on M5 branch | M1/M4/M5 | tests/postgres_suite.py::test_postgres_api_write_failure_rolls_back expects HTTP 503 and verifies no move row/state change |
-| QA-12 | PostgreSQL model/session constraints | FK, move order uniqueness, coordinate/player checks, analysis checks, transaction rollback | MERGED-IMPLEMENTATION CI EVIDENCE ONLY: PostgreSQL job PASSED in run #139; M5 branch NOT RUN | M4 CI; M5 evidence | Run #131 executed tests/test_database_postgres.py and tests/postgres_suite.py; zero-skips guard passed |
-| QA-13 | PostgreSQL API acceptance | Human moves, terminal X win, AI move, history metadata | PR-ONLY: PostgreSQL job PASSED in run #131; M5 branch NOT RUN | M1/M4/M5 | tests/postgres_suite.py::test_postgres_api_human_ai_terminal_state_and_history |
-| QA-14 | PostgreSQL migration | Initialize empty DB; backfill existing public IDs; idempotent rerun | MERGED-IMPLEMENTATION CI EVIDENCE ONLY: migration tests PASSED in run #139; M5 branch NOT RUN | M1/M4/M5 | test_migration_initializes_an_empty_database; test_migration_backfills_existing_public_ids_and_is_idempotent |
-| QA-15 | Compose persistence across API restart | Compose stack: create game, move, restart API container, GET state/history | MERGED-IMPLEMENTATION CI EVIDENCE ONLY: PASSED in run #139; M5 branch NOT RUN | M1/M4/M5 | Workflow file inspected on PR head contains a compose-smoke job, but run #101 job list did not include that job; do not mark it passed |
+| QA-04 | Service persistence across sessions | Create game, apply ordered moves, read through new SQLAlchemy session | PASSED on M5 commit | M1/M5 | CI run #155 Python suite: 189 passed; see run URL and SHA in Run context |
+| QA-05 | API persistence across requests | API create, moves, GET restored state | PASSED on M5 commit | M1/M5 | CI run #155; Python suite and Compose persistence smoke passed |
+| QA-06 | AI move persistence | Persist and reload AI move | PASSED in CI acceptance scope; AI engine mocked | M1/M2/M5 | CI run #155; PostgreSQL API acceptance passed; AI engine is mocked in test |
+| QA-07 | Terminal win persistence | Persist status/result/winner/end time and read back | PASSED in CI acceptance scope; X win covered | M1/M5 | CI run #155 PostgreSQL API acceptance and Compose persistence smoke passed |
+| QA-08 | Draw persistence | Persist/reload DRAW status, result and ended_at | NOT RUN; dedicated draw persistence case not identified | M1/M5 | Keep open until a dedicated draw persistence test is added and run |
+| QA-09 | Malformed persisted history | Reject non-contiguous move numbers, wrong turn, illegal moves, status/result mismatch | IMPLEMENTATION VALIDATION PRESENT; dedicated corruption tests not identified | M1/M5 | _rebuild_state validates invariants; no dedicated test per corruption case identified |
+| QA-10 | Service rollback | Inject failure during move persistence and assert no partial move/state | PASSED in CI suite scope | M1/M5 | CI run #155 Python suite passed; PostgreSQL write-failure acceptance also passed |
+| QA-11 | API database write failure/rollback | Trigger SQLAlchemy write failure via API and assert HTTP error and no partial rows | PASSED on M5 commit | M1/M4/M5 | CI run #155 PostgreSQL API acceptance passed |
+| QA-12 | PostgreSQL model/session constraints | FK, move order uniqueness, coordinate/player checks, analysis checks, transaction rollback | PASSED on M5 commit | M4 CI; M5 evidence | CI run #155 PostgreSQL acceptance passed with zero-skips guard |
+| QA-13 | PostgreSQL API acceptance | Human moves, terminal X win, AI move, history metadata | PASSED on M5 commit | M1/M4/M5 | CI run #155 PostgreSQL API acceptance passed |
+| QA-14 | PostgreSQL migration | Initialize empty DB; backfill existing public IDs; idempotent rerun | PASSED on M5 commit | M1/M4/M5 | CI run #155 PostgreSQL service/API/migration acceptance passed |
+| QA-15 | Compose persistence across API restart | Compose stack: create game, move, restart API container, GET state/history | PASSED on M5 commit (CI disposable stack) | M1/M4/M5 | CI run #155 Compose API/database persistence after restart passed |
 | QA-16 | Browser E2E | Verify PvP/PvAI and history in browser/deployed environment | NOT RUN | M3/M5 | No browser E2E result identified |
-| QA-17 | Publish/deploy/live smoke | Verify image publication, public HTTPS and persistence after deployment restart | NOT RUN | M1/M3/M4/M5 | No deployment/live-smoke evidence identified |
+| QA-17 | Publish/deploy/live smoke | Verify image publication, public HTTPS and persistence after deployment restart | NOT RUN | M1/M3/M4/M5 | No deployment/live-smoke evidence identified
 
 ## Merged M1 implementation test inventory (not M5-branch proof)
 
@@ -88,4 +93,6 @@ The reviewed repository implementation has _rebuild_state checks for contiguous 
 - SQLite evidence must not be presented as PostgreSQL evidence.
 - SKIPPED, NOT RUN, BLOCKED and PARTIAL are not PASS.
 - Do not store credentials, tokens, or production database URLs in this file.
-- Keep draw and malformed-history corruption tests, current-branch integration, browser E2E and live deployment smoke open until the corresponding evidence is recorded. Compose restart smoke has PR-only passing evidence in run #131.
+- Keep dedicated draw persistence and malformed-history corruption tests open until implemented and executed.
+- Browser E2E and public deployed/live smoke remain NOT RUN; the successful Compose smoke is limited to a disposable CI environment.
+- The current M5 integration and core CI evidence are recorded at commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5 and workflow run #155.
