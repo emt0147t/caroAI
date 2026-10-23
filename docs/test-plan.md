@@ -1,15 +1,13 @@
 # CaroAI — Test Plan (Sprint 1)
 
-## PR #38 validation snapshot — SHA `d93124518e1b907bdd1db29b959cd3a15a0c14ff` (2026-10-23)
+## Latest post-sync validation snapshot — SHA `176ae2b01094c1cc104c3a4e22d0dcb16d274c9e` (2026-10-23)
 
-- Push CI [run #281](https://github.com/emt0147t/caroAI/actions/runs/39978359724): **SUCCESS**. The five validation jobs passed: Python tests/lint, PostgreSQL service/API/migration acceptance (including the zero-skips guard), disposable Compose persistence after API restart, frontend syntax/regression, and Docker image build.
-- Pull-request CI [run #282](https://github.com/emt0147t/caroAI/actions/runs/39978367013): **SUCCESS** for PR validation. The five validation jobs passed; the approved production publish/Render verification job was **SKIPPED by design**. This does not establish image publication or deployment.
-- Browser E2E [run #41](https://github.com/emt0147t/caroAI/actions/runs/39978367028): **SUCCESS, 13/13 Playwright tests passed** in the PR #38 validation snapshot. This is CI browser E2E evidence, not a production/deployed test. This wording does not claim a separate branch-head checkout beyond the workflow's actual checkout/ref.
-- These runs were checked against the supplied snapshot head `d93124518e1b907bdd1db29b959cd3a15a0c14ff`. Historical counts of 216 passed / 11 skipped / 1 warning and PostgreSQL acceptance 15 passed / 0 skipped remain tied only to SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`, runs #231/#232.
-- Production image publication/deployment, public HTTPS/live smoke, and persistence after restart/redeploy in a deployed environment remain **NOT RUN**. The passing Compose check is limited to a disposable CI stack.
-
-
-> **Trạng thái:** Kế hoạch kiểm thử, không phải test code. Danh sách endpoint trong tài liệu này lấy từ Team Guide được cung cấp cho Sprint 1. Request/response schema, status code và một số quy tắc vẫn cần M1 xác nhận; tài liệu không tự định nghĩa các contract đó.
+- PR #38 head after syncing `develop`: `176ae2b01094c1cc104c3a4e22d0dcb16d274c9e`; GitHub comparison reports the branch is **0 commits behind** `develop` and 64 commits ahead.
+- Pull-request CI [run #292](https://github.com/emt0147t/caroAI/actions/runs/39989472844): **SUCCESS** for the required validation jobs: Python tests/lint, PostgreSQL service/API/migration acceptance (including the zero-skips guard), disposable Compose persistence after API restart, frontend syntax/regression, and Docker image build. Production publish/Render verification was **SKIPPED by design**.
+- Frontend Browser E2E [run #46](https://github.com/emt0147t/caroAI/actions/runs/39989472522): **SUCCESS** on this PR validation snapshot. Do not infer a test count unless the run logs explicitly show it.
+- A push-triggered CI run on this exact SHA is not independently confirmed by the available workflow records; do not substitute older push runs as evidence for this SHA.
+- These CI runs validate the code/documentation at the stated snapshot, before the final documentation refresh. After the refresh, verify the newly triggered PR CI and Browser E2E workflows on the new final head before merge.
+- Public image publication/deployment, public HTTPS/live smoke, and persistence after restart/redeploy in the deployed environment remain **NOT RUN**. Compose persistence proves behavior only in a disposable CI stack.
 
 ## 1. Mục tiêu kiểm thử
 
