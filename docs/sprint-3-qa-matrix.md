@@ -11,8 +11,8 @@
 - Current M5 branch does not yet contain M1's SQLAlchemy persistence implementation; the matrix records PR #32 evidence separately.
 - M1 PR #32 head at latest inspection: 50435a02bca65e08cace8ad3d0a539981bc4c0d8; PR remains open and unmerged. Evidence below is PR-only until the implementation is integrated into the M5 branch.
 - Earlier workflow run #101 failed at Flake8 E302. It was superseded by run #131 at the then-current PR head 4e63747430ce372772d8903b7c8cd2004dadad94.
-- Run #131: https://github.com/emt0147t/caroAI/actions/runs/39912882803 — overall SUCCESS for SHA 4e63747430ce372772d8903b7c8cd2004dadad94. All five jobs passed: frontend, test/lint, PostgreSQL acceptance with zero-skips guard, Compose persistence after API restart, and Docker image build.
-- PR #32 has since advanced to SHA 50435a02bca65e08cace8ad3d0a539981bc4c0d8. Its new workflow run #139 is IN PROGRESS: https://github.com/emt0147t/caroAI/actions/runs/39913192666. Do not infer a result until that run completes.
+- Run #131: https://github.com/emt0147t/caroAI/actions/runs/39912882803 — overall SUCCESS for previous SHA 4e63747430ce372772d8903b7c8cd2004dadad94. Run #139 is the newer successful result.
+- PR #32 advanced to SHA 50435a02bca65e08cace8ad3d0a539981bc4c0d8. Workflow run #139 for this SHA is now COMPLETE with overall SUCCESS: https://github.com/emt0147t/caroAI/actions/runs/39913192666. All five jobs passed: tests/lint, Compose API/database persistence after restart, PostgreSQL acceptance with zero-skips guard, frontend regression, and Docker image build.
 - The Compose job explicitly built and started a disposable stack, created/moved a game, restarted the API, read persisted state, and cleaned up resources.
 - Important: run #131 is evidence for PR #32's head, not for feature/m5-sprint3-qa, because M1 persistence has not been integrated into the M5 branch.
 
