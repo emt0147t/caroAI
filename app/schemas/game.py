@@ -46,6 +46,8 @@ class MakeMoveResponse(BaseModel):
     move: MoveResponse
     game: GameResponse
 
+
+
 class GameHistoryItem(BaseModel):
     """Metadata for one persisted game in the history list."""
 
