@@ -27,3 +27,13 @@ The History page at `/history.html` never reads or writes game history in localS
 ## Public deployment smoke
 
 Not run in this change: Issue #30 (M4) remains open and no confirmed HTTPS release URL/release SHA is provided in the repository coordination records. Do not treat localhost CI as public deployment evidence. Once M4 publishes a URL and release SHA, run the same Playwright suite against the deployment after confirming that its API contract matches this branch; capture URL, browser/version, UTC timestamp, release SHA, screenshots/traces and result.
+
+## Verified CI evidence (2026-10-23)
+
+- Source head: `dcf6328a4a93f6c19ba3b6daf5c2a799c4b0dec0`.
+- Browser run #10: https://github.com/emt0147t/caroAI/actions/runs/39914481855
+- Result: **12 passed, 1 skipped** in 11.3 seconds. The skipped test is persistence-after-refresh because `GET /api/games/history` returns 404 on the current develop API.
+- Runner: GitHub-hosted Ubuntu 24.04; Playwright 1.56.1; Chromium 141.0.7390.37 (Playwright build v1194); test execution logged at 2026-10-23 06:57:22–06:57:34 UTC.
+- Evidence artifact (Playwright report / test results): https://github.com/emt0147t/caroAI/actions/runs/39914481855/artifacts/12484187122
+- Full CI run #163: https://github.com/emt0147t/caroAI/actions/runs/39914481863 — lint/tests, Compose restart persistence, PostgreSQL acceptance, frontend syntax/regression and Docker build all succeeded.
+- Public HTTPS deployment smoke: **NOT RUN**; M4 has not provided a verified public URL or deployed release SHA. The local Compose URL is not public deployment evidence.
