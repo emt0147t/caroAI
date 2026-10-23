@@ -189,20 +189,19 @@ Test plan Sprint 1 được coi là hoàn tất khi:
 
 
 
-## 13. Current implementation and QA evidence (2026-10-23)
+## 13. Current implementation and QA evidence (updated 2026-10-23)
 
-This section records observed status separately from the planned test cases above. The detailed matrix is maintained in [sprint-3-qa-matrix.md](sprint-3-qa-matrix.md).
+This section records observed status separately from planned tests. The detailed matrix is maintained in [sprint-3-qa-matrix.md](sprint-3-qa-matrix.md).
 
 | Area | Current status | Evidence / limitation |
 |---|---|---|
 | M5 baseline suite | Historical baseline passed on M5 branch at SHA 2dd55cda274d7112e6d3244a4b457768178e98f8 | 178 passed, 11 skipped, 1 warning on local Windows; exact Python version not recorded. This is not a test result for later commits. |
-| PostgreSQL on M5 baseline | NOT RUN | TEST_DATABASE_URL and CAROAI_TEST_DATABASE_CONFIRMED were not configured in the recorded M5 run. |
-| M5 branch application persistence | BLOCKED / NOT RUN | The M5 branch snapshot does not contain M1's SQLAlchemy persistence implementation; do not claim current-branch persistence from PR #32 results. |
-| PR #32 SQLite persistence tests | PR-ONLY evidence | Separate review worktree reported 5 repository persistence tests passed. Includes service/API readback, X win, mocked AI move, history, and service-level rollback. |
-| PR #32 PostgreSQL acceptance | PostgreSQL job PASSED in workflow run #101; overall workflow FAILED | https://github.com/emt0147t/caroAI/actions/runs/39911965014. The dedicated job ran tests/test_database_postgres.py and tests/postgres_suite.py, with a zero-skips guard. This includes PostgreSQL API human/AI/X-win/history, API write rollback, and migration empty-schema/backfill tests. It is PR-only evidence, not a result on the M5 branch. |
-| PR #32 lint / ordinary test job | FAILED / SKIPPED | Flake8 E302 at app/schemas/game.py:49 and tests/test_repository_persistence.py:206. Pytest and Compose config validation in the ordinary job were skipped; Docker build was skipped. |
-| Draw persistence and corrupted-history rejection tests | NOT RUN / coverage gap | No dedicated draw persistence test or dedicated tests for each malformed persisted-history invariant were identified in the reviewed PR #32 test files. |
-| Compose restart smoke | NOT CONFIRMED | The PR workflow file defines a Compose smoke job, but that job was not present in the returned job list for run #101. Do not mark it passed without a run result. |
+| PostgreSQL on M5 baseline | NOT RUN | TEST_DATABASE_URL was not configured in the recorded M5 run. |
+| Persistence implementation on M5 branch | BLOCKED / NOT RUN | M1's SQLAlchemy persistence implementation remains on PR #32 and is not yet integrated into the M5 branch. |
+| PR #32 SQLite persistence tests | PR-ONLY evidence | Separate review worktree reported 5 repository persistence tests passed, including new-session readback, API readback, X win, mocked AI move, history and service rollback. |
+| Latest PR #32 CI | ALL JOBS PASSED on PR head 4e63747430ce372772d8903b7c8cd2004dadad94 | Run #131: https://github.com/emt0147t/caroAI/actions/runs/39912882803. Frontend, lint/pytest, PostgreSQL acceptance with zero-skips guard, Compose API/database persistence after API restart, and Docker image build all passed. This is PR-only evidence, not an M5 branch result. |
+| Earlier PR #32 CI run #101 | FAILED, superseded by run #131 | Run #101 failed Flake8 E302 at app/schemas/game.py:49 and tests/test_repository_persistence.py:206; downstream steps were skipped. Keep this as historical evidence only. |
+| Draw persistence and corrupted-history rejection tests | NOT RUN / coverage gap | No dedicated draw persistence test or dedicated test for each malformed persisted-history invariant was identified in the reviewed PR #32 test files. |
 | Browser E2E and deployed/live persistence | NOT RUN | No successful evidence recorded in the M5 matrix. |
 
 ### Evidence rules
@@ -210,9 +209,9 @@ This section records observed status separately from the planned test cases abov
 - Record the exact full commit SHA, command, environment, result, and workflow URL for every run.
 - PR #32 evidence must not be presented as a result from feature/m5-sprint3-qa.
 - SQLite evidence must not be presented as PostgreSQL evidence.
-- A successful PostgreSQL job does not make the overall workflow green.
+- A successful PR workflow does not prove the same behavior on the M5 branch.
 - SKIPPED, NOT RUN, BLOCKED and PARTIAL are not PASS.
-- Keep unresolved draw, malformed-history, current-branch integration, Compose, browser and live-smoke checks open until corresponding evidence is recorded.
+- Keep unresolved draw, malformed-history, current-branch integration, browser and live-smoke checks open until corresponding evidence is recorded.
 
 ### PostgreSQL test safety and manual command
 
@@ -225,4 +224,3 @@ python -m pytest tests/test_database_postgres.py -q
 ```
 
 The URL above is a placeholder, not a real credential. The PostgreSQL acceptance job described above belongs to PR #32. The M5 branch itself still requires a dedicated run against an explicitly disposable test database.
-
