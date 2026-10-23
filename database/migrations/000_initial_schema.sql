@@ -1,6 +1,6 @@
 -- Versioned baseline for a fresh PostgreSQL database.
 -- IF NOT EXISTS also makes this safe to run against a legacy schema: existing
--- tables are not altered here; later migrations handle schema changes.
+-- tables are not altered here, and later migrations handle schema changes.
 CREATE TABLE IF NOT EXISTS games (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     public_id VARCHAR(36) NOT NULL UNIQUE,
