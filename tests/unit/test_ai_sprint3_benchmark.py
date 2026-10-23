@@ -39,8 +39,6 @@ def test_sprint3_benchmark_has_at_least_ten_unique_nonterminal_fixtures():
         assert not has_five_in_a_row(board, 2), item["name"]
 
 
-
-
 def test_full_source_sha_validation_rejects_abbreviated_or_malformed_values():
     assert benchmark.validate_full_sha("A" * 40) == "a" * 40
     with pytest.raises(ValueError, match="full 40-character Git SHA"):
