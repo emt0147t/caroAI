@@ -9,11 +9,12 @@
 - Baseline environment: local Windows; exact Python version not recorded
 - PostgreSQL test run on the M5 baseline: NOT RUN; TEST_DATABASE_URL was not configured
 - Current M5 branch does not yet contain M1's SQLAlchemy persistence implementation; the matrix records PR #32 evidence separately.
-- M1 PR #32 reviewed at head SHA e4a91172b518dd16437ca91f72aa594e90da3c7e. Evidence below is PR-only until the implementation is integrated into the M5 branch.
-- Workflow run #101: https://github.com/emt0147t/caroAI/actions/runs/39911965014
-- Run #101 jobs: frontend PASSED; PostgreSQL service/API/migration acceptance PASSED; ordinary test/lint FAILED at Flake8; pytest and Compose config steps in that job SKIPPED; Docker build SKIPPED.
-- Flake8 findings in run #101: E302 at app/schemas/game.py:49 and tests/test_repository_persistence.py:206.
-- Important: a passing individual job does not make the whole workflow green. Source inspection is not runtime evidence.
+- M1 PR #32 latest reviewed head SHA: 4e63747430ce372772d8903b7c8cd2004dadad94. Evidence below is PR-only until the implementation is integrated into the M5 branch.
+- Earlier workflow run #101 failed at Flake8 E302; that result has been superseded by run #131 on the later PR head.
+- Latest observed PR #32 workflow run #131: https://github.com/emt0147t/caroAI/actions/runs/39912882803 — overall SUCCESS at head 4e63747430ce372772d8903b7c8cd2004dadad94.
+- Run #131 jobs all PASSED: frontend syntax/regression; test and lint; PostgreSQL service/API/migration acceptance with zero-skips guard; Compose API/database persistence after API restart; Docker image build.
+- The Compose job explicitly built and started a disposable stack, created/moved a game, restarted the API, read persisted state, and cleaned up resources.
+- Important: run #131 is evidence for PR #32's head, not for feature/m5-sprint3-qa, because M1 persistence has not been integrated into the M5 branch.
 
 ## Status definitions
 
@@ -40,10 +41,10 @@
 | QA-09 | Malformed persisted history | Reject non-contiguous move numbers, wrong turn, illegal moves, status/result mismatch | IMPLEMENTATION VALIDATION PRESENT; DEDICATED CORRUPTION TESTS NOT IDENTIFIED | M1/M5 | PR #32 _rebuild_state checks these invariants; no dedicated test per corruption case found in reviewed test files |
 | QA-10 | Service rollback | Inject failure during move persistence and assert no partial move/state | PR-ONLY: SQLite service-level test exists; NOT RUN on M5 branch | M1/M5 | test_service_transaction_rolls_back_if_move_persistence_fails |
 | QA-11 | API database write failure/rollback | Trigger SQLAlchemy write failure via API and assert HTTP error and no partial rows | PR-ONLY: PostgreSQL acceptance test exists; run #101 PostgreSQL job passed; NOT RUN on M5 branch | M1/M4/M5 | tests/postgres_suite.py::test_postgres_api_write_failure_rolls_back expects HTTP 503 and verifies no move row/state change |
-| QA-12 | PostgreSQL model/session constraints | FK, move order uniqueness, coordinate/player checks, analysis checks, transaction rollback | PR-ONLY: PostgreSQL job PASSED in run #101; M5 branch NOT RUN | M4 CI; M5 evidence | Run #101 executed tests/test_database_postgres.py and tests/postgres_suite.py; zero-skips guard passed |
-| QA-13 | PostgreSQL API acceptance | Human moves, terminal X win, AI move, history metadata | PR-ONLY: PostgreSQL job PASSED in run #101; M5 branch NOT RUN | M1/M4/M5 | tests/postgres_suite.py::test_postgres_api_human_ai_terminal_state_and_history |
-| QA-14 | PostgreSQL migration | Initialize empty DB; backfill existing public IDs; idempotent rerun | PR-ONLY: migration tests included in PostgreSQL job that PASSED in run #101; M5 branch NOT RUN | M1/M4/M5 | test_migration_initializes_an_empty_database; test_migration_backfills_existing_public_ids_and_is_idempotent |
-| QA-15 | Compose persistence across API restart | Compose stack: create game, move, restart API container, GET state/history | NOT CONFIRMED by run #101 | M1/M4/M5 | Workflow file inspected on PR head contains a compose-smoke job, but run #101 job list did not include that job; do not mark it passed |
+| QA-12 | PostgreSQL model/session constraints | FK, move order uniqueness, coordinate/player checks, analysis checks, transaction rollback | PR-ONLY: PostgreSQL job PASSED in run #131; M5 branch NOT RUN | M4 CI; M5 evidence | Run #131 executed tests/test_database_postgres.py and tests/postgres_suite.py; zero-skips guard passed |
+| QA-13 | PostgreSQL API acceptance | Human moves, terminal X win, AI move, history metadata | PR-ONLY: PostgreSQL job PASSED in run #131; M5 branch NOT RUN | M1/M4/M5 | tests/postgres_suite.py::test_postgres_api_human_ai_terminal_state_and_history |
+| QA-14 | PostgreSQL migration | Initialize empty DB; backfill existing public IDs; idempotent rerun | PR-ONLY: migration tests included in PostgreSQL job that PASSED in run #131; M5 branch NOT RUN | M1/M4/M5 | test_migration_initializes_an_empty_database; test_migration_backfills_existing_public_ids_and_is_idempotent |
+| QA-15 | Compose persistence across API restart | Compose stack: create game, move, restart API container, GET state/history | PR-ONLY: PASSED in run #131; M5 branch NOT RUN | M1/M4/M5 | Workflow file inspected on PR head contains a compose-smoke job, but run #101 job list did not include that job; do not mark it passed |
 | QA-16 | Browser E2E | Verify PvP/PvAI and history in browser/deployed environment | NOT RUN | M3/M5 | No browser E2E result identified |
 | QA-17 | Publish/deploy/live smoke | Verify image publication, public HTTPS and persistence after deployment restart | NOT RUN | M1/M3/M4/M5 | No deployment/live-smoke evidence identified |
 
@@ -87,4 +88,4 @@ The reviewed repository implementation has _rebuild_state checks for contiguous 
 - SQLite evidence must not be presented as PostgreSQL evidence.
 - SKIPPED, NOT RUN, BLOCKED and PARTIAL are not PASS.
 - Do not store credentials, tokens, or production database URLs in this file.
-- Keep draw, malformed-history corruption tests, current-branch integration, Compose, browser and live-smoke checks open until the corresponding evidence is recorded.
+- Keep draw and malformed-history corruption tests, current-branch integration, browser E2E and live deployment smoke open until the corresponding evidence is recorded. Compose restart smoke has PR-only passing evidence in run #131.
