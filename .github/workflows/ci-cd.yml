@@ -96,9 +96,96 @@ jobs:
           print("PostgreSQL acceptance suite completed with zero skipped tests.")
           PY
 
+  compose-smoke:
+    name: Compose API/database persistence after restart
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POSTGRES_DB: caroai_test
+      POSTGRES_USER: caroai_test
+      POSTGRES_PASSWORD: caroai_smoke_password
+      APP_PORT: "8000"
+      FRONTEND_PORT: "8080"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start disposable Compose stack
+        run: docker compose up --build -d
+      - name: Verify create/move, restart the API, and read persisted state
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          import time
+          import urllib.error
+          import urllib.request
+
+          BASE = "http://127.0.0.1:8000"
+
+          def request(method, path, payload=None):
+              body = None if payload is None else json.dumps(payload).encode()
+              headers = {"Content-Type": "application/json"} if body else {}
+              req = urllib.request.Request(
+                  BASE + path, data=body, headers=headers, method=method
+              )
+              with urllib.request.urlopen(req, timeout=5) as response:
+                  return response.status, json.loads(response.read().decode())
+
+          def retry_get(path, expected_status=200):
+              last_error = None
+              for _ in range(30):
+                  try:
+                      status, body = request("GET", path)
+                      if status == expected_status:
+                          return body
+                      last_error = RuntimeError(f"{path}: HTTP {status}")
+                  except Exception as exc:
+                      last_error = exc
+                  time.sleep(2)
+              raise RuntimeError(f"Timed out waiting for {path}: {last_error}")
+
+          try:
+              retry_get("/api/history")
+              status, created = request(
+                  "POST", "/api/games", {"mode": "HUMAN_VS_HUMAN"}
+              )
+              assert status == 201, (status, created)
+              game_id = created["id"]
+              status, moved = request(
+                  "POST", f"/api/games/{game_id}/moves",
+                  {"row": 3, "col": 4},
+              )
+              assert status == 200, (status, moved)
+              assert moved["game"]["move_count"] == 1
+              assert moved["game"]["board"][3][4] == "X"
+
+              subprocess.run(
+                  ["docker", "compose", "restart", "app"],
+                  check=True, timeout=60,
+              )
+              restored = retry_get(f"/api/games/{game_id}")
+              assert restored["move_count"] == 1
+              assert restored["board"][3][4] == "X"
+              assert restored["current_player"] == "O"
+
+              history = retry_get("/api/history?limit=10&offset=0")
+              records = [item for item in history["items"] if item["id"] == game_id]
+              assert len(records) == 1
+              assert records[0]["move_count"] == 1
+              print("Compose persistence smoke passed across API container restart.")
+          except Exception:
+              subprocess.run(
+                  ["docker", "compose", "logs", "--no-color", "app", "db"],
+                  check=False,
+              )
+              raise
+          PY
+      - name: Stop and remove disposable Compose resources
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+
   build:
     name: Build Docker image
-    needs: [frontend, test, postgres-integration]
+    needs: [frontend, test, postgres-integration, compose-smoke]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
