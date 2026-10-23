@@ -424,8 +424,6 @@ def collect_environment(
         "python_version": sys.version.replace("\n", " "),
         "python_executable": sys.executable,
         "argv": list(sys.argv),
-        "python_executable": sys.executable,
-        "argv": list(sys.argv),
         "platform": platform.platform(),
         "system": platform.system(),
         "machine": platform.machine(),
@@ -816,11 +814,26 @@ def write_outputs(
     return csv_path, json_path, report_path
 
 
-def main() -> int:
+def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--runs", type=int, default=5, help="Measured trials per fixture/difficulty (minimum 5)")
-    parser.add_argument("--warmup", type=int, default=1, help="Warm-up trials per fixture/difficulty (minimum 1)")
-    parser.add_argument("--output-dir", type=Path, default=REPORTS_DIR, help="Directory for report and raw data")
+    parser.add_argument(
+        "--runs",
+        type=int,
+        default=5,
+        help="Measured trials per fixture/difficulty (minimum 5)",
+    )
+    parser.add_argument(
+        "--warmup",
+        type=int,
+        default=1,
+        help="Warm-up trials per fixture/difficulty (minimum 1)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=REPORTS_DIR,
+        help="Directory for report and raw data",
+    )
     parser.add_argument(
         "--source-sha",
         default=os.environ.get("CAROAI_SOURCE_SHA"),
@@ -833,8 +846,10 @@ def main() -> int:
         parser.error("--warmup must be at least 1")
     if not args.output_dir.is_absolute():
         args.output_dir = ROOT / args.output_dir
+    return args
 
-    source_sha, source_sha_method = get_source_sha(args.source_sha)
+
+def benchmark_command(args: argparse.Namespace, source_sha: str) -> str:
     launcher = "py -3" if os.name == "nt" else "python3"
     command = (
         f"{launcher} scripts/benchmark_ai_sprint3.py --runs {args.runs} "
@@ -844,59 +859,102 @@ def main() -> int:
         command += f" --source-sha {source_sha}"
     if args.output_dir != REPORTS_DIR:
         command += f' --output-dir "{args.output_dir}"'
+    return command
+
+
+def run_measurements(
+    fixtures: list[dict[str, Any]],
+    runs: int,
+    warmup: int,
+    source_sha: str,
+    environment_id: str,
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for fixture in fixtures:
+        for difficulty in DIFFICULTY_CONFIG:
+            for _ in range(warmup):
+                record = run_trial(
+                    fixture,
+                    difficulty,
+                    trial=0,
+                    is_warmup=True,
+                    source_sha=source_sha,
+                    environment_id=environment_id,
+                )
+                records.append(record)
+            for trial in range(1, runs + 1):
+                record = run_trial(
+                    fixture,
+                    difficulty,
+                    trial=trial,
+                    is_warmup=False,
+                    source_sha=source_sha,
+                    environment_id=environment_id,
+                )
+                records.append(record)
+
+            recent = [
+                row["elapsed_ms"]
+                for row in records
+                if row["fixture"] == fixture["name"]
+                and row["difficulty"] == difficulty
+                and not row["is_warmup"]
+                and row["elapsed_ms"] is not None
+            ]
+            if recent:
+                trial_summary = f"median={statistics.median(recent):.3f} ms"
+            else:
+                trial_summary = "no valid timing samples"
+            print(f"  {fixture['name']} / {difficulty}: {trial_summary}")
+    return records
+
+
+def count_trial_failures(records: list[dict[str, Any]]) -> int:
+    return sum(
+        1
+        for row in records
+        if not row["is_warmup"]
+        and (
+            row["error_type"]
+            or not row["output_shape_valid"]
+            or not row["legal_move"]
+            or not row["board_unchanged"]
+            or row["expected_move_ok"] is False
+        )
+    )
+
+
+def main() -> int:
+    args = parse_arguments()
+    source_sha, source_sha_method = get_source_sha(args.source_sha)
+    command = benchmark_command(args, source_sha)
     environment = collect_environment(source_sha, command, source_sha_method)
     environment_id = f"{platform.system().lower()}-{source_sha[:12]}"
     fixtures = build_fixtures()
-    records: list[dict[str, Any]] = []
 
     print(
         f"Sprint 3 AI benchmark: {len(fixtures)} fixtures × "
         f"{len(DIFFICULTY_CONFIG)} difficulties × {args.runs} trials "
         f"plus {args.warmup} warm-up(s); SHA={source_sha}"
     )
-    for fixture in fixtures:
-        for difficulty in DIFFICULTY_CONFIG:
-            for warmup_index in range(1, args.warmup + 1):
-                record = run_trial(
-                    fixture, difficulty, trial=warmup_index, is_warmup=True,
-                    source_sha=source_sha, environment_id=environment_id,
-                )
-                record["trial"] = 0
-                records.append(record)
-            for trial in range(1, args.runs + 1):
-                record = run_trial(
-                    fixture, difficulty, trial=trial, is_warmup=False,
-                    source_sha=source_sha, environment_id=environment_id,
-                )
-                records.append(record)
-            recent = [
-                row["elapsed_ms"] for row in records
-                if row["fixture"] == fixture["name"]
-                and row["difficulty"] == difficulty
-                and not row["is_warmup"]
-                and row["elapsed_ms"] is not None
-            ]
-            print(
-                f"  {fixture['name']} / {difficulty}: "
-                f"median={statistics.median(recent):.3f} ms" if recent
-                else f"  {fixture['name']} / {difficulty}: no valid timing samples"
-            )
-
+    records = run_measurements(
+        fixtures, args.runs, args.warmup, source_sha, environment_id
+    )
     summaries = build_summaries(records, fixtures)
     outputs = write_outputs(
-        args.output_dir, environment, fixtures, records, summaries, args.runs, args.warmup
+        args.output_dir,
+        environment,
+        fixtures,
+        records,
+        summaries,
+        args.runs,
+        args.warmup,
     )
     print("Artifacts written:")
     for path in outputs:
         print(f"  {path}")
 
-    failures = sum(
-        1 for row in records
-        if not row["is_warmup"] and (
-            row["error_type"] or not row["output_shape_valid"] or not row["legal_move"]
-            or not row["board_unchanged"] or row["expected_move_ok"] is False
-        )
-    )
+    failures = count_trial_failures(records)
     print(f"Measured trial failures: {failures}")
     return 1 if failures else 0
 
