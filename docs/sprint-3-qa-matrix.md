@@ -22,7 +22,7 @@
 
 - The last previously verified M5 head is `b333273da91bc2e6bceb8be891ec91112681c9e2`; runs #260/#261 passed on that SHA only and do not cover later commits.
 - The earlier `cc25a0f5eaf075ed1cee58944114b99e0d43971a` with runs #250/#251 is historical. Counts 216 passed / 11 skipped / 1 warning and PostgreSQL acceptance 15 passed / 0 skipped belong only to `affbb23a90a12dd14f006d8ef692ffdead1e682c`, runs #231/#232. Run #219 on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36` is historical/pre-sync.
-- Latest supplied M3 PR #34 evidence: head `4d540c65f4963d154229214dd34e6dec8f679534`; Browser E2E run #32 passed 13/13 Playwright tests and CaroAI CI run #263 succeeded on that SHA. This is **PARTIAL — M3 PR-only evidence; not verified on M5 head; production/live smoke NOT RUN**.
+- Historical M3 PR #34 evidence: head `4d540c65f4963d154229214dd34e6dec8f679534`; Browser E2E run #32 passed 13/13 Playwright tests and CaroAI CI run #263 succeeded on that SHA. At that time, this was M3 PR-only evidence and did not establish M5-branch or production/live behavior. Current PR #38 Browser E2E evidence is recorded separately above in run #41 (13/13).
 
 ## Run context
 
