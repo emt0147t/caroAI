@@ -1,0 +1,59 @@
+name: Frontend Browser E2E
+on:
+  push:
+    branches: ["feature/frontend-sprint3-e2e-history"]
+  pull_request:
+    branches: [develop]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Install backend dependencies
+        run: python -m pip install -r requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Playwright
+        run: npm install
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start real API and frontend
+        run: docker compose up -d --build
+      - name: Wait for proxied API
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/health >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          docker compose ps
+          docker compose logs app frontend
+          exit 1
+      - name: Run browser E2E
+        run: npm run test:e2e
+        env:
+          CI: "true"
+          CAROAI_BASE_URL: http://127.0.0.1:8080
+      - name: Upload Playwright evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-evidence
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v
