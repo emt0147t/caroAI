@@ -52,7 +52,8 @@ Các endpoint dưới đây là danh sách từ Team Guide. Với mọi endpoint
 
 | Endpoint | Mục đích | Happy path cần kiểm tra | Invalid input / not found / game kết thúc | Response cần kiểm tra |
 |---|---|---|---|---|
-| `GET /health` | Kiểm tra health của ứng dụng; phạm vi health của database chờ M1 xác nhận | Khi ứng dụng và database hoạt động, endpoint trả success theo contract | Database unavailable: kiểm tra failure chỉ khi health contract hỗ trợ; không giả định status code/body | Success/failure theo schema và status đã được M1 chốt; hiện chờ M1 xác nhận |
+| `GET /health` | Liveness probe: kiểm tra ứng dụng còn phản hồi | Khi process/application hoạt động, endpoint trả trạng thái liveness theo implementation | Không dùng riêng `/health` để kết luận database sẵn sàng | Theo implementation hiện tại; liveness không thay thế database readiness |
+| `GET /ready` | Readiness probe: kiểm tra ứng dụng sẵn sàng phục vụ, bao gồm kết nối database | Khi application và PostgreSQL sẵn sàng, endpoint trả success | Khi database không sẵn sàng, endpoint phải báo readiness failure theo implementation | Kiểm tra kết quả readiness của database; không suy diễn production monitoring hoặc deployment status |
 | `POST /api/games` | Tạo game | Tạo được game cho mode được specification hỗ trợ; giá trị difficulty và điều kiện áp dụng chờ M1 xác nhận | Invalid input theo schema đã chốt; không áp dụng not found; điều kiện tạo game sau khi kết thúc không liên quan nếu chưa có contract | Kiểm tra dữ liệu game được trả về theo schema đã chốt; fields/status code chờ M1 xác nhận |
 | `GET /api/games/{game_id}` | Lấy thông tin game | Lấy game đã tồn tại | `game_id` không tồn tại cần not-found behavior theo contract; invalid ID format chờ M1 | Kiểm tra dữ liệu game theo response schema; không giả định thêm fields |
 | `POST /api/games/{game_id}/moves` | Ghi một move cho game | Gửi move hợp lệ theo request schema đã chốt và xác nhận game/move được xử lý | Tọa độ ngoài bàn, ô đã có quân, game không tồn tại; game đã kết thúc phải bị xử lý theo contract. Status/error response chờ M1 | Kiểm tra move/game data theo response schema đã chốt; không suy diễn fields hoặc status code |
@@ -116,25 +117,25 @@ Luồng kiểm thử dự kiến:
 
 M5 không tự định nghĩa hoặc kiểm thử chiến thuật, độ khó hay chất lượng AI nếu M2 chưa cung cấp behavior/criteria; API request/response thuộc M1 và runtime environment thuộc M4.
 
-## 7. Health Check Test
+## 7. Health and Readiness Check
 
-- Khi application và PostgreSQL hoạt động, gọi `GET /health`; endpoint phải trả success theo contract.
-- Nếu PostgreSQL unavailable, kiểm tra failure chỉ khi health contract quy định kiểm tra database dependency.
-- Không tự đặt status code, body, response fields, timeout hoặc retry behavior. Các chi tiết này chờ M1 xác nhận.
+- `GET /health` là **liveness**: xác nhận ứng dụng còn phản hồi; không coi đây là bằng chứng database đang sẵn sàng.
+- `GET /ready` là **database readiness**: kiểm tra readiness của ứng dụng với PostgreSQL dependency.
+- Khi PostgreSQL không khả dụng, xác minh `/ready` không báo ready; không suy diễn status code/body ngoài implementation hiện tại.
+- Các probe này không chứng minh public deployment, HTTPS hoặc production live smoke.
 
-## 8. Docker Smoke Test
+## 8. Docker Compose Smoke and Persistence Test
 
-Khi project có Docker Compose configuration, thực hiện smoke test theo thứ tự:
+Repository có `docker-compose.yml`. CI kiểm tra Compose stack và xác nhận persistence sau khi restart API container:
 
-1. Build image bằng `docker compose build`.
-2. Khởi động application container và PostgreSQL container theo cấu hình team.
-3. Xác nhận application kết nối được PostgreSQL.
-4. Gọi `GET /health` và kiểm tra kết quả theo contract.
-5. Tạo game thành công qua API đã chốt.
-6. Ghi một move hợp lệ.
-7. Đọc lại game và moves để xác nhận dữ liệu được lưu.
+1. Build Docker image.
+2. Khởi động API và PostgreSQL qua Compose.
+3. Tạo game và ghi move qua API.
+4. Restart API container trong khi database volume/service vẫn tồn tại.
+5. Đọc lại game/state/history để xác nhận dữ liệu đã commit còn tồn tại.
+6. Dọn disposable stack sau khi test kết thúc.
 
-Repository hiện chưa có Docker Compose configuration; test này phụ thuộc việc team cung cấp môi trường/configuration. Không giả định tên service, port, biến môi trường bổ sung hoặc migration command.
+Kết quả gần nhất được ghi nhận trên M5 head `affbb23a90a12dd14f006d8ef692ffdead1e682c`: [push CI run #231](https://github.com/emt0147t/caroAI/actions/runs/39921750450) và [pull_request CI run #232](https://github.com/emt0147t/caroAI/actions/runs/39922033030). Đây là smoke test trên **disposable CI Compose stack**, không chứng minh public deployment, HTTPS, production health hoặc persistence sau live redeploy.
 
 ## 9. Test Environment
 
@@ -142,8 +143,9 @@ Repository hiện chưa có Docker Compose configuration; test này phụ thuộ
 - **API client:** FastAPI `TestClient` hoặc `httpx` (chọn theo implementation/fixture của M1; `httpx` đã có trong `requirements.txt`).
 - **Database:** PostgreSQL tương thích với cấu hình SQLAlchemy của ứng dụng.
 - **Container smoke test:** Docker Compose nếu team cung cấp cấu hình.
-- **Test database/isolation:** Chưa có quyết định trong repository. Team cần chốt database riêng cho test, cách tạo/reset dữ liệu và cách cô lập test song song trước khi thực thi DB/integration tests.
-- **Schema setup:** Migration strategy chưa được chốt; không giả định test tự tạo schema bằng cách nào.
+- **Test database/isolation:** Dedicated PostgreSQL CI acceptance job dùng disposable test database/schema safeguards. PostgreSQL tests yêu cầu `TEST_DATABASE_URL` và `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`; test setup tạo/dọn schema riêng và không được trỏ tới production/shared database.
+- **Schema setup/migrations:** Repository có versioned migration runner. CI PostgreSQL acceptance bao gồm khởi tạo schema trên database rỗng, backfill public IDs hiện có và kiểm tra chạy migration idempotent.
+- **Current evidence:** [push CI run #231](https://github.com/emt0147t/caroAI/actions/runs/39921750450) và [pull_request CI run #232](https://github.com/emt0147t/caroAI/actions/runs/39922033030) đều xanh trên SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`; portable suite 216 passed, 11 skipped, 1 warning; dedicated PostgreSQL acceptance 15 passed, zero skipped.
 
 ## 10. Test Data
 
