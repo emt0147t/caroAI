@@ -182,12 +182,10 @@ Test plan Sprint 1 được coi là hoàn tất khi:
 3. **M1 — Difficulty:** Quy tắc null/bắt buộc cho `difficulty` theo `mode`.
 4. **M1 — Game ID:** Kiểu, format và validation của `game_id` trong API so với kiểu ID database.
 5. **M2 — AI:** AI design, AI contract, behavior và criteria cho AI move/legal move/hint/analyze. **M1:** API request/response và game-state contract liên quan. **M4:** runtime/deployment environment nếu cần. M5 chỉ lập test plan/QA coverage theo các contract đã xác nhận, không tự định nghĩa AI behavior.
-6. **Team — Test database:** Database riêng hay strategy khác, isolation/reset và hỗ trợ chạy test song song.
-7. **Team — Migration:** Cách thiết lập schema cho integration tests và môi trường smoke test.
-8. **M1/Team — Transaction:** Ranh giới transaction, rollback behavior và xử lý lỗi persistence cần được kiểm thử.
-9. **M1 — Database constraints:** Chấp thuận `UNIQUE (game_id, row, col)`, composite FK cho analysis, chính sách cascade và rules khác.
-10. **Team — Docker:** Dockerfile/Compose configuration, service readiness và cách cấu hình kết nối database.
-11. **M1 — History:** Phạm vi dữ liệu, thứ tự, pagination/filtering (nếu có) của `GET /api/history`.
+6. **M1/Team — Transaction:** Ranh giới transaction, rollback behavior và xử lý lỗi persistence cần được kiểm thử theo implementation/contract đã thống nhất.
+7. **M1 — Database constraints:** Chốt các constraint còn thuộc quyết định nghiệp vụ, gồm `UNIQUE (game_id, row, col)`, composite FK cho analysis, chính sách cascade và rules khác.
+8. **Team — Deployment:** Xác định deployment target và người chịu trách nhiệm public HTTPS/live smoke; đây là release dependency, không phải bằng chứng đã triển khai.
+9. **M1 — History:** Phạm vi dữ liệu, thứ tự, pagination/filtering (nếu có) của `GET /api/history`.
 
 
 
@@ -199,19 +197,19 @@ This section records observed status separately from planned tests. The detailed
 |---|---|---|
 | M5 baseline suite | Historical baseline passed on M5 branch at SHA 2dd55cda274d7112e6d3244a4b457768178e98f8 | 178 passed, 11 skipped, 1 warning on local Windows; exact Python version not recorded. This is not a test result for later commits. |
 | Persistence implementation on M5 branch | INTEGRATED and CI-VERIFIED | M5 commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5 includes SQLAlchemy persistence; run #155 passed. |
-| M5 CI suite | PASS | Run #197 on 3de3bc0477eb9a7308d175077e69e6d5d7141598: 194 passed, 11 skipped, 1 warning in 5.00 seconds. Pre-sync run #219 on b9a87fe0759dfe51074ce71f5e01cfb45f088f36 passed all five CI jobs; after syncing develop, merge commit e4f9452e684e0eeef5e08e9bbf443920c00dc484 requires a fresh CI pass; Flake8 and Docker Compose config validation passed. |
-| PostgreSQL integration / migrations | PASS | Pre-sync run #219 PostgreSQL service/API/migration acceptance passed with zero-skips guard on the latest M5 QA/docs commit. |
-| Compose persistence after API restart | PASS on M5 CI disposable stack | Pre-sync run #219 created/moved a game, restarted API, read persisted state and cleaned up the stack. This is not public deployment evidence. |
-| Draw persistence and corrupted-history rejection tests | PASS in Python suite | Run #197 Python suite: 194 passed, 11 skipped, 1 warning; run #203 then passed all five CI jobs on the latest QA docs commit. Dedicated draw persistence and four corrupted-history cases are present in tests/test_repository_persistence.py. |
-| Browser E2E | NOT RUN | No successful browser E2E result recorded. |
-| Deployed/live persistence | NOT RUN | No public HTTPS/live environment smoke test or deployed restart persistence evidence recorded.
+| M5 current-head CI evidence (pre-review cleanup) | PASS | On SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`, [push run #231](https://github.com/emt0147t/caroAI/actions/runs/39921750450) and [pull_request run #232](https://github.com/emt0147t/caroAI/actions/runs/39922033030) passed all five jobs. Portable suite: 216 passed, 11 skipped, 1 warning. This snapshot predates the review-fix documentation commits; those commits require fresh CI. |
+| PostgreSQL integration / migrations | PASS | Dedicated PostgreSQL acceptance in runs #231/#232: 15 passed, zero skipped. Disposable test DB/schema safeguards and versioned migration runner are implemented. |
+| Compose persistence after API restart | PASS on M5 CI disposable stack | Runs #231/#232 passed the Compose API/database persistence-after-restart job. This is not public deployment evidence. |
+| Draw persistence and corrupted-history rejection tests | PASS in Python suite | The portable suite in runs #231/#232 passed 216 tests with 11 skipped and 1 warning; dedicated draw persistence and four corrupted-history cases are present in `tests/test_repository_persistence.py`. |
+| Browser E2E | PARTIAL — M3 PR-only evidence; not verified on M5 head | PR #34 head `31a000989408d86ff6cdc863913f45d69832ce0a`: [pull_request run #30](https://github.com/emt0147t/caroAI/actions/runs/39916935723) passed 13/13 Playwright tests; [push run](https://github.com/emt0147t/caroAI/actions/runs/39916931396) failed on that same SHA. Neither is E2E evidence for the M5 head or production/live smoke. |
+| Deployed/live persistence | NOT RUN | Public HTTPS/live smoke and persistence after restart/redeploy in the deployed environment have no evidence. M1/M3/M4 own deployment/live validation; M5 records the evidence and limitation. |
 
 ### Evidence rules
 
 - Record the exact full commit SHA, command, environment, result, and workflow URL for every run.
-- Historical M1 PR #32 evidence must remain labeled as pre-merge evidence; current M5-branch full-suite count is from workflow run #197 on commit 3de3bc0477eb9a7308d175077e69e6d5d7141598. Pre-sync full CI evidence is [run #219](https://github.com/emt0147t/caroAI/actions/runs/39920451798) on commit b9a87fe0759dfe51074ce71f5e01cfb45f088f36; it does not validate the later merge commit e4f9452e684e0eeef5e08e9bbf443920c00dc484.
+- Historical M1 PR #32 evidence remains pre-merge only. The latest completed pre-review-cleanup M5 evidence is [push run #231](https://github.com/emt0147t/caroAI/actions/runs/39921750450) and [pull_request run #232](https://github.com/emt0147t/caroAI/actions/runs/39922033030) on SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`. Run #219 on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36` is historical/pre-sync only. The review-fix documentation commits need fresh CI.
 - SQLite evidence must not be presented as PostgreSQL evidence.
-- A successful workflow proves only the checks and commit recorded in that run; run #197 contains the recorded Python suite count; run #219 is the latest full CI evidence.
+- A successful workflow proves only the checks and commit recorded in that run. Runs #231/#232 are the pre-review-cleanup evidence snapshot; do not claim they validate later review-fix commits.
 - SKIPPED, NOT RUN, BLOCKED and PARTIAL are not PASS.
 - Draw persistence and four malformed-history cases are covered by the current Python suite. Keep browser E2E and deployed/live smoke open until corresponding evidence is recorded.
 
@@ -225,4 +223,4 @@ $env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
 python -m pytest tests/test_database_postgres.py -q
 ```
 
-The URL above is a placeholder, not a real credential. The pre-sync PostgreSQL acceptance job is from M5 branch commit b9a87fe0759dfe51074ce71f5e01cfb45f088f36, workflow run #219. A fresh CI run is required for the post-sync head. For any additional manual run, use only an explicitly disposable test database.
+The URL above is a placeholder, not a real credential. The current pre-review-cleanup PostgreSQL acceptance evidence is in runs #231/#232 on SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`. A fresh CI run is required for the review-fix head. For any additional manual run, use only an explicitly disposable test database.
