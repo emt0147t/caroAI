@@ -6,7 +6,7 @@
 - QA branch: feature/m5-sprint3-qa
 - Persistence integration commit: 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5
 - Evidence snapshot commit for Run #197: 3de3bc0477eb9a7308d175077e69e6d5d7141598
-- Latest CI-verified handover snapshot at Run #219: b9a87fe0759dfe51074ce71f5e01cfb45f088f36
+- Pre-sync CI-verified handover snapshot at Run #219: b9a87fe0759dfe51074ce71f5e01cfb45f088f36
 - Integration commit message: merge: integrate develop persistence into M5 QA branch
 - CI workflow run #155 (persistence integration commit): https://github.com/emt0147t/caroAI/actions/runs/39914292428
 - CI workflow run #171 (QA documentation head before additional persistence tests): https://github.com/emt0147t/caroAI/actions/runs/39914848382
@@ -14,14 +14,14 @@
 - CI workflow run #196 (previous QA docs commit): https://github.com/emt0147t/caroAI/actions/runs/39918306942
 - CI workflow run #197 (Python suite detail): https://github.com/emt0147t/caroAI/actions/runs/39918816443
 - CI workflow run #198 (previous docs snapshot): https://github.com/emt0147t/caroAI/actions/runs/39919251420
-- CI workflow run #219 (latest handover snapshot): https://github.com/emt0147t/caroAI/actions/runs/39920451798
+- CI workflow run #219 (pre-sync handover snapshot): https://github.com/emt0147t/caroAI/actions/runs/39920451798
 - Run #197 head SHA: 3de3bc0477eb9a7308d175077e69e6d5d7141598; overall SUCCESS; all five jobs passed.
 - Run #196 head SHA: 44367370ba5b16f7a2dfcc2908b63ebf3087f627; overall SUCCESS; all five jobs passed.
 - Run #181 head SHA: eeecfe569cc8b12cf5cc0f275ba4d5ced53a4192; overall SUCCESS; all five jobs passed.
 - Run #171 head SHA: b35e8059bb5ecb430214d4176a322385e8ed6688; overall SUCCESS; all five jobs passed.
 - CI head SHA: 3de3bc0477eb9a7308d175077e69e6d5d7141598
-- CI overall conclusion: SUCCESS (run #219; completed 2026-10-23)
-- CI jobs all passed in run #219: Run tests and lint; PostgreSQL service/API/migration acceptance; Compose API/database persistence after restart; frontend syntax and regression checks; Docker image build.
+- Pre-sync CI overall conclusion: SUCCESS (run #219 on b9a87fe; completed 2026-10-23)
+- CI jobs all passed in pre-sync run #219: Run tests and lint; PostgreSQL service/API/migration acceptance; Compose API/database persistence after restart; frontend syntax and regression checks; Docker image build.
 - Python suite: 194 passed, 11 skipped, 1 warning (run #197: 5.00 seconds).
 - Flake8: PASS, 0 issues. Docker Compose config validation: PASS.
 - PostgreSQL acceptance job: PASS, including the workflow's zero-skips guard.
@@ -92,7 +92,7 @@ The repository implementation has `_rebuild_state` checks for contiguous move nu
 - QA documentation workflow run #171: https://github.com/emt0147t/caroAI/actions/runs/39914848382 — SUCCESS on commit b35e8059bb5ecb430214d4176a322385e8ed6688.
 - Persistence test workflow run #181, attempt 2: https://github.com/emt0147t/caroAI/actions/runs/39916011771 — SUCCESS on commit eeecfe569cc8b12cf5cc0f275ba4d5ced53a4192; all five jobs passed.
 - Workflow run #197: https://github.com/emt0147t/caroAI/actions/runs/39918816443 — SUCCESS on code/test commit 3de3bc0477eb9a7308d175077e69e6d5d7141598; Python suite: 194 passed, 11 skipped, 1 warning in 5.00 seconds.
-- Latest completed workflow run #219: https://github.com/emt0147t/caroAI/actions/runs/39920451798 — SUCCESS on commit b9a87fe0759dfe51074ce71f5e01cfb45f088f36; all five jobs passed.
+- Pre-sync workflow run #219: https://github.com/emt0147t/caroAI/actions/runs/39920451798 — SUCCESS on commit b9a87fe0759dfe51074ce71f5e01cfb45f088f36; all five jobs passed. The branch was subsequently synced with develop at merge commit e4f9452e684e0eeef5e08e9bbf443920c00dc484; this run does not validate that merge commit.
 - All five jobs passed: Run tests and lint; PostgreSQL service/API/migration acceptance; Compose API/database persistence after restart; frontend syntax and regression checks; Docker image build.
 - Python suite: 189 passed, 11 skipped, 1 warning in 4.34 seconds. Flake8 reported 0 issues; Docker Compose config validation passed.
 - PostgreSQL acceptance passed with the zero-skips guard. Compose restart smoke passed on a disposable CI stack.
@@ -113,4 +113,4 @@ The repository implementation has `_rebuild_state` checks for contiguous move nu
 - Do not store credentials, tokens, or production database URLs in this file.
 - Dedicated draw persistence and four malformed-history corruption cases are implemented and passed in the Python suite on runs #181 and #197.
 - Browser E2E and public deployed/live smoke remain NOT RUN; the successful Compose smoke is limited to a disposable CI environment.
-- The latest completed CI evidence at this snapshot is run #219 on commit b9a87fe0759dfe51074ce71f5e01cfb45f088f36. The Python suite count of 194 passed, 11 skipped, 1 warning was captured in run #197 on the immediately preceding code-equivalent commit. Persistence integration originally landed at 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5 in run #155.
+- The pre-sync completed CI evidence is run #219 on commit b9a87fe0759dfe51074ce71f5e01cfb45f088f36. After syncing develop, the new merge head is e4f9452e684e0eeef5e08e9bbf443920c00dc484 and requires its own CI pass before PR. The Python suite count of 194 passed, 11 skipped, 1 warning was captured in run #197 on the immediately preceding code-equivalent commit. Persistence integration originally landed at 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5 in run #155.
