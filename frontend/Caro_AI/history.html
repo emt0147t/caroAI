@@ -67,10 +67,10 @@ function render(items) {
 async function loadHistory() {
   refresh.disabled = true; list.replaceChildren(); state.className = ''; state.textContent = 'Đang tải lịch sử từ Backend…';
   try {
-    const response = await fetch(API + '/api/games/history?limit=20&offset=0', { headers: { Accept: 'application/json' } });
+    const response = await fetch(API + '/api/history?limit=20&offset=0', { headers: { Accept: 'application/json' } });
     let data = null; try { data = await response.json(); } catch (_) {}
     if (!response.ok) {
-      if (response.status === 404) throw new Error('History API chưa khả dụng trên Backend. Lịch sử chưa thể hiển thị cho đến khi endpoint được triển khai.');
+      if (response.status === 404) throw new Error('History API hiện chưa khả dụng. Vui lòng thử lại sau.');
       throw new Error(data?.detail || ('Backend trả về HTTP ' + response.status));
     }
     const items = Array.isArray(data) ? data : (data?.items || data?.games);
