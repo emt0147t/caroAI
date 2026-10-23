@@ -72,15 +72,22 @@ The coordinates are illustrative; the actual move is selected by the AI. Unknown
 
 The AI endpoint computes and validates a move from a Backend-owned state snapshot, then persists the move and updated status/result in the same repository transaction. This describes the code in the Sprint 3 backend branch; PostgreSQL migration and live database smoke evidence remain pending.
 
-## Planned interfaces — not confirmed as implemented
+## Game History API
+
+### GET /api/history
+
+Returns persisted game summaries, newest first, for the MVP History UI. Optional query parameters are limit (default 50, range 1–100) and offset (default 0, non-negative). The response contains items, limit and offset. Each item contains the public ID, mode, status, result, started_at, ended_at and move_count. Use GET /api/games/{game_id} to retrieve the board. Query validation errors return HTTP 422; storage errors return HTTP 503.
+
+This endpoint does not imply user ownership/authentication, replay or analysis support.
+
+## Planned interfaces — not implemented
 
 | Interface | Status |
 |---|---|
-| `POST /api/games/{game_id}/hint` | Not confirmed as implemented in current routes |
-| `POST /api/games/{game_id}/analysis` | Not confirmed as implemented in current routes |
-| `GET /api/history` | Not confirmed as implemented; persistence contract remains open |
+| POST /api/games/{game_id}/hint | Not implemented in current routes |
+| POST /api/games/{game_id}/analysis | Not implemented in current routes |
 
-Do not treat these paths or earlier examples as callable APIs until their owners verify the routes and schemas.
+Do not treat these paths as callable APIs until their routes and schemas are implemented and verified.
 
 ## Error response format
 
@@ -94,6 +101,6 @@ The implemented game routes use `400` for invalid game actions, `404` for missin
 
 ## Runtime boundary
 
-Implemented routes → `GameService` → SQLAlchemy repository/unit-of-work → `games` and ordered `moves`; Backend `GameRules` remains authoritative. The API-facing `id` maps to `games.public_id` and BIGINT `games.id` is internal. Schema migration/backfill, disposable-PostgreSQL CI and deployed DB smoke remain follow-up gates. Hint, analysis and history routes are not active routes.
+Implemented game/history routes → `GameService` → SQLAlchemy repository/unit-of-work → `games` and ordered `moves`; Backend `GameRules` remains authoritative. The API-facing `id` maps to `games.public_id` and BIGINT `games.id` is internal. Versioned migration, disposable-PostgreSQL CI and runtime/deployment smoke remain acceptance gates. Hint and analysis routes are not implemented.
 
 See [game-domain.md](game-domain.md) for the implemented state/rules, [database-design.md](database-design.md) for the schema foundation and open decisions, and [test-plan.md](test-plan.md) for observed test evidence and blockers.
