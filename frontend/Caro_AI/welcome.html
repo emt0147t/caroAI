@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cờ Caro AI - Bắt đầu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#f4efeb;--card:#fff;--border:#e2d9d0;--ink:#2c2523;--sub:#786e65;--accent:#2b8a6e;--pale:#e8f3f0;--error:#b42318}
+    *{box-sizing:border-box;margin:0;padding:0;font-family:"Plus Jakarta Sans",system-ui,sans-serif}
+    body{min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg);color:var(--ink)}
+    .card{width:min(100%,480px);background:var(--card);border:1px solid var(--border);border-radius:26px;padding:36px;box-shadow:0 20px 40px #3c28140f}
+    .logo{width:68px;height:68px;display:grid;place-items:center;margin:0 auto 16px;border-radius:20px;background:var(--ink);color:white;font-size:2rem;font-weight:800}
+    h1{text-align:center;font-size:2rem;font-weight:800;letter-spacing:-.5px}
+    .subtitle{text-align:center;color:var(--sub);font-size:.92rem;line-height:1.6;margin:10px 0 30px}
+    .group{margin:20px 0}.label{display:block;margin-bottom:10px;color:var(--sub);font-size:.82rem;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+    .choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .choice{border:1.5px solid var(--border);border-radius:13px;padding:13px 10px;background:#faf7f4;color:var(--ink);font-weight:700;cursor:pointer}
+    .choice[aria-pressed="true"]{border-color:var(--accent);background:var(--pale);color:var(--accent)}
+    select{width:100%;padding:13px;border:1px solid var(--border);border-radius:12px;background:#faf7f4;color:var(--ink);font-weight:600}
+    .start{width:100%;margin-top:12px;padding:15px;border:0;border-radius:14px;background:var(--ink);color:white;font-size:1rem;font-weight:800;cursor:pointer}
+    button:disabled,select:disabled{opacity:.6;cursor:wait}
+    .message{margin-top:14px;padding:12px;border-radius:10px;background:#fef3f2;color:var(--error);font-size:.9rem;line-height:1.5}
+    .hidden{display:none!important}.foot{text-align:center;color:var(--sub);font-size:.78rem;margin-top:20px}
+    @media(max-width:480px){.card{padding:26px 20px}h1{font-size:1.7rem}}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="logo" aria-hidden="true">#</div>
+    <h1>Cờ Caro AI</h1>
+    <p class="subtitle">Chọn cách chơi và bắt đầu ván mới. Trạng thái và luật chơi được xử lý bởi Backend.</p>
+    <section class="group" aria-labelledby="modeLabel">
+      <span id="modeLabel" class="label">Chế độ chơi</span>
+      <div class="choices">
+        <button class="choice" type="button" data-mode="HUMAN_VS_HUMAN" aria-pressed="true">Người vs Người</button>
+        <button class="choice" type="button" data-mode="HUMAN_VS_AI" aria-pressed="false">Người vs AI</button>
+      </div>
+    </section>
+    <section class="group hidden" id="difficultyGroup">
+      <label class="label" for="difficulty">Độ khó AI</label>
+      <select id="difficulty">
+        <option value="easy">Dễ</option>
+        <option value="medium" selected>Trung bình</option>
+        <option value="hard">Khó</option>
+      </select>
+    </section>
+    <button id="startBtn" class="start" type="button">Bắt đầu ván đấu →</button>
+    <p id="message" class="message hidden" role="alert"></p>
+    <p class="foot">Bàn cờ 15 × 15 · X đi trước · <a href="history.html">Xem lịch sử ván đấu</a></p>
+  </main>
+  <script>
+    // Configure a separate backend origin by setting window.CAROAI_API_BASE_URL before this script.
+    const API = String(window.CAROAI_API_BASE_URL || "").replace(/\/$/, "");
+    let selectedMode = "HUMAN_VS_HUMAN";
+    const choices = [...document.querySelectorAll("[data-mode]")];
+    const difficultyGroup = document.getElementById("difficultyGroup");
+    const difficulty = document.getElementById("difficulty");
+    const start = document.getElementById("startBtn");
+    const message = document.getElementById("message");
+    choices.forEach(button => button.addEventListener("click", () => {
+      selectedMode = button.dataset.mode;
+      choices.forEach(item => item.setAttribute("aria-pressed", String(item === button)));
+      difficultyGroup.classList.toggle("hidden", selectedMode !== "HUMAN_VS_AI");
+      message.classList.add("hidden");
+    }));
+    start.addEventListener("click", async () => {
+      if (start.disabled) return;
+      start.disabled = true;
+      message.classList.add("hidden");
+      start.textContent = "Đang tạo ván...";
+      try {
+        const response = await fetch(API + "/api/games", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: selectedMode })
+        });
+        let data = null;
+        try { data = await response.json(); } catch (_) {}
+        if (!response.ok) throw new Error(data?.detail || ("HTTP " + response.status));
+        if (!data?.id) throw new Error("Backend không trả về game ID hợp lệ.");
+        const params = new URLSearchParams({ game_id: data.id, mode: data.mode, difficulty: selectedMode === "HUMAN_VS_AI" ? difficulty.value : "medium" });
+        window.location.href = "trong_tran/index.html?" + params.toString();
+      } catch (error) {
+        message.textContent = error instanceof TypeError
+          ? "Không kết nối được Backend. Hãy kiểm tra server, CORS và API base URL."
+          : "Không thể tạo ván: " + error.message;
+        message.classList.remove("hidden");
+      } finally {
+        start.disabled = false;
+        start.textContent = "Bắt đầu ván đấu →";
+      }
+    });
+  </script>
+</body>
+</html>
