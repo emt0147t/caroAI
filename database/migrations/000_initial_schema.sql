@@ -11,18 +11,16 @@ CREATE TABLE IF NOT EXISTS games (
     started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     ended_at TIMESTAMPTZ
 );
-CREATE UNIQUE INDEX IF NOT EXISTS ix_games_public_id ON games (public_id);
-
 CREATE TABLE IF NOT EXISTS moves (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     game_id BIGINT NOT NULL REFERENCES games(id),
     player CHAR(1) NOT NULL,
-    row SMALLINT NOT NULL,
-    col SMALLINT NOT NULL,
+    "row" SMALLINT NOT NULL,
+    "col" SMALLINT NOT NULL,
     move_number INTEGER NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT ck_moves_row_on_board CHECK (row >= 0 AND row <= 14),
-    CONSTRAINT ck_moves_col_on_board CHECK (col >= 0 AND col <= 14),
+    CONSTRAINT ck_moves_row_on_board CHECK ("row" >= 0 AND "row" <= 14),
+    CONSTRAINT ck_moves_col_on_board CHECK ("col" >= 0 AND "col" <= 14),
     CONSTRAINT ck_moves_player_x_or_o CHECK (player IN ('X', 'O')),
     CONSTRAINT ck_moves_move_number_positive CHECK (move_number > 0),
     CONSTRAINT uq_moves_game_move_number UNIQUE (game_id, move_number)
