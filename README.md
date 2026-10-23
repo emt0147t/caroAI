@@ -1,6 +1,6 @@
 # CaroAI
 
-CaroAI is a 15 × 15 Caro game with a FastAPI backend, an in-memory game service, a Python AI package, and a static frontend. The repository also contains a PostgreSQL/SQLAlchemy schema foundation. **Game creation and moves currently live only in process memory**; PostgreSQL persistence, migrations, and database-backed gameplay are not integrated.
+CaroAI is a 15 × 15 Caro game with a FastAPI backend, Python AI package, and static frontend. The Sprint 3 backend branch adds a SQLAlchemy repository that persists games and ordered moves while keeping UUID-shaped public game IDs. The code requires PostgreSQL schema migration for the new `games.public_id` column before it can run against an existing database; M4 owns that migration and the live PostgreSQL/deployment verification.
 
 ## Repository layout
 
@@ -43,7 +43,7 @@ python -m pytest tests/test_games_api.py -q
 
 PostgreSQL checks in `tests/test_database_postgres.py` are opt-in and create/drop a unique schema. They require a **disposable PostgreSQL test database** with permission to create and drop schemas. Set `TEST_DATABASE_URL` to that database and, only after verifying the target is disposable, set `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`. The fixture also requires the database name to visibly include `test` and rejects names marked `prod` or `live`. Do not point it at production or shared data. No DB tests run without these settings.
 
-The current PostgreSQL suite checks SQLAlchemy models directly through database sessions; it does not verify persistence through `GameService` or the API.
+The opt-in PostgreSQL suite in `tests/test_database_postgres.py` checks SQLAlchemy models/sessions directly. The new `tests/test_repository_persistence.py` exercises service/API persistence and rollback using SQLite; it is portable regression evidence, not a substitute for running the same integration path against disposable PostgreSQL.
 
 Example PowerShell setup (replace the placeholder with a local disposable test database URL):
 
@@ -53,11 +53,11 @@ $env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
 python -m pytest tests/test_database_postgres.py -q
 ```
 
-`DATABASE_URL` is read by the application database helper if/when database access is invoked. It is not needed to start the current in-memory API. The repository has no migration tool or schema migration command yet. See [database design](docs/database-design.md) for current tables and unresolved decisions.
+The API routes now create a request-scoped SQLAlchemy repository and require `DATABASE_URL`. The versioned migration/backfill for `games.public_id` is still pending under [Issue #30](https://github.com/emt0147t/caroAI/issues/30); do not run this branch against an existing PostgreSQL schema until that migration is applied. See [database design](docs/database-design.md).
 
 ## Current boundaries
 
-- The game API supports create, get, human moves, and `POST /api/games/{game_id}/ai-move`. The AI endpoint is implemented, but game state is still process-local and is not persisted to PostgreSQL.
+- The game API supports create, get, human moves, and `POST /api/games/{game_id}/ai-move`. The Sprint 3 repository implementation stores games and ordered moves through SQLAlchemy; PostgreSQL-specific migration/runtime acceptance is still pending.
 - Health reports application availability; it does not check PostgreSQL.
 - AI move is wired into the game routes. Hint and analysis endpoints are not confirmed as implemented.
 - Docker and CI files exist. Their runtime/database smoke behavior is owned by M4 and is not claimed as verified here.

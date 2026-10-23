@@ -1,1 +1,1 @@
-"""Developer scripts for reproducible CaroAI experiments."""
+"""Operational scripts for CaroAI."""
