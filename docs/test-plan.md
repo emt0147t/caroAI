@@ -207,11 +207,11 @@ This section records observed status separately from planned tests. The detailed
 ### Evidence rules
 
 - Record the exact full commit SHA, command, environment, result, and workflow URL for every run.
-- M1 PR/merged-develop evidence must not be presented as a result from feature/m5-sprint3-qa.
+- Historical M1 PR #32 evidence must remain labeled as pre-merge evidence; current M5-branch status is supported by workflow run #155 on commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5.
 - SQLite evidence must not be presented as PostgreSQL evidence.
-- A successful PR workflow does not prove the same behavior on the M5 branch.
+- A successful workflow proves only the checks and commit recorded in that run; run #155 is the current M5-branch evidence.
 - SKIPPED, NOT RUN, BLOCKED and PARTIAL are not PASS.
-- Keep unresolved draw, malformed-history, current-branch integration, browser and live-smoke checks open until corresponding evidence is recorded.
+- Keep dedicated draw persistence, malformed-history corruption tests, browser E2E and deployed/live smoke open until corresponding evidence is recorded.
 
 ### PostgreSQL test safety and manual command
 
