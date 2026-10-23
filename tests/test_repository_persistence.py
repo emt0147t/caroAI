@@ -273,3 +273,48 @@ def test_create_and_move_routes_do_not_read_state_after_write_commit(
             assert moved.json()["game"]["move_count"] == 1
     finally:
         app.dependency_overrides.pop(get_game_service, None)
+
+
+@pytest.mark.parametrize(
+    ("corruption", "expected_message"),
+    [
+        ("non_contiguous_numbers", "not contiguous"),
+        ("wrong_player_turn", "player turns"),
+        ("illegal_occupied_cell", "violates the game rules"),
+        ("status_result_mismatch", "status/result is inconsistent"),
+    ],
+)
+def test_repository_rejects_corrupted_persisted_history(
+    database, corruption, expected_message
+):
+    _engine, session_factory = database
+    with session_factory() as session:
+        game_id = GameService(SQLAlchemyGameRepository(session)).create_game(
+            GameMode.HUMAN_VS_HUMAN
+        )
+        record = session.query(Game).filter_by(public_id=game_id).one()
+
+        if corruption == "non_contiguous_numbers":
+            session.add_all([
+                Move(game_id=record.id, player="X", row=0, col=0, move_number=1),
+                Move(game_id=record.id, player="O", row=1, col=1, move_number=3),
+            ])
+        elif corruption == "wrong_player_turn":
+            session.add(
+                Move(game_id=record.id, player="O", row=0, col=0, move_number=1)
+            )
+        elif corruption == "illegal_occupied_cell":
+            session.add_all([
+                Move(game_id=record.id, player="X", row=0, col=0, move_number=1),
+                Move(game_id=record.id, player="O", row=1, col=1, move_number=2),
+                Move(game_id=record.id, player="X", row=0, col=0, move_number=3),
+            ])
+        else:
+            record.status = GameStatus.X_WON.value
+            record.result = GameStatus.X_WON.value
+        session.commit()
+
+    with session_factory() as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        with pytest.raises(GamePersistenceError, match=expected_message):
+            service.get_game(game_id)
