@@ -2,15 +2,12 @@
 
 ## Current-head evidence snapshot (2026-10-23)
 
-- M5 head SHA at review: `affbb23a90a12dd14f006d8ef692ffdead1e682c`.
-- Push CI: [run #231](https://github.com/emt0147t/caroAI/actions/runs/39921750450) — all 5 jobs passed.
-- Pull-request CI: [run #232](https://github.com/emt0147t/caroAI/actions/runs/39922033030) — all 5 jobs passed.
-- Portable Python suite: **216 passed, 11 skipped, 1 warning**.
-- Dedicated PostgreSQL acceptance: **15 passed, zero skipped**.
-- Compose persistence after API restart: passed on a disposable CI stack.
-- Frontend syntax/regression: passed; Docker image build: passed.
-- These runs validate SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`, not subsequent documentation commits. New CI runs are required after this review-fix commit.
-- Historical/pre-sync only: [run #219](https://github.com/emt0147t/caroAI/actions/runs/39920451798) on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36`; it is not current-head evidence.
+- Final review-fix head SHA: `cc25a0f5eaf075ed1cee58944114b99e0d43971a`.
+- Push CI: [run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) — all five required validation jobs passed on this exact SHA.
+- Pull-request CI: [run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) — all five required validation jobs passed on the same SHA; production publish/deploy verification was skipped by design.
+- The five successful validation jobs cover Python tests/lint, PostgreSQL service/API/migration acceptance, Compose persistence after API restart, frontend syntax/regression, and Docker image build.
+- Detailed counts from the pre-review-cleanup snapshot only: [push #231](https://github.com/emt0147t/caroAI/actions/runs/39921750450) and [pull_request #232](https://github.com/emt0147t/caroAI/actions/runs/39922033030), SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`: portable suite 216 passed, 11 skipped, 1 warning; dedicated PostgreSQL acceptance 15 passed, zero skipped.
+- Historical/pre-sync only: [run #219](https://github.com/emt0147t/caroAI/actions/runs/39920451798) on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36`.
 
 ## Run context
 
@@ -75,7 +72,7 @@
 | QA-13 | PostgreSQL API acceptance | Human moves, terminal X win, AI move, history metadata | PASSED on M5 commit | M1/M4/M5 | CI run #155 PostgreSQL API acceptance passed |
 | QA-14 | PostgreSQL migration | Initialize empty DB; backfill existing public IDs; idempotent rerun | PASSED on M5 commit | M1/M4/M5 | CI run #155 PostgreSQL service/API/migration acceptance passed |
 | QA-15 | Compose persistence across API restart | Compose stack: create game, move, restart API container, GET state/history | PASSED on M5 commit (CI disposable stack) | M1/M4/M5 | CI run #155 Compose API/database persistence after restart passed |
-| QA-16 | Browser E2E | Verify PvP/PvAI and history in browser against Compose/API/frontend | PARTIAL — M3 PR-only evidence; not run on M5 head | M3/M5 | PR #34 head `31a000989408d86ff6cdc863913f45d69832ce0a`: [pull_request run #30](https://github.com/emt0147t/caroAI/actions/runs/39916935723) passed 13/13 Playwright tests; [push run](https://github.com/emt0147t/caroAI/actions/runs/39916931396) failed on same SHA. Neither validates M5 SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c` or production/live smoke |
+| QA-16 | Browser E2E | Verify PvP/PvAI and history in browser against Compose/API/frontend | PARTIAL — M3 PR-only evidence; not verified on M5 head | M3/M5 | PR #34 head `31a000989408d86ff6cdc863913f45d69832ce0a`: [pull_request run #30](https://github.com/emt0147t/caroAI/actions/runs/39916935723) passed 13/13 Playwright tests; [push run](https://github.com/emt0147t/caroAI/actions/runs/39916931396) failed on same SHA. Neither validates final M5 SHA `cc25a0f5eaf075ed1cee58944114b99e0d43971a` or production/live smoke |
 | QA-17 | Publish/deploy/live smoke | Verify image publication, public HTTPS and persistence after deployment restart | NOT RUN | M1/M3/M4 (M5 records evidence only) | No deployment/live-smoke evidence identified; keep Issue #31 open until owners complete or team explicitly accepts the gap
 
 ## Merged M1 implementation test inventory (not M5-branch proof)
@@ -101,11 +98,13 @@ The repository implementation has `_rebuild_state` checks for contiguous move nu
 
 ## CI evidence and limitations
 
+- Final review-fix head `cc25a0f5eaf075ed1cee58944114b99e0d43971a`: [push run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) both passed all five required validation jobs. The publish/deploy verification job in #251 was skipped by design.
+- Pre-review-cleanup detailed-count snapshot `affbb23a90a12dd14f006d8ef692ffdead1e682c`: [push run #231](https://github.com/emt0147t/caroAI/actions/runs/39921750450) and [pull_request run #232](https://github.com/emt0147t/caroAI/actions/runs/39922033030); portable suite 216 passed, 11 skipped, 1 warning; PostgreSQL acceptance 15 passed, zero skipped.
 - Persistence integration workflow run #155: https://github.com/emt0147t/caroAI/actions/runs/39914292428 — SUCCESS on commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5.
 - QA documentation workflow run #171: https://github.com/emt0147t/caroAI/actions/runs/39914848382 — SUCCESS on commit b35e8059bb5ecb430214d4176a322385e8ed6688.
 - Persistence test workflow run #181, attempt 2: https://github.com/emt0147t/caroAI/actions/runs/39916011771 — SUCCESS on commit eeecfe569cc8b12cf5cc0f275ba4d5ced53a4192; all five jobs passed.
 - Workflow run #197: https://github.com/emt0147t/caroAI/actions/runs/39918816443 — SUCCESS on code/test commit 3de3bc0477eb9a7308d175077e69e6d5d7141598; Python suite: 194 passed, 11 skipped, 1 warning in 5.00 seconds.
-- Pre-sync workflow run #219: https://github.com/emt0147t/caroAI/actions/runs/39920451798 — SUCCESS on commit b9a87fe0759dfe51074ce71f5e01cfb45f088f36; all five jobs passed. The branch was subsequently synced with develop at merge commit e4f9452e684e0eeef5e08e9bbf443920c00dc484; this run does not validate that merge commit.
+- Pre-sync workflow run #219: https://github.com/emt0147t/caroAI/actions/runs/39920451798 — SUCCESS on commit b9a87fe0759dfe51074ce71f5e01cfb45f088f36; all five jobs passed. Run #219 is historical/pre-sync evidence only and does not validate the final review-fix head.
 - All five jobs passed: Run tests and lint; PostgreSQL service/API/migration acceptance; Compose API/database persistence after restart; frontend syntax and regression checks; Docker image build.
 - Python suite: 189 passed, 11 skipped, 1 warning in 4.34 seconds. Flake8 reported 0 issues; Docker Compose config validation passed.
 - PostgreSQL acceptance passed with the zero-skips guard. Compose restart smoke passed on a disposable CI stack.
