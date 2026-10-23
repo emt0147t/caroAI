@@ -21,6 +21,15 @@ DATABASE_URL_ENV = "DATABASE_URL"
 SessionLocal = sessionmaker(autocommit=False, autoflush=False)
 
 
+def normalize_database_url(database_url: str) -> str:
+    """Use the PostgreSQL driver installed by this project for common URL forms."""
+    if database_url.startswith("postgres://"):
+        return "postgresql+psycopg2://" + database_url[len("postgres://"):]
+    if database_url.startswith("postgresql://"):
+        return "postgresql+psycopg2://" + database_url[len("postgresql://"):]
+    return database_url
+
+
 @lru_cache(maxsize=1)
 def get_engine() -> Engine:
     """Return the shared SQLAlchemy engine configured from DATABASE_URL."""
@@ -30,7 +39,7 @@ def get_engine() -> Engine:
             f"Environment variable {DATABASE_URL_ENV} is required to connect to PostgreSQL."
         )
 
-    return create_engine(database_url, pool_pre_ping=True)
+    return create_engine(normalize_database_url(database_url), pool_pre_ping=True)
 
 
 def get_db() -> Generator[Session, None, None]:

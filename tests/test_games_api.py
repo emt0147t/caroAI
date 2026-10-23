@@ -1,11 +1,22 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.api.dependencies import get_game_service
+from app.db.repository import InMemoryGameRepository
 from app.main import app
+from app.services.game_service import GameService
 from app.services import game_service as game_service_module
 
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def isolate_test_repository():
+    repository = InMemoryGameRepository()
+    app.dependency_overrides[get_game_service] = lambda: GameService(repository)
+    yield
+    app.dependency_overrides.pop(get_game_service, None)
 
 
 def test_create_game():
@@ -37,7 +48,7 @@ def test_make_first_move():
 
     response = client.post(
         f"/api/games/{game_id}/moves",
-        json={"row": 7, "col": 7},
+        json={"row": 7, "col": 8},
     )
 
     assert response.status_code == 200
@@ -45,7 +56,7 @@ def test_make_first_move():
     data = response.json()
 
     assert data["move"]["row"] == 7
-    assert data["move"]["col"] == 7
+    assert data["move"]["col"] == 8
     assert data["move"]["player"] == "X"
     assert data["move"]["move_number"] == 1
 

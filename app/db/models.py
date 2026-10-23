@@ -1,9 +1,5 @@
-"""SQLAlchemy models for the confirmed portions of the Sprint 1 design.
-
-Open contract decisions are deliberately not encoded here. See
-docs/database-design.md and the TODO comments below before tightening the
-schema.
-"""
+"""SQLAlchemy models for CaroAI persistence."""
+from uuid import uuid4
 
 from sqlalchemy import (
     BigInteger,
@@ -29,16 +25,32 @@ Base = declarative_base()
 
 
 class Game(Base):
-    """A persisted Caro game."""
+    """A persisted Caro game.
+
+    `id` is the internal database key. `public_id` preserves the existing
+    UUID-shaped API identifier and is the value exposed to clients.
+    """
 
     __tablename__ = "games"
 
-    id = Column(BigInteger, Identity(always=True), primary_key=True)
+    id = Column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        Identity(always=True),
+        primary_key=True,
+    )
+    public_id = Column(
+        String(36),
+        nullable=False,
+        unique=True,
+        index=True,
+        default=lambda: str(uuid4()),
+    )
     mode = Column(String(32), nullable=False)
     difficulty = Column(String(16), nullable=True)
     status = Column(
         String(16), nullable=False, server_default=text("'IN_PROGRESS'")
     )
+    # result is NULL while in progress; terminal values are X_WON, O_WON, or DRAW.
     result = Column(String(16), nullable=True)
     started_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -48,11 +60,9 @@ class Game(Base):
     moves = relationship("Move", back_populates="game")
     analyses = relationship("GameAnalysis", back_populates="game")
 
-    # TODO(M1): Confirm enum enforcement strategy (PostgreSQL ENUM vs CHECK)
-    # and the complete allowed values before adding database constraints.
-    # TODO(M1): Confirm status/result consistency and transition semantics.
-    # TODO(M1): Confirm whether difficulty nullability depends on mode.
-    # TODO(M1/Team): Confirm BIGINT identity against the application/API ID contract.
+    # TODO(M1): Confirm enum enforcement strategy and allowed mode/status values.
+    # TODO(M1/M4): Migrate existing rows to populated public_id values before
+    # making this column required in any already-provisioned database.
 
 
 class Move(Base):
@@ -67,7 +77,11 @@ class Move(Base):
         UniqueConstraint("game_id", "move_number", name="uq_moves_game_move_number"),
     )
 
-    id = Column(BigInteger, Identity(always=True), primary_key=True)
+    id = Column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        Identity(always=True),
+        primary_key=True,
+    )
     game_id = Column(BigInteger, ForeignKey("games.id"), nullable=False)
     player = Column(CHAR(1), nullable=False)
     row = Column(SmallInteger, nullable=False)
@@ -78,10 +92,6 @@ class Move(Base):
     )
 
     game = relationship("Game", back_populates="moves")
-
-    # TODO(M1): Confirm whether UNIQUE (game_id, row, col) is compatible with
-    # undo/replay behavior before adding it.
-    # TODO(M1/Team): Confirm delete behavior; no database or ORM cascade is set.
 
 
 class GameAnalysis(Base):
@@ -99,7 +109,11 @@ class GameAnalysis(Base):
         ),
     )
 
-    id = Column(BigInteger, Identity(always=True), primary_key=True)
+    id = Column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        Identity(always=True),
+        primary_key=True,
+    )
     game_id = Column(BigInteger, ForeignKey("games.id"), nullable=False, index=True)
     move_id = Column(BigInteger, ForeignKey("moves.id"), nullable=True)
     score = Column(DOUBLE_PRECISION, nullable=True)
@@ -109,8 +123,3 @@ class GameAnalysis(Base):
     explanation = Column(Text, nullable=True)
 
     game = relationship("Game", back_populates="analyses")
-
-    # TODO(M1/Team): Confirm whether move_id needs a composite FK with game_id.
-    # TODO(M1/Team): Confirm analysis cardinality; intentionally no UNIQUE on
-    # move_id and no ORM relationship to Move are defined.
-    # TODO(M1): Confirm score/classification types and any allowed value ranges.

@@ -9,6 +9,12 @@ on:
     branches:
       - develop
   workflow_dispatch:
+    inputs:
+      release_approved:
+        description: "Request production release; production Environment review is independently required"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -18,67 +24,292 @@ jobs:
     name: Frontend syntax and regression checks
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
-
-      - name: Check game JavaScript syntax
-        run: node --check frontend/Caro_AI/trong_tran/script.js
-
-      - name: Run frontend regression tests
-        run: node --test tests/frontend-regression.test.cjs
+      - run: node --check frontend/Caro_AI/trong_tran/script.js
+      - run: node --test tests/frontend-regression.test.cjs
 
   test:
-    name: Run tests and lint
+    name: Python tests and lint
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: pip
           cache-dependency-path: requirements-dev.txt
-
-      - name: Install development dependencies
-        run: |
+      - run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
-
-      - name: Run flake8
-        run: |
-          python -m flake8 app tests \
+      - run: |
+          python -m flake8 app tests scripts \
             --count \
             --max-complexity=10 \
             --max-line-length=127 \
             --statistics
+      - run: python -m pytest -q tests/
+      - run: docker compose config --quiet
 
-      - name: Run pytest
-        run: python -m pytest -q tests/
+  postgres-integration:
+    name: PostgreSQL service/API/migration acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: caroai_test
+          POSTGRES_USER: caroai_test
+          POSTGRES_PASSWORD: caroai_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U caroai_test -d caroai_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg2://caroai_test:caroai_test_password@localhost:5432/caroai_test
+      CAROAI_TEST_DATABASE_CONFIRMED: disposable-test-database
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+      - name: Run PostgreSQL model and application acceptance tests
+        run: >-
+          python -m pytest -q
+          tests/test_database_postgres.py tests/postgres_suite.py
+          --junitxml=postgres-junit.xml
+      - name: Fail if any PostgreSQL acceptance test was skipped
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          root = ET.parse("postgres-junit.xml").getroot()
+          skipped = root.findall(".//skipped")
+          if skipped:
+              raise SystemExit(
+                  f"PostgreSQL acceptance suite skipped {len(skipped)} test(s)"
+              )
+          print("PostgreSQL acceptance suite completed with zero skipped tests.")
+          PY
 
-      - name: Validate Docker Compose
-        run: docker compose config --quiet
+  compose-smoke:
+    name: Compose API/database persistence after restart
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POSTGRES_DB: caroai_test
+      POSTGRES_USER: caroai_test
+      POSTGRES_PASSWORD: caroai_smoke_password
+      APP_PORT: "8000"
+      FRONTEND_PORT: "8080"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start disposable Compose stack
+        run: |
+          if ! docker compose up --build -d; then
+            docker compose ps
+            docker compose logs --no-color db app
+            exit 1
+          fi
+      - name: Verify create/move, restart the API, and read persisted state
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          import time
+          import urllib.request
+
+          BASE = "http://127.0.0.1:8000"
+
+          def request(method, path, payload=None):
+              body = None if payload is None else json.dumps(payload).encode()
+              headers = {"Content-Type": "application/json"} if body else {}
+              req = urllib.request.Request(
+                  BASE + path, data=body, headers=headers, method=method
+              )
+              with urllib.request.urlopen(req, timeout=5) as response:
+                  return response.status, json.loads(response.read().decode())
+
+          def retry_get(path):
+              last_error = None
+              for _ in range(30):
+                  try:
+                      status, body = request("GET", path)
+                      if status == 200:
+                          return body
+                      last_error = RuntimeError(f"{path}: HTTP {status}")
+                  except Exception as exc:
+                      last_error = exc
+                  time.sleep(2)
+              raise RuntimeError(f"Timed out waiting for {path}: {last_error}")
+
+          try:
+              retry_get("/api/history")
+              status, created = request(
+                  "POST", "/api/games", {"mode": "HUMAN_VS_HUMAN"}
+              )
+              assert status == 201, (status, created)
+              game_id = created["id"]
+              status, moved = request(
+                  "POST", f"/api/games/{game_id}/moves",
+                  {"row": 3, "col": 4},
+              )
+              assert status == 200, (status, moved)
+              assert moved["game"]["move_count"] == 1
+              assert moved["game"]["board"][3][4] == "X"
+
+              subprocess.run(
+                  ["docker", "compose", "restart", "app"],
+                  check=True, timeout=60,
+              )
+              restored = retry_get(f"/api/games/{game_id}")
+              assert restored["move_count"] == 1
+              assert restored["board"][3][4] == "X"
+              assert restored["current_player"] == "O"
+
+              history = retry_get("/api/history?limit=10&offset=0")
+              records = [item for item in history["items"] if item["id"] == game_id]
+              assert len(records) == 1
+              assert records[0]["move_count"] == 1
+              print("Compose persistence smoke passed across API container restart.")
+          except Exception:
+              subprocess.run(
+                  ["docker", "compose", "logs", "--no-color", "app", "db"],
+                  check=False,
+              )
+              raise
+          PY
+      - name: Stop and remove disposable Compose resources
+        if: always()
+        run: docker compose down --volumes --remove-orphans
 
   build:
-    name: Build Docker image
-    needs: [frontend, test]
+    name: Docker image build (no publish/deploy)
+    needs: [frontend, test, postgres-integration, compose-smoke]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build SHA-tagged candidate image without publishing
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: false
+          tags: caroai-ci:${{ github.sha }}
+
+  release:
+    name: Approved production publish and Render verification
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_approved == true }}
+    needs: [frontend, test, postgres-integration, compose-smoke, build]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    permissions:
+      contents: read
+    env:
+      IMAGE_NAME: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/caroai
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Validate environment-scoped release configuration
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
+        run: |
+          test -n "$DOCKERHUB_USERNAME" || { echo "Missing production Environment secret DOCKERHUB_USERNAME"; exit 1; }
+          test -n "$DOCKERHUB_TOKEN" || { echo "Missing production Environment secret DOCKERHUB_TOKEN"; exit 1; }
+          test -n "$RENDER_DEPLOY_HOOK" || { echo "Missing production Environment secret RENDER_DEPLOY_HOOK"; exit 1; }
+          test -n "$RENDER_API_KEY" || { echo "Missing production Environment secret RENDER_API_KEY"; exit 1; }
+          test -n "$RENDER_SERVICE_ID" || { echo "Missing production Environment secret RENDER_SERVICE_ID"; exit 1; }
+          test -n "$PUBLIC_URL" || { echo "Missing production Environment variable CAROAI_PUBLIC_URL"; exit 1; }
+          case "$PUBLIC_URL" in https://*) ;; *) echo "CAROAI_PUBLIC_URL must use HTTPS"; exit 1 ;; esac
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Derive full and short SHA tags
+        id: tags
+        shell: bash
+        run: |
+          echo "short_sha=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
+          echo "full_sha=$GITHUB_SHA"
+      - name: Build and publish immutable full/short SHA tags
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.short_sha }}
+      - name: Trigger Render deployment for exact full-SHA image
+        id: render-deploy
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          response=$(curl --fail --silent --show-error --get \
+            --data-urlencode "imgURL=$IMAGE_NAME:$GITHUB_SHA" \
+            "$RENDER_DEPLOY_HOOK")
+          echo "$response"
+          deploy_id=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("deploy", {}).get("id", ""))')
+          test -n "$deploy_id" || { echo "Render did not return a deployment ID"; exit 1; }
+          echo "deploy_id=$deploy_id" >> "$GITHUB_OUTPUT"
+      - name: Wait for Render to confirm exact image is live
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          DEPLOY_ID: ${{ steps.render-deploy.outputs.deploy_id }}
+        run: |
+          for attempt in $(seq 1 60); do
+            response=$(curl --fail --silent --show-error \
+              --header "Authorization: Bearer $RENDER_API_KEY" \
+              --header "Accept: application/json" \
+              "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys/$DEPLOY_ID")
+            status=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("status", ""))')
+            image_ref=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("image", {}).get("ref", ""))')
+            echo "Render deploy status=$status image=$image_ref"
+            if [ "$status" = "live" ]; then
+              case "$image_ref" in
+                *":$GITHUB_SHA") echo "Render confirms the requested SHA image is live."; break ;;
+                *) echo "Render image ref does not match full SHA $GITHUB_SHA"; exit 1 ;;
+              esac
+            fi
+            case "$status" in
+              build_failed|update_failed|pre_deploy_failed|canceled|deactivated)
+                echo "Render deployment failed with status: $status"; exit 1 ;;
+            esac
+            if [ "$attempt" -eq 60 ]; then
+              echo "Timed out waiting for Render deployment to become live"; exit 1
+            fi
+            sleep 10
+          done
+      - name: Verify public HTTPS liveness and database readiness
+        env:
+          PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
+        run: |
+          for attempt in $(seq 1 36); do
+            if curl --fail --silent --show-error "$PUBLIC_URL/health" >/dev/null && curl --fail --silent --show-error "$PUBLIC_URL/ready" >/dev/null; then
+              echo "Public HTTPS /health and /ready passed."
+              exit 0
+            fi
+            sleep 10
+          done
+          curl --fail --show-error "$PUBLIC_URL/health"
+          curl --fail --show-error "$PUBLIC_URL/ready"
+          exit 1
