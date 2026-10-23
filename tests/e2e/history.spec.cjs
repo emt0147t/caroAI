@@ -23,7 +23,7 @@ test('a created game appears in backend history after reload in a fresh page', a
 
   await page.goto('/');
   await page.getByRole('button', { name: /Bắt đầu ván đấu/ }).click();
-  await expect(page).toHaveURL(/trong_tran\\/index\\.html\\?game_id=/);
+  await page.waitForURL(url => url.pathname.endsWith('/trong_tran/index.html') && url.searchParams.has('game_id'));
   const id = new URL(page.url()).searchParams.get('game_id');
   expect(id).toBeTruthy();
 
