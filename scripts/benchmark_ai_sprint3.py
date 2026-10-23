@@ -9,12 +9,10 @@ import json
 import math
 import os
 import platform
-import random
 import statistics
 import subprocess
 import sys
 import time
-from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -23,9 +21,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.ai.engine import DIFFICULTY_CONFIG, get_ai_move
-from app.ai.evaluator import BOARD_SIZE, EMPTY, check_win_at, has_five_in_a_row
-from app.ai.move_generator import get_candidate_moves
+from app.ai.engine import DIFFICULTY_CONFIG, get_ai_move  # noqa: E402
+from app.ai.evaluator import BOARD_SIZE, EMPTY, check_win_at, has_five_in_a_row  # noqa: E402
+from app.ai.move_generator import get_candidate_moves  # noqa: E402
 
 REPORTS_DIR = ROOT / "reports"
 FIXTURE_COUNT_MINIMUM = 10
@@ -308,17 +306,48 @@ def validate_fixtures(fixtures: list[dict[str, Any]]) -> None:
                 )
 
 
-def get_source_sha() -> str:
-    result = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    sha = result.stdout.strip()
-    if len(sha) != 40 or any(ch not in "0123456789abcdef" for ch in sha.lower()):
-        raise RuntimeError(f"Expected a full 40-character Git SHA, got: {sha!r}")
+def validate_full_sha(value: str) -> str:
+    """Validate a full 40-hex-character Git SHA without shortening it."""
+    sha = value.strip().lower()
+    if len(sha) != 40 or any(ch not in "0123456789abcdef" for ch in sha):
+        raise ValueError(f"Expected a full 40-character Git SHA, got: {value!r}")
+    return sha
+
+
+def get_source_sha(explicit_sha: str | None = None) -> tuple[str, str]:
+    """
+    Resolve a full source SHA. In a normal checkout, verify it against HEAD and
+    require the measured source files to be clean. Minimal runtime images often
+    omit .git; in that case require the caller to pass the full source SHA.
+    """
+    git_error = None
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        git_sha = validate_full_sha(result.stdout.strip())
+    except (OSError, subprocess.CalledProcessError, ValueError) as exc:
+        git_error = exc
+        git_sha = None
+
+    if git_sha is None:
+        if not explicit_sha:
+            raise RuntimeError(
+                "Git metadata is unavailable. Pass --source-sha with the full "
+                "40-character SHA used to build this environment/image."
+            ) from git_error
+        return validate_full_sha(explicit_sha), "provided-no-git-metadata"
+
+    if explicit_sha:
+        provided_sha = validate_full_sha(explicit_sha)
+        if provided_sha != git_sha:
+            raise RuntimeError(
+                f"--source-sha {provided_sha} does not match git HEAD {git_sha}"
+            )
 
     # The SHA must identify the AI code, benchmark script, and exact demo fixtures.
     # Generated reports are intentionally excluded so the benchmark remains rerunnable.
@@ -339,7 +368,34 @@ def get_source_sha() -> str:
             "AI engine, benchmark script and demo manifest before measuring. "
             f"git status: {status}"
         )
-    return sha
+    method = "provided-and-verified-against-git" if explicit_sha else "git-head"
+    return git_sha, method
+
+
+def _linux_cpu_name() -> str | None:
+    try:
+        for line in Path("/proc/cpuinfo").read_text(encoding="utf-8").splitlines():
+            if line.lower().startswith("model name"):
+                return line.split(":", 1)[1].strip()
+    except OSError:
+        return None
+    return None
+
+
+def _windows_cpu_name() -> str | None:
+    try:
+        output = subprocess.check_output(
+            ["wmic", "cpu", "get", "Name", "/value"],
+            stderr=subprocess.DEVNULL,
+            timeout=3,
+            text=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    for line in output.splitlines():
+        if line.startswith("Name="):
+            return line.split("=", 1)[1].strip()
+    return None
 
 
 def cpu_name() -> str:
@@ -347,29 +403,15 @@ def cpu_name() -> str:
     if value:
         return value
     if sys.platform.startswith("linux"):
-        try:
-            for line in Path("/proc/cpuinfo").read_text(encoding="utf-8").splitlines():
-                if line.lower().startswith("model name"):
-                    return line.split(":", 1)[1].strip()
-        except OSError:
-            pass
+        return _linux_cpu_name() or "unknown"
     if os.name == "nt":
-        try:
-            output = subprocess.check_output(
-                ["wmic", "cpu", "get", "Name", "/value"],
-                stderr=subprocess.DEVNULL,
-                timeout=3,
-                text=True,
-            )
-            for line in output.splitlines():
-                if line.startswith("Name="):
-                    return line.split("=", 1)[1].strip()
-        except (OSError, subprocess.SubprocessError):
-            pass
+        return _windows_cpu_name() or "unknown"
     return "unknown"
 
 
-def collect_environment(source_sha: str, command: str) -> dict[str, Any]:
+def collect_environment(
+    source_sha: str, command: str, source_sha_method: str
+) -> dict[str, Any]:
     docker_markers = (
         Path("/.dockerenv").exists()
         or bool(os.environ.get("container"))
@@ -378,7 +420,10 @@ def collect_environment(source_sha: str, command: str) -> dict[str, Any]:
     return {
         "captured_at_utc": utc_now(),
         "source_sha": source_sha,
+        "source_sha_method": source_sha_method,
         "python_version": sys.version.replace("\n", " "),
+        "python_executable": sys.executable,
+        "argv": list(sys.argv),
         "python_executable": sys.executable,
         "argv": list(sys.argv),
         "platform": platform.platform(),
@@ -588,16 +633,35 @@ def render_report(
         f"- Platform: {environment['platform']}",
         f"- Machine: {environment['machine']}; CPU: {environment['cpu_name']}",
         f"- Container detected: {environment['is_container']} ({environment['container_hint']})",
-        f"- Fixtures: {len(fixtures)}; difficulties: EASY/MEDIUM/HARD; warm-up: {warmup}; measured trials per fixture/difficulty: {runs}",
+        (
+            f"- Fixtures: {len(fixtures)}; difficulties: EASY/MEDIUM/HARD; "
+            f"warm-up: {warmup}; measured trials per fixture/difficulty: {runs}"
+        ),
         "",
         "## Protocol and interpretation",
         "",
-        "- Timing uses time.perf_counter_ns() around get_ai_move only. Board copying and root candidate-count collection occur outside the timed interval.",
-        "- Raw CSV/JSON include measured trials and warm-up rows marked with is_warmup=true. Summaries exclude warm-ups.",
-        "- The p95 uses the nearest-rank method: sorted sample at rank ceil(0.95 × n). For a fixture/difficulty with five trials, p95 equals that fixture's maximum and is not a high-confidence production percentile.",
-        "- The by-difficulty p95 aggregates all fixture trials equally; it describes this explicit benchmark workload, not the real-world frequency distribution of player positions.",
+        (
+            "- Timing uses time.perf_counter_ns() around get_ai_move only. "
+            "Board copying and root candidate-count collection occur outside the timed interval."
+        ),
+        (
+            "- Raw CSV/JSON include measured trials and warm-up rows marked with "
+            "is_warmup=true. Summaries exclude warm-ups."
+        ),
+        (
+            "- The p95 uses nearest-rank: sorted sample at rank ceil(0.95 × n). "
+            "With five trials, per-fixture p95 equals the maximum and is not a "
+            "high-confidence production percentile."
+        ),
+        (
+            "- The by-difficulty p95 aggregates all fixture trials equally; it "
+            "describes this workload, not the real-world distribution of player positions."
+        ),
         "- Root candidate count is measured before the timed call. Node count is not instrumented and is reported as N/A.",
-        "- The proposed p95 ≤ 2,000 ms target is still pending explicit team confirmation. A measured value below the proposal is not, by itself, acceptance of the SLO.",
+        (
+            "- The proposed p95 ≤ 2,000 ms target is pending team confirmation. "
+            "A measurement below the proposal does not itself accept the SLO."
+        ),
         "",
         "## Environment metadata",
         "",
@@ -611,7 +675,10 @@ def render_report(
         "",
         "## Per-difficulty summary",
         "",
-        "| Difficulty | Samples | Failures | Median (ms) | p95 (ms) | Min (ms) | Max (ms) | Proposed 2s threshold | SLO decision |",
+        (
+            "| Difficulty | Samples | Failures | Median (ms) | p95 (ms) | "
+            "Min (ms) | Max (ms) | Proposed 2s threshold | SLO decision |"
+        ),
         "|---|---:|---:|---:|---:|---:|---:|---|---|",
     ])
     for item in summaries["per_difficulty"]:
@@ -680,9 +747,15 @@ def render_report(
         f"- {display_output_dir}/ai-benchmark.json — environment, configuration, raw rows and summaries.",
         "- reports/ai-demo-boards.json — fixed demo-board coordinates and expected tactical outcomes.",
         "",
-        f"## Overall status: {'PASS (benchmark outputs legal and expected moves)' if failures == 0 else 'FAIL (inspect raw rows)'}",
+        (
+            "## Overall status: "
+            f"{'PASS (benchmark outputs legal and expected moves)' if failures == 0 else 'FAIL (inspect raw rows)'}"
+        ),
         "",
-        f"Measured trial failures: {failures}. This status only covers the listed fixtures, configurations and captured environment.",
+        (
+            f"Measured trial failures: {failures}. This status only covers the listed "
+            "fixtures, configurations and captured environment."
+        ),
         "",
     ])
     return "\n".join(lines)
@@ -748,6 +821,11 @@ def main() -> int:
     parser.add_argument("--runs", type=int, default=5, help="Measured trials per fixture/difficulty (minimum 5)")
     parser.add_argument("--warmup", type=int, default=1, help="Warm-up trials per fixture/difficulty (minimum 1)")
     parser.add_argument("--output-dir", type=Path, default=REPORTS_DIR, help="Directory for report and raw data")
+    parser.add_argument(
+        "--source-sha",
+        default=os.environ.get("CAROAI_SOURCE_SHA"),
+        help="Full source SHA for images without .git; must match HEAD when Git metadata exists",
+    )
     args = parser.parse_args()
     if args.runs < 5:
         parser.error("--runs must be at least 5 for the Sprint 3 protocol")
@@ -756,15 +834,17 @@ def main() -> int:
     if not args.output_dir.is_absolute():
         args.output_dir = ROOT / args.output_dir
 
-    source_sha = get_source_sha()
+    source_sha, source_sha_method = get_source_sha(args.source_sha)
     launcher = "py -3" if os.name == "nt" else "python3"
     command = (
         f"{launcher} scripts/benchmark_ai_sprint3.py --runs {args.runs} "
         f"--warmup {args.warmup}"
     )
+    if args.source_sha:
+        command += f" --source-sha {source_sha}"
     if args.output_dir != REPORTS_DIR:
         command += f' --output-dir "{args.output_dir}"'
-    environment = collect_environment(source_sha, command)
+    environment = collect_environment(source_sha, command, source_sha_method)
     environment_id = f"{platform.system().lower()}-{source_sha[:12]}"
     fixtures = build_fixtures()
     records: list[dict[str, Any]] = []
