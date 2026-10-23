@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       release_approved:
-        description: "Release candidate approved for production deployment"
+        description: "Request production release; production Environment review is independently required"
         required: true
         type: boolean
         default: false
@@ -32,16 +32,9 @@ jobs:
       - run: node --test tests/frontend-regression.test.cjs
 
   test:
-    name: Run tests and lint
+    name: Python tests and lint
     runs-on: ubuntu-latest
     steps:
-      - name: Enforce explicit main-branch release approval
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          RELEASE_APPROVED: ${{ inputs.release_approved }}
-        run: |
-          test "$GITHUB_REF" = "refs/heads/main" || { echo "Release dispatch must target main"; exit 1; }
-          test "$RELEASE_APPROVED" = "true" || { echo "Release candidate approval is required"; exit 1; }
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
@@ -134,7 +127,6 @@ jobs:
           import json
           import subprocess
           import time
-          import urllib.error
           import urllib.request
 
           BASE = "http://127.0.0.1:8000"
@@ -148,12 +140,12 @@ jobs:
               with urllib.request.urlopen(req, timeout=5) as response:
                   return response.status, json.loads(response.read().decode())
 
-          def retry_get(path, expected_status=200):
+          def retry_get(path):
               last_error = None
               for _ in range(30):
                   try:
                       status, body = request("GET", path)
-                      if status == expected_status:
+                      if status == 200:
                           return body
                       last_error = RuntimeError(f"{path}: HTTP {status}")
                   except Exception as exc:
@@ -202,45 +194,75 @@ jobs:
         run: docker compose down --volumes --remove-orphans
 
   build:
-    name: Build Docker image and publish approved release
+    name: Docker image build (no publish/deploy)
     needs: [frontend, test, postgres-integration, compose-smoke]
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      IMAGE_NAME: docker.io/${{ secrets.DOCKERHUB_USERNAME || 'local-ci' }}/caroai
-      RELEASE_RUN: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_approved }}
     steps:
       - uses: actions/checkout@v4
-      - name: Derive traceable image tags
-        id: image-tags
-        shell: bash
-        run: |
-          echo "short_sha=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
-          echo "source_sha=$GITHUB_SHA"
       - uses: docker/setup-buildx-action@v3
-      - name: Log in to Docker Hub for approved release
-        if: env.RELEASE_RUN == 'true'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and publish SHA-tagged image
+      - name: Build SHA-tagged candidate image without publishing
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          push: ${{ env.RELEASE_RUN == 'true' }}
+          push: false
+          tags: caroai-ci:${{ github.sha }}
+
+  release:
+    name: Approved production publish and Render verification
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_approved == true }}
+    needs: [frontend, test, postgres-integration, compose-smoke, build]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    permissions:
+      contents: read
+    env:
+      IMAGE_NAME: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/caroai
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Validate environment-scoped release configuration
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
+        run: |
+          test -n "$DOCKERHUB_USERNAME" || { echo "Missing production Environment secret DOCKERHUB_USERNAME"; exit 1; }
+          test -n "$DOCKERHUB_TOKEN" || { echo "Missing production Environment secret DOCKERHUB_TOKEN"; exit 1; }
+          test -n "$RENDER_DEPLOY_HOOK" || { echo "Missing production Environment secret RENDER_DEPLOY_HOOK"; exit 1; }
+          test -n "$RENDER_API_KEY" || { echo "Missing production Environment secret RENDER_API_KEY"; exit 1; }
+          test -n "$RENDER_SERVICE_ID" || { echo "Missing production Environment secret RENDER_SERVICE_ID"; exit 1; }
+          test -n "$PUBLIC_URL" || { echo "Missing production Environment variable CAROAI_PUBLIC_URL"; exit 1; }
+          case "$PUBLIC_URL" in https://*) ;; *) echo "CAROAI_PUBLIC_URL must use HTTPS"; exit 1 ;; esac
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Derive full and short SHA tags
+        id: tags
+        shell: bash
+        run: |
+          echo "short_sha=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
+          echo "full_sha=$GITHUB_SHA"
+      - name: Build and publish immutable full/short SHA tags
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ env.IMAGE_NAME }}:${{ steps.image-tags.outputs.short_sha }}
-      - name: Trigger Render deployment for the exact SHA-tagged image
-        if: env.RELEASE_RUN == 'true'
+            ${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.short_sha }}
+      - name: Trigger Render deployment for exact full-SHA image
         id: render-deploy
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
-          test -n "$RENDER_DEPLOY_HOOK" || { echo "Missing RENDER_DEPLOY_HOOK secret"; exit 1; }
           response=$(curl --fail --silent --show-error --get \
             --data-urlencode "imgURL=$IMAGE_NAME:$GITHUB_SHA" \
             "$RENDER_DEPLOY_HOOK")
@@ -248,15 +270,12 @@ jobs:
           deploy_id=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("deploy", {}).get("id", ""))')
           test -n "$deploy_id" || { echo "Render did not return a deployment ID"; exit 1; }
           echo "deploy_id=$deploy_id" >> "$GITHUB_OUTPUT"
-      - name: Wait for Render to confirm the exact image is live
-        if: env.RELEASE_RUN == 'true'
+      - name: Wait for Render to confirm exact image is live
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
           DEPLOY_ID: ${{ steps.render-deploy.outputs.deploy_id }}
         run: |
-          test -n "$RENDER_API_KEY" || { echo "Missing RENDER_API_KEY secret"; exit 1; }
-          test -n "$RENDER_SERVICE_ID" || { echo "Missing RENDER_SERVICE_ID secret"; exit 1; }
           for attempt in $(seq 1 60); do
             response=$(curl --fail --silent --show-error \
               --header "Authorization: Bearer $RENDER_API_KEY" \
@@ -267,8 +286,8 @@ jobs:
             echo "Render deploy status=$status image=$image_ref"
             if [ "$status" = "live" ]; then
               case "$image_ref" in
-                *":$GITHUB_SHA") echo "Render confirms the requested SHA image is live." ; break ;;
-                *) echo "Render reports live but the deployed image ref does not match $GITHUB_SHA"; exit 1 ;;
+                *":$GITHUB_SHA") echo "Render confirms the requested SHA image is live."; break ;;
+                *) echo "Render image ref does not match full SHA $GITHUB_SHA"; exit 1 ;;
               esac
             fi
             case "$status" in
@@ -280,22 +299,17 @@ jobs:
             fi
             sleep 10
           done
-      - name: Verify deployed public HTTPS application and database readiness
-        if: env.RELEASE_RUN == 'true'
+      - name: Verify public HTTPS liveness and database readiness
         env:
           PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
-        shell: bash
         run: |
-          test -n "$PUBLIC_URL" || { echo "Set repository variable CAROAI_PUBLIC_URL to the public HTTPS base URL"; exit 1; }
-          case "$PUBLIC_URL" in https://*) ;; *) echo "Public URL must use HTTPS"; exit 1 ;; esac
           for attempt in $(seq 1 36); do
             if curl --fail --silent --show-error "$PUBLIC_URL/health" >/dev/null && curl --fail --silent --show-error "$PUBLIC_URL/ready" >/dev/null; then
-              echo "Public app liveness and database readiness checks passed: $PUBLIC_URL"
+              echo "Public HTTPS /health and /ready passed."
               exit 0
             fi
             sleep 10
           done
-          echo "Deployment did not become healthy; collecting final public endpoint responses."
           curl --fail --show-error "$PUBLIC_URL/health"
           curl --fail --show-error "$PUBLIC_URL/ready"
           exit 1
