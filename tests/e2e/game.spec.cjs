@@ -136,20 +136,31 @@ test('end-game state is loaded from API and prevents further moves', async ({ pa
   expect((await getGame(request, id)).move_count).toBe(9);
 });
 
-test('terminal DRAW response is displayed and all cells are locked', async ({ page }) => {
-  const id = await startGame(page);
-  await page.unrouteAll();
-  await page.route('**/api/games/' + id, route => route.fulfill({
-    status: 200, contentType: 'application/json',
-    body: JSON.stringify({
-      id, mode: 'HUMAN_VS_HUMAN', status: 'DRAW', current_player: 'X',
-      move_count: 225, winner: null,
-      board: Array.from({ length: 15 }, () => Array(15).fill('X'))
-    })
-  }));
-  await page.reload();
+test('a full no-five board reaches backend DRAW and locks the UI', async ({ page, request }) => {
+  const create = await request.post('/api/games', { data: { mode: 'HUMAN_VS_HUMAN' } });
+  expect(create.status()).toBe(201);
+  const id = (await create.json()).id;
+  const cells = { X: [], O: [] };
+  // This 15x15 two-colour pattern has no five consecutive marks in any direction.
+  // Counts are 113 X / 112 O, matching the alternating turn order.
+  for (let row = 0; row < 15; row++) {
+    for (let col = 0; col < 15; col++) {
+      cells[(row + Math.floor(col / 2)) % 2 === 0 ? 'X' : 'O'].push([row, col]);
+    }
+  }
+  for (let ply = 0; ply < 225; ply++) {
+    const player = ply % 2 === 0 ? 'X' : 'O';
+    const [row, col] = cells[player].shift();
+    const move = await request.post('/api/games/' + id + '/moves', { data: { row, col } });
+    expect(move.status(), 'backend move ' + (ply + 1)).toBe(200);
+    if (ply === 224) expect((await move.json()).game.status).toBe('DRAW');
+  }
+  await page.goto('/trong_tran/index.html?game_id=' + encodeURIComponent(id));
   await expect(page.locator('#gameStatus')).toContainText('Hòa!');
   expect(await page.locator('#board .cell').evaluateAll(cells => cells.every(cell => cell.disabled))).toBeTruthy();
+  const persisted = await getGame(request, id);
+  expect(persisted.status).toBe('DRAW');
+  expect(persisted.move_count).toBe(225);
 });
 
 test('board remains visible on mobile and desktop viewports', async ({ page }) => {
