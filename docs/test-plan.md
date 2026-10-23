@@ -189,24 +189,28 @@ Test plan Sprint 1 được coi là hoàn tất khi:
 
 
 
-## 13. Current implementation and QA evidence (2026-10-16)
+## 13. Current implementation and QA evidence (2026-10-23)
 
-This section records observed status separately from the planned test cases above.
+This section records observed status separately from the planned test cases above. The detailed Sprint 3 status matrix is maintained in [sprint-3-qa-matrix.md](sprint-3-qa-matrix.md).
 
 | Area | Current status | Evidence / limitation |
 |---|---|---|
-| Game rules, service, AI unit, game API and health regression | Historical pass on Windows CPython 3.13.15 | 36 passed, 0 failed, 1 Starlette deprecation warning in a consolidated run. This is historical evidence and does not establish Python 3.11 compatibility. |
-| PostgreSQL model/session checks | Historical result reported as 11 passed in 6.34s | The suite validates SQLAlchemy models and sessions directly. The available report does not record interpreter, run date, host, or database name. It does not prove GameService/API persistence. |
-| Python 3.11 CI | Previous branch commit passed; rerun after this documentation update | The passing run is recorded below. The next push triggers a fresh workflow run. |
-| PostgreSQL in ordinary CI | Not configured as an integration job | The test fixture skips unless `TEST_DATABASE_URL` and `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database` are set. Ordinary CI does not provision a dedicated PostgreSQL service or set these values; a skip is not a PostgreSQL pass. |
-| API persistence / restart persistence / application transaction rollback | Not implemented / not verified | `GameService` stores state in the in-memory `self._games` dictionary and does not call repository/session helpers. |
-| Docker database smoke / migration lifecycle | Not verified in this M5 run | Coordinate with M4 for database readiness, application connectivity, and migration strategy. |
+| M5 branch baseline: rules, AI, API, service and health suite | Historical baseline passed on the M5 branch at SHA 2dd55cda274d7112e6d3244a4b457768178e98f8 | 178 passed, 11 skipped, 1 warning on local Windows; exact Python version was not recorded. This is not a test result for later commits. |
+| PostgreSQL model/session checks on the M5 baseline | NOT RUN | The test fixture requires TEST_DATABASE_URL and CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database; those values were not configured in the recorded M5 run. |
+| Service/API persistence on the M5 branch | BLOCKED / NOT RUN | On this branch, app/services/game_service.py still stores state in an in-memory dictionary and app/db/repository.py is a placeholder. |
+| M1 PR #32 SQLite persistence tests | Historical PR-only evidence | The separate PR review worktree reported 5 repository persistence tests passed; this is not a result from feature/m5-sprint3-qa and does not prove PostgreSQL persistence. |
+| M1 PR #32 PostgreSQL CI | PostgreSQL job passed on merge-ref workflow run #101; overall workflow FAILED | Run #101: https://github.com/emt0147t/caroAI/actions/runs/39911965014. The PostgreSQL job and zero-skips guard passed. The test/lint job failed at Flake8 E302 in app/schemas/game.py:49 and tests/test_repository_persistence.py:206; pytest and Compose validation in that job were skipped, and Docker build was skipped. |
+| Migration against an existing schema | NOT RUN / not fully verified | PR #32 identifies versioned migration/backfill of games.public_id as a dependency under Issue #30. Do not infer deployed migration success from a CI job name alone. |
+| Docker Compose database smoke, browser E2E, deployment/live persistence | NOT RUN | No successful execution evidence is recorded in the M5 matrix. Coordinate with M3/M4/M1. |
 
-### Recorded CI run — commit 11319012dc086029efb15da175591cf4f170c062
+### Evidence rules
 
-GitHub Actions used CPython 3.11.17. The lint step passed with 0 flake8 findings. The test step reported **178 passed, 11 skipped, 1 warning in 3.78s**. The 11 skips correspond to opt-in PostgreSQL tests without the required disposable-database configuration; they are not PostgreSQL passes. `docker compose config --quiet` passed. The Docker image build was still running when this note was written, so no image-build result is claimed here.
-
-Workflow: https://github.com/emt0147t/caroAI/actions/runs/38903417312
+- Record the exact full commit SHA, command, environment, result, and workflow URL for every run.
+- A successful overall test suite does not independently prove every test category.
+- PR #32 evidence must not be presented as a result from feature/m5-sprint3-qa.
+- SQLite evidence must not be presented as PostgreSQL evidence.
+- SKIPPED, NOT RUN, BLOCKED and IN PROGRESS are not PASS.
+- Keep unresolved persistence, migration, Compose, browser and live-smoke checks open until the corresponding evidence is recorded.
 
 ### PostgreSQL test safety and manual command
 
@@ -218,8 +222,5 @@ $env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
 python -m pytest tests/test_database_postgres.py -q
 ```
 
-The URL above is a placeholder, not a real credential. This suite remains manual-only until a separate CI job provisions a disposable database and sets the opt-in environment variables. Do not report PostgreSQL coverage from a run where this suite was skipped.
+The URL above is a placeholder, not a real credential. This suite remains opt-in on the M5 branch until a dedicated CI job provisions a disposable database and sets the required environment variables.
 
-### Outstanding acceptance criteria — application persistence
-
-M1 and M5 must agree on the repository/session contract and game-ID mapping. Before marking persistence complete, add and run tests that create a game, apply ordered moves, persist terminal status/winner/end time, and read the final state through a new session. Test transaction rollback through the GameService/API path, not only direct SQLAlchemy session rollback. Coordinate ordered migrations and Docker smoke verification with M4.
