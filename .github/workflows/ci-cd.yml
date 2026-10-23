@@ -109,7 +109,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build and start disposable Compose stack
-        run: docker compose up --build -d
+        run: |
+          if ! docker compose up --build -d; then
+            docker compose ps
+            docker compose logs --no-color db app
+            exit 1
+          fi
       - name: Verify create/move, restart the API, and read persisted state
         run: |
           python - <<'PY'
