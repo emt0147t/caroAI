@@ -11,10 +11,12 @@
 - Current M5 source snapshot still uses an in-memory GameService and app/db/repository.py is a placeholder. Do not treat persistence acceptance as implemented on this branch.
 - M1 PR #32 is open and not merged at the time of this audit: https://github.com/emt0147t/caroAI/pull/32
 - PR #32 head at the time of audit: e4a91172b518dd16437ca91f72aa594e90da3c7e
-- PR #32 CI run #101 was observed IN PROGRESS: https://github.com/emt0147t/caroAI/actions/runs/39911965014
-- PR #32 description reports an earlier CI run #85 successful at a different head; that result must not be treated as a pass for the current PR head.
+- PR #32 merge-ref CI run #101: FAILED overall: https://github.com/emt0147t/caroAI/actions/runs/39911965014
+- Run #101 job results: frontend regression PASSED; PostgreSQL service/API/migration acceptance job PASSED with zero skipped tests; test/lint job FAILED at Flake8; Docker build was SKIPPED because a required job failed.
+- Flake8 failures in run #101: app/schemas/game.py:49: E302; tests/test_repository_persistence.py:206: E302. Pytest and Compose validation in that job were skipped after Flake8 failed.
+- PR #32 description reports an earlier CI run #85 successful at a different head; that result is not a pass for the current merge-ref/run #101.
 - PR #32's SQLite persistence test evidence and the M5 baseline are separate evidence sets.
-- CI on the M5 branch has frontend, test/lint and Docker build jobs, but no dedicated PostgreSQL service/job. PR #32 proposes a PostgreSQL job; it is not evidence that the job has passed.
+- CI on the M5 branch itself has frontend, test/lint and Docker build jobs, but no dedicated PostgreSQL service/job. The PostgreSQL job above is from the PR #32 merge-ref workflow.
 - Rule: SKIPPED and NOT RUN are not PASS. A source-code audit is not a runtime test.
 
 ## Status definitions
@@ -40,19 +42,19 @@
 | QA-08 | Malformed persisted history | Reject gaps, wrong turn, illegal moves and status/result mismatch | NOT RUN | M1/M5 | PR #32 describes validation behavior, but a passing test for each malformed-history case has not been verified in the available evidence |
 | QA-09 | API write failure and rollback | Force a write failure and prove no partial game/move rows remain | PARTIAL: service-level SQLite rollback test in PR #32; API write-failure/rollback not verified | M1 implementation; M5 tests | PR #32 has a service rollback test; do not claim API-level failure/rollback is proven |
 | QA-10 | Invalid API requests | Missing game, occupied/out-of-range cell, wrong mode/turn/difficulty; verify stored data is unchanged | PARTIAL BASELINE; persistence assertions NOT RUN on M5 branch | M1/M5 | Existing API tests cover several request errors, but no database-unchanged assertions were verified on this branch |
-| QA-11 | PostgreSQL service/API integration | Run service/API persistence acceptance tests against disposable PostgreSQL | NOT RUN; PostgreSQL CI result not verified | M4 provides DB CI; M1 persistence; M5 tests | Current M5 workflow has no PostgreSQL job. PR #32 head workflow run #101 was IN PROGRESS when checked |
-| QA-12 | PostgreSQL migration | Test fresh schema and existing-schema backfill for games.public_id | NOT RUN | M4/M1 | PR #32 identifies migration/backfill as a dependency; no passing migration run verified |
-| QA-13 | Compose DB smoke | App connects to PostgreSQL; create/move/read across requests or sessions | NOT RUN | M4/M1/M5 | No smoke-run evidence captured |
+| QA-11 | PostgreSQL service/API integration | Run service/API persistence acceptance tests against disposable PostgreSQL | PR #32 merge-ref PostgreSQL job PASSED; final PR checks NOT GREEN | M4 provides DB CI; M1 persistence; M5 tests | Run #101 PostgreSQL job passed and zero-skips guard passed; overall workflow failed at Flake8, so build was skipped |
+| QA-12 | PostgreSQL migration | Test fresh schema and existing-schema backfill for games.public_id | PARTIAL / NOT FULLY VERIFIED | M4/M1 | Run #101 job is named migration acceptance, but no separate deployed/existing-schema migration evidence is recorded here; verify test scope before closing |
+| QA-13 | Compose DB smoke | App connects to PostgreSQL; create/move/read across requests or sessions | NOT RUN | M4/M1/M5 | Compose config validation was skipped in run #101 after lint failed; config validation alone would not prove DB smoke |
 | QA-14 | Browser E2E | Verify PvP/PvAI and history in browser/deployed environment | NOT RUN | M3/M5 | No browser E2E evidence captured |
-| QA-15 | Publish/deploy/live smoke | Verify SHA-tagged image, public HTTPS, and persistence after restart/redeploy | NOT RUN | M4/M3/M1/M5 | No deployment/live-smoke evidence captured |
+| QA-15 | Publish/deploy/live smoke | Verify SHA-tagged image, public HTTPS, and persistence after restart/redeploy | NOT RUN | M4/M3/M1/M5 | Docker build was skipped in run #101; no deployment/live-smoke evidence captured |
 
 ## Historical PR #32 evidence (not current-M5-branch proof)
 
 - PR #32's separate review worktree previously reported 183 passed, 11 skipped, 1 warning in the full suite and 5 passed in tests/test_repository_persistence.py.
 - PR #32's PostgreSQL integration suite previously reported 11 skipped because TEST_DATABASE_URL was not set.
-- PR #32 description reports CI run #85 successful at an earlier head (2ffb8d72dab212cd04f4096ed65487b982e6f4a0); its current head during this audit is e4a91172b518dd16437ca91f72aa594e90da3c7e and run #101 was still in progress.
-- These results do not prove PostgreSQL integration passed. They also do not prove PR #32 has merged or that its tests exist on feature/m5-sprint3-qa.
-- tests/test_repository_persistence.py was not present on this M5 branch at the time of audit.
+- Current PR #32 merge-ref workflow run #101 has a successful PostgreSQL job, but the overall workflow failed because Flake8 found E302 in app/schemas/game.py:49 and tests/test_repository_persistence.py:206. Pytest/Compose in the regular test job and Docker build did not run in that workflow.
+- The PostgreSQL job passing on the PR merge ref is meaningful evidence for the exact test scope in that job, but it does not mean all CI checks passed, the PR is merged, the production migration is complete, or deployed persistence has been verified.
+- These results do not prove PostgreSQL acceptance on feature/m5-sprint3-qa. tests/test_repository_persistence.py was not present on this M5 branch at the time of audit.
 
 ## Evidence rules
 
