@@ -36,7 +36,8 @@ test('PvAI difficulty reaches the real API; AI move is rendered from backend sta
   await expect(page.locator('#aiDifficulty')).toHaveValue('hard');
   await page.getByRole('button', { name: 'Đánh hàng 8, cột 8' }).click();
   await expect(page.locator('#loadingBox')).toBeVisible();
-  await expect(page.locator('#currentPlayer')).toHaveText('X', { timeout: 30000 });
+  await expect(page.locator('#board .cell').filter({ hasText: /^O$/ })).toHaveCount(1, { timeout: 30000 });
+  await expect(page.locator('#currentPlayer')).toHaveText('X');
   const game = await getGame(request, id);
   expect(game.move_count).toBe(2);
   expect(game.board[7][7]).toBe('X');
