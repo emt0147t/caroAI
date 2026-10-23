@@ -196,17 +196,17 @@ This section records observed status separately from planned tests. The detailed
 | Area | Current status | Evidence / limitation |
 |---|---|---|
 | M5 baseline suite | Historical baseline passed on M5 branch at SHA 2dd55cda274d7112e6d3244a4b457768178e98f8 | 178 passed, 11 skipped, 1 warning on local Windows; exact Python version not recorded. This is not a test result for later commits. |
-| PostgreSQL on M5 baseline | NOT RUN | TEST_DATABASE_URL was not configured in the recorded M5 run. |
-| Persistence implementation on M5 branch | BLOCKED / NOT RUN | M1's SQLAlchemy persistence implementation remains on PR #32 and is not yet integrated into the M5 branch. |
-| PR #32 previous CI run #131 | ALL JOBS PASSED on SHA 4e63747430ce372772d8903b7c8cd2004dadad94 | https://github.com/emt0147t/caroAI/actions/runs/39912882803. Frontend, lint/pytest, PostgreSQL acceptance with zero-skips guard, Compose API/database persistence after API restart, and Docker image build passed. This is PR-only evidence. |
-| PR #32 current CI run #139 | IN PROGRESS at inspected SHA 50435a02bca65e08cace8ad3d0a539981bc4c0d8 | https://github.com/emt0147t/caroAI/actions/runs/39913192666. Do not infer a result until the workflow completes. |
-| Draw persistence and corrupted-history rejection tests | NOT RUN / coverage gap | No dedicated draw persistence test or dedicated test for each malformed persisted-history invariant was identified in the reviewed PR #32 test files. |
-| Browser E2E and deployed/live persistence | NOT RUN | No successful evidence recorded in the M5 matrix. |
+| Persistence implementation on M5 branch | BLOCKED / NOT RUN | At the current M5 branch snapshot, app/services/game_service.py still stores games in an in-memory dictionary and app/db/repository.py remains a placeholder. |
+| M1 persistence implementation | MERGED to develop; M5 branch not yet integrated | PR #32 is merged. Its pre-merge CI run #139 passed all five jobs: https://github.com/emt0147t/caroAI/actions/runs/39913192666. This is evidence for the PR head before merge, not a run on the M5 branch. |
+| PostgreSQL integration / migrations | PASS on M1 PR CI; NOT RUN on M5 branch | Run #139 PostgreSQL acceptance job passed with zero-skips guard. Do not claim the M5 branch has this coverage until it contains the implementation and reruns the checks. |
+| Compose persistence after API restart | PASS on M1 PR CI; NOT RUN on M5 branch | Run #139 Compose job created/moved a game, restarted the API, read persisted state and cleaned up the disposable stack. |
+| Draw persistence and corrupted-history rejection tests | NOT RUN / coverage gap | No dedicated draw persistence test or dedicated test for each malformed persisted-history invariant was identified in the reviewed M1 test files. |
+| Browser E2E and deployed/live persistence | NOT RUN | No successful browser E2E or public deployed/live smoke evidence recorded in the M5 matrix. |
 
 ### Evidence rules
 
 - Record the exact full commit SHA, command, environment, result, and workflow URL for every run.
-- PR #32 evidence must not be presented as a result from feature/m5-sprint3-qa.
+- M1 PR/merged-develop evidence must not be presented as a result from feature/m5-sprint3-qa.
 - SQLite evidence must not be presented as PostgreSQL evidence.
 - A successful PR workflow does not prove the same behavior on the M5 branch.
 - SKIPPED, NOT RUN, BLOCKED and PARTIAL are not PASS.
@@ -222,4 +222,4 @@ $env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
 python -m pytest tests/test_database_postgres.py -q
 ```
 
-The URL above is a placeholder, not a real credential. The PostgreSQL acceptance job described above belongs to PR #32. The M5 branch itself still requires a dedicated run against an explicitly disposable test database.
+The URL above is a placeholder, not a real credential. The successful PostgreSQL acceptance job described above belongs to M1's PR #32. The M5 branch itself still requires integration with the current implementation and a dedicated test run against an explicitly disposable test database.
