@@ -145,7 +145,7 @@ Kết quả review-fix head `cc25a0f5eaf075ed1cee58944114b99e0d43971a`: [push CI
 - **Container smoke test:** Docker Compose stack trong CI; smoke kiểm tra persistence sau restart API trên disposable CI environment.
 - **Test database/isolation:** Dedicated PostgreSQL CI acceptance job dùng disposable test database/schema safeguards. PostgreSQL tests yêu cầu `TEST_DATABASE_URL` và `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`; test setup tạo/dọn schema riêng và không được trỏ tới production/shared database.
 - **Schema setup/migrations:** Repository có versioned migration runner. CI PostgreSQL acceptance bao gồm khởi tạo schema trên database rỗng, backfill public IDs hiện có và kiểm tra chạy migration idempotent.
-- **Current evidence:** [push CI run #231](https://github.com/emt0147t/caroAI/actions/runs/39921750450) và [pull_request CI run #232](https://github.com/emt0147t/caroAI/actions/runs/39922033030) đều xanh trên SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`; portable suite 216 passed, 11 skipped, 1 warning; dedicated PostgreSQL acceptance 15 passed, zero skipped.
+- **Historical detailed-count snapshot:** [push CI run #231](https://github.com/emt0147t/caroAI/actions/runs/39921750450) và [pull_request CI run #232](https://github.com/emt0147t/caroAI/actions/runs/39922033030) đều xanh trên SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`; portable suite 216 passed, 11 skipped, 1 warning; dedicated PostgreSQL acceptance 15 passed, zero skipped.
 
 ## 10. Test Data
 
@@ -197,7 +197,7 @@ This section records observed status separately from planned tests. The detailed
 |---|---|---|
 | M5 baseline suite | Historical baseline passed on M5 branch at SHA 2dd55cda274d7112e6d3244a4b457768178e98f8 | 178 passed, 11 skipped, 1 warning on local Windows; exact Python version not recorded. This is not a test result for later commits. |
 | Persistence implementation on M5 branch | INTEGRATED and CI-VERIFIED | M5 commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5 includes SQLAlchemy persistence; run #155 passed. |
-| Earlier M5 review-fix CI snapshot | PASS | Final review-fix SHA `cc25a0f5eaf075ed1cee58944114b99e0d43971a`: [push run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) passed all five required validation jobs. Production publish/deploy verification in #251 was skipped by design. |
+| Earlier M5 review-fix CI snapshot | PASS | Earlier review-fix SHA `cc25a0f5eaf075ed1cee58944114b99e0d43971a`: [push run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) passed all five required validation jobs. Production publish/deploy verification in #251 was skipped by design. |
 | PostgreSQL integration / migrations | PASS | Dedicated PostgreSQL acceptance in runs #231/#232: 15 passed, zero skipped. Disposable test DB/schema safeguards and versioned migration runner are implemented. |
 | Compose persistence after API restart | PASS on M5 CI disposable stack | Runs #231/#232 passed the Compose API/database persistence-after-restart job. This is not public deployment evidence. |
 | Draw persistence and corrupted-history rejection tests | PASS in Python suite | The portable suite in runs #231/#232 passed 216 tests with 11 skipped and 1 warning; dedicated draw persistence and four corrupted-history cases are present in `tests/test_repository_persistence.py`. |
