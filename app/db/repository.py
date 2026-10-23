@@ -1,6 +1,8 @@
 """Repository and transaction unit-of-work for CaroAI game state."""
 from contextlib import contextmanager
 from copy import deepcopy
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from threading import RLock
 from typing import Iterator
 from uuid import uuid4
@@ -21,6 +23,19 @@ class RepositoryGameNotFoundError(LookupError):
 
 class GamePersistenceError(RuntimeError):
     """Raised when a persisted game cannot be read or written consistently."""
+
+
+@dataclass(frozen=True)
+class GameHistoryRecord:
+    """Storage-neutral summary for the Game History API."""
+
+    public_id: str
+    mode: str
+    status: str
+    result: str | None
+    started_at: datetime
+    ended_at: datetime | None
+    move_count: int
 
 
 def _result_for_state(state: GameState) -> str | None:
@@ -126,6 +141,36 @@ class SQLAlchemyGameUnitOfWork:
         )
         self.session.flush()
 
+    def list_history(
+        self, *, limit: int = 50, offset: int = 0
+    ) -> list[GameHistoryRecord]:
+        """Return newest games first with persisted move counts."""
+        move_count = (
+            select(func.count(PersistedMove.id))
+            .where(PersistedMove.game_id == GameRecord.id)
+            .correlate(GameRecord)
+            .scalar_subquery()
+        )
+        statement = (
+            select(GameRecord, move_count.label("move_count"))
+            .order_by(GameRecord.started_at.desc(), GameRecord.id.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        rows = self.session.execute(statement).all()
+        return [
+            GameHistoryRecord(
+                public_id=record.public_id,
+                mode=record.mode,
+                status=record.status,
+                result=record.result,
+                started_at=record.started_at,
+                ended_at=record.ended_at,
+                move_count=int(count),
+            )
+            for record, count in rows
+        ]
+
 
 class SQLAlchemyGameRepository:
     """SQLAlchemy-backed repository; the caller owns the request-scoped Session."""
@@ -147,12 +192,20 @@ class SQLAlchemyGameRepository:
 class InMemoryGameUnitOfWork:
     """Small transactional adapter for isolated unit/API tests only."""
 
-    def __init__(self, games: dict[str, GameState]) -> None:
+    def __init__(
+        self,
+        games: dict[str, GameState],
+        started_at: dict[str, datetime],
+        ended_at: dict[str, datetime],
+    ) -> None:
         self._games = games
+        self._started_at = started_at
+        self._ended_at = ended_at
 
     def create_game(self, mode: GameMode) -> str:
         game_id = str(uuid4())
         self._games[game_id] = GameState(mode=mode)
+        self._started_at[game_id] = datetime.now(timezone.utc)
         return game_id
 
     def get_game_state(
@@ -167,6 +220,41 @@ class InMemoryGameUnitOfWork:
         if game_id not in self._games:
             raise RepositoryGameNotFoundError(f"Game '{game_id}' not found")
         self._games[game_id] = deepcopy(state)
+        if state.status == GameStatus.IN_PROGRESS:
+            self._ended_at.pop(game_id, None)
+        else:
+            self._ended_at[game_id] = datetime.now(timezone.utc)
+
+    def list_history(
+        self, *, limit: int = 50, offset: int = 0
+    ) -> list[GameHistoryRecord]:
+        """Return recent in-memory games in the same shape as SQL persistence."""
+        ordered_ids = sorted(
+            self._games,
+            key=lambda game_id: (self._started_at[game_id], game_id),
+            reverse=True,
+        )
+        selected_ids = ordered_ids[offset:offset + limit]
+        records = []
+        for game_id in selected_ids:
+            state = self._games[game_id]
+            result = (
+                None
+                if state.status == GameStatus.IN_PROGRESS
+                else state.status.value
+            )
+            records.append(
+                GameHistoryRecord(
+                    public_id=game_id,
+                    mode=state.mode.value,
+                    status=state.status.value,
+                    result=result,
+                    started_at=self._started_at[game_id],
+                    ended_at=self._ended_at.get(game_id),
+                    move_count=state.move_count,
+                )
+            )
+        return records
 
 
 class InMemoryGameRepository:
@@ -174,15 +262,23 @@ class InMemoryGameRepository:
 
     def __init__(self) -> None:
         self._games: dict[str, GameState] = {}
+        self._started_at: dict[str, datetime] = {}
+        self._ended_at: dict[str, datetime] = {}
         self._lock = RLock()
 
     @contextmanager
     def transaction(self) -> Iterator[InMemoryGameUnitOfWork]:
         with self._lock:
             working_copy = deepcopy(self._games)
+            started_at_copy = deepcopy(self._started_at)
+            ended_at_copy = deepcopy(self._ended_at)
             try:
-                yield InMemoryGameUnitOfWork(working_copy)
+                yield InMemoryGameUnitOfWork(
+                    working_copy, started_at_copy, ended_at_copy
+                )
             except Exception:
                 raise
             else:
                 self._games = working_copy
+                self._started_at = started_at_copy
+                self._ended_at = ended_at_copy

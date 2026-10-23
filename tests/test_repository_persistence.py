@@ -7,7 +7,11 @@ from sqlalchemy.pool import StaticPool
 
 from app.api.dependencies import get_game_service
 from app.db.models import Base, Game, Move
-from app.db.repository import SQLAlchemyGameRepository, SQLAlchemyGameUnitOfWork
+from app.db.repository import (
+    GamePersistenceError,
+    SQLAlchemyGameRepository,
+    SQLAlchemyGameUnitOfWork,
+)
 from app.domain.game_state import GameMode, GameStatus, Player
 from app.main import app
 from app.services import game_service as game_service_module
@@ -198,3 +202,73 @@ def test_service_transaction_rolls_back_if_move_persistence_fails(database, monk
         assert record.status == GameStatus.IN_PROGRESS.value
         assert record.result is None
         assert move_count == 0
+
+def test_history_api_returns_persisted_metadata_and_move_count(database):
+    _engine, session_factory = database
+
+    def sql_game_service():
+        with session_factory() as session:
+            yield GameService(SQLAlchemyGameRepository(session))
+
+    app.dependency_overrides[get_game_service] = sql_game_service
+    try:
+        with TestClient(app) as client:
+            created = client.post(
+                "/api/games", json={"mode": "HUMAN_VS_HUMAN"}
+            )
+            assert created.status_code == 201
+            game_id = created.json()["id"]
+            moved = client.post(
+                f"/api/games/{game_id}/moves",
+                json={"row": 3, "col": 4},
+            )
+            assert moved.status_code == 200
+
+            history = client.get("/api/history?limit=10&offset=0")
+            assert history.status_code == 200
+            payload = history.json()
+            assert payload["limit"] == 10
+            assert payload["offset"] == 0
+            assert len(payload["items"]) == 1
+            item = payload["items"][0]
+            assert item["id"] == game_id
+            assert item["mode"] == "HUMAN_VS_HUMAN"
+            assert item["status"] == "IN_PROGRESS"
+            assert item["result"] is None
+            assert item["move_count"] == 1
+            assert item["started_at"] is not None
+            assert item["ended_at"] is None
+            assert client.get("/api/history?limit=101").status_code == 422
+    finally:
+        app.dependency_overrides.pop(get_game_service, None)
+
+
+def test_create_and_move_routes_do_not_read_state_after_write_commit(
+    database, monkeypatch
+):
+    _engine, session_factory = database
+
+    def sql_game_service():
+        with session_factory() as session:
+            yield GameService(SQLAlchemyGameRepository(session))
+
+    def fail_if_called(_self, _game_id):
+        raise GamePersistenceError("simulated follow-up read failure")
+
+    monkeypatch.setattr(GameService, "get_game", fail_if_called)
+    app.dependency_overrides[get_game_service] = sql_game_service
+    try:
+        with TestClient(app) as client:
+            created = client.post(
+                "/api/games", json={"mode": "HUMAN_VS_HUMAN"}
+            )
+            assert created.status_code == 201
+            game_id = created.json()["id"]
+            moved = client.post(
+                f"/api/games/{game_id}/moves",
+                json={"row": 5, "col": 6},
+            )
+            assert moved.status_code == 200
+            assert moved.json()["game"]["move_count"] == 1
+    finally:
+        app.dependency_overrides.pop(get_game_service, None)

@@ -46,8 +46,7 @@ def create_game(
     service: GameService = Depends(get_game_service),
 ):
     try:
-        game_id = service.create_game(request.mode)
-        state = service.get_game(game_id)
+        game_id, state = service.create_game_with_state(request.mode)
     except GamePersistenceError as exc:
         raise _storage_unavailable(exc) from exc
 
@@ -79,8 +78,7 @@ def make_move(
     service: GameService = Depends(get_game_service),
 ):
     try:
-        move = service.make_move(game_id, request.row, request.col)
-        state = service.get_game(game_id)
+        move, state = service.make_move_with_state(game_id, request.row, request.col)
     except GameNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except InvalidMoveError as exc:
@@ -109,8 +107,9 @@ def make_ai_move(
     service: GameService = Depends(get_game_service),
 ):
     try:
-        move = service.make_ai_move(game_id, request.difficulty.value)
-        state = service.get_game(game_id)
+        move, state = service.make_ai_move_with_state(
+            game_id, request.difficulty.value
+        )
     except GameNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except InvalidAIMoveError as exc:

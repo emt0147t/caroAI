@@ -27,9 +27,17 @@ class GameService:
         # production routes always inject SQLAlchemyGameRepository explicitly.
         self._repository = repository or InMemoryGameRepository()
 
-    def create_game(self, mode: GameMode) -> str:
+    def create_game_with_state(self, mode: GameMode) -> tuple[str, GameState]:
+        """Create a game and return its initial state within the same transaction."""
         with self._repository.transaction() as uow:
-            return uow.create_game(mode)
+            game_id = uow.create_game(mode)
+            state = uow.get_game_state(game_id)
+            return game_id, state
+
+    def create_game(self, mode: GameMode) -> str:
+        """Create a game and return its public identifier."""
+        game_id, _state = self.create_game_with_state(mode)
+        return game_id
 
     def get_game(self, game_id: str) -> GameState:
         try:
@@ -38,15 +46,27 @@ class GameService:
         except RepositoryGameNotFoundError as exc:
             raise GameNotFoundError(str(exc)) from exc
 
-    def make_move(self, game_id: str, row: int, col: int) -> Move:
+    def make_move_with_state(
+        self, game_id: str, row: int, col: int
+    ) -> tuple[Move, GameState]:
+        """Persist a move and return the resulting state before leaving the UoW."""
         try:
             with self._repository.transaction() as uow:
                 state = uow.get_game_state(game_id, for_update=True)
                 move = GameRules.apply_move(state, row, col)
                 uow.persist_move(game_id, move, state)
-                return move
+                return move, state
         except RepositoryGameNotFoundError as exc:
             raise GameNotFoundError(str(exc)) from exc
+
+    def make_move(self, game_id: str, row: int, col: int) -> Move:
+        move, _state = self.make_move_with_state(game_id, row, col)
+        return move
+
+    def list_history(self, *, limit: int = 50, offset: int = 0):
+        """Return paginated game summaries from the configured repository."""
+        with self._repository.transaction() as uow:
+            return uow.list_history(limit=limit, offset=offset)
 
     def _choose_ai_coordinates(
         self, state: GameState, difficulty: str
@@ -85,14 +105,20 @@ class GameService:
             ) from exc
         return row, col
 
-    def make_ai_move(self, game_id: str, difficulty: str) -> Move:
-        """Compute, validate and persist an AI move in one transaction."""
+    def make_ai_move_with_state(
+        self, game_id: str, difficulty: str
+    ) -> tuple[Move, GameState]:
+        """Compute, validate, persist and return an AI move in one transaction."""
         try:
             with self._repository.transaction() as uow:
                 state = uow.get_game_state(game_id, for_update=True)
                 row, col = self._choose_ai_coordinates(state, difficulty)
                 move = GameRules.apply_move(state, row, col)
                 uow.persist_move(game_id, move, state)
-                return move
+                return move, state
         except RepositoryGameNotFoundError as exc:
             raise GameNotFoundError(str(exc)) from exc
+
+    def make_ai_move(self, game_id: str, difficulty: str) -> Move:
+        move, _state = self.make_ai_move_with_state(game_id, difficulty)
+        return move
