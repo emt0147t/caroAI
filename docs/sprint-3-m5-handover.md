@@ -1,5 +1,14 @@
 # Sprint 3 — M5 Handover Evidence (Issue #31)
 
+## PR #38 validation snapshot — SHA `d93124518e1b907bdd1db29b959cd3a15a0c14ff` (2026-10-23)
+
+- Push CI [run #281](https://github.com/emt0147t/caroAI/actions/runs/39978359724): **SUCCESS**. The five validation jobs passed: Python tests/lint, PostgreSQL service/API/migration acceptance (including the zero-skips guard), disposable Compose persistence after API restart, frontend syntax/regression, and Docker image build.
+- Pull-request CI [run #282](https://github.com/emt0147t/caroAI/actions/runs/39978367013): **SUCCESS** for PR validation. The five validation jobs passed; the approved production publish/Render verification job was **SKIPPED by design**. This does not establish image publication or deployment.
+- Browser E2E [run #41](https://github.com/emt0147t/caroAI/actions/runs/39978367028): **SUCCESS, 13/13 Playwright tests passed** in the PR #38 validation snapshot. This is CI browser E2E evidence, not a production/deployed test. This wording does not claim a separate branch-head checkout beyond the workflow's actual checkout/ref.
+- These runs were checked against the supplied snapshot head `d93124518e1b907bdd1db29b959cd3a15a0c14ff`. Historical counts of 216 passed / 11 skipped / 1 warning and PostgreSQL acceptance 15 passed / 0 skipped remain tied only to SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`, runs #231/#232.
+- Production image publication/deployment, public HTTPS/live smoke, and persistence after restart/redeploy in a deployed environment remain **NOT RUN**. The passing Compose check is limited to a disposable CI stack.
+
+
 ## Historical evidence snapshot (2026-10-23)
 
 - Earlier review-fix snapshot: `cc25a0f5eaf075ed1cee58944114b99e0d43971a` (historical; superseded by later commits).
@@ -12,7 +21,7 @@
 
 - `b333273da91bc2e6bceb8be891ec91112681c9e2` is the previously verified M5 head. Push run #260 and pull-request run #261 passed all five required jobs on that exact SHA only; they do not validate later commits.
 - SHA `cc25a0f5eaf075ed1cee58944114b99e0d43971a` and runs #250/#251 are historical. Detailed counts 216 passed / 11 skipped / 1 warning and PostgreSQL acceptance 15 passed / 0 skipped belong only to SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c` in runs #231/#232. Run #219 on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36` is historical/pre-sync.
-- Latest supplied M3 evidence is PR #34 head `4d540c65f4963d154229214dd34e6dec8f679534`: Browser E2E run #32 passed 13/13 Playwright tests and CaroAI CI run #263 succeeded. Status remains **PARTIAL — M3 PR-only evidence; not verified on M5 head; production/live smoke NOT RUN**.
+- Historical M3 evidence remains separately recorded: PR #34 head `4d540c65f4963d154229214dd34e6dec8f679534`, Browser E2E run #32 passed 13/13 and CaroAI CI #263 succeeded on that SHA. Current PR #38 Browser E2E run #41 separately passed 13/13 in this PR validation snapshot; neither result is production/live smoke.
 
 ## Scope and branch safety
 
@@ -65,7 +74,7 @@ Coverage documented in the M5 QA branch includes:
 
 | Area | Status | Follow-up owner / action |
 |---|---|---|
-| Browser E2E for PvP/PvAI and history | **PARTIAL — M3 PR-only evidence; not verified on M5 head; production/live smoke NOT RUN** | PR #34 head `4d540c65f4963d154229214dd34e6dec8f679534`: [Browser E2E run #32](https://github.com/emt0147t/caroAI/actions/runs/39926139293) passed 13/13 Playwright tests; [CaroAI CI run #263](https://github.com/emt0147t/caroAI/actions/runs/39926139313) succeeded on the same SHA against real Compose/API/frontend. Older run #30 is historical only. This is not E2E on M5 head or production/live smoke; M3/M5 should capture E2E on the intended release head if required. |
+| Browser E2E for PvP/PvAI and history | **PASSED for PR #38 validation snapshot (13/13); production/live smoke NOT RUN** | [PR #38 Browser E2E run #41](https://github.com/emt0147t/caroAI/actions/runs/39978367028) passed 13/13 Playwright tests. Historical M3 PR #34 run #32 on SHA `4d540c65f4963d154229214dd34e6dec8f679534` remains separate historical evidence. Neither run establishes production/live smoke. |
 | Public publish/deploy, public HTTPS and live smoke | **NOT RUN** | M3/M4/M1 own deployment target and live-smoke evidence; M5 records results but does not implement their deployment work |
 | Persistence after restart/redeploy in the deployed environment | **NOT RUN** | M1/M3/M4 coordinate verification against the actual deployed service; the passing Compose check is only a disposable CI stack |
 | 11 skipped in generic Python suite | **SKIPPED, understood** | PostgreSQL tests in `tests/test_database_postgres.py` require `TEST_DATABASE_URL` and `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`; the dedicated PostgreSQL acceptance job passed its zero-skips guard |
@@ -81,7 +90,7 @@ The successful Compose smoke is not proof of public deployment, public HTTPS, or
 - [x] Pre-cleanup M5 head `affbb23a90a12dd14f006d8ef692ffdead1e682c` passed all five jobs in push run #231 and pull_request run #232.
 - [x] Earlier review-fix snapshot `cc25a0f5eaf075ed1cee58944114b99e0d43971a` passed all five required validation jobs in push run #250 and pull_request run #251.
 - [x] M3 PR #34 E2E evidence recorded as PR-only/partial, including both passing PR workflow and failing push workflow.
-- [ ] Browser E2E evidence collected.
+- [x] Browser E2E for PR #38 validation snapshot recorded: run #41 passed 13/13. Production/live smoke remains outstanding.
 - [ ] Public deployment/live smoke and deployed restart-persistence evidence collected.
 - [ ] Issue #31 acceptance checklist reviewed with M1/M3/M4 and final owner sign-off recorded.
 
