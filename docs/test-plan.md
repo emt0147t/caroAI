@@ -197,19 +197,19 @@ This section records observed status separately from planned tests. The detailed
 |---|---|---|
 | M5 baseline suite | Historical baseline passed on M5 branch at SHA 2dd55cda274d7112e6d3244a4b457768178e98f8 | 178 passed, 11 skipped, 1 warning on local Windows; exact Python version not recorded. This is not a test result for later commits. |
 | Persistence implementation on M5 branch | INTEGRATED and CI-VERIFIED | M5 commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5 includes SQLAlchemy persistence; run #155 passed. |
-| M5 final review-fix CI | PASS | Final review-fix SHA `cc25a0f5eaf075ed1cee58944114b99e0d43971a`: [push run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) passed all five required validation jobs. Production publish/deploy verification in #251 was skipped by design. |
+| Earlier M5 review-fix CI snapshot | PASS | Final review-fix SHA `cc25a0f5eaf075ed1cee58944114b99e0d43971a`: [push run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) passed all five required validation jobs. Production publish/deploy verification in #251 was skipped by design. |
 | PostgreSQL integration / migrations | PASS | Dedicated PostgreSQL acceptance in runs #231/#232: 15 passed, zero skipped. Disposable test DB/schema safeguards and versioned migration runner are implemented. |
 | Compose persistence after API restart | PASS on M5 CI disposable stack | Runs #231/#232 passed the Compose API/database persistence-after-restart job. This is not public deployment evidence. |
 | Draw persistence and corrupted-history rejection tests | PASS in Python suite | The portable suite in runs #231/#232 passed 216 tests with 11 skipped and 1 warning; dedicated draw persistence and four corrupted-history cases are present in `tests/test_repository_persistence.py`. |
-| Browser E2E | PARTIAL — M3 PR-only evidence; not verified on M5 head | PR #34 head `31a000989408d86ff6cdc863913f45d69832ce0a`: [pull_request run #30](https://github.com/emt0147t/caroAI/actions/runs/39916935723) passed 13/13 Playwright tests; [push run](https://github.com/emt0147t/caroAI/actions/runs/39916931396) failed on that same SHA. Neither is E2E evidence for the M5 head or production/live smoke. |
+| Browser E2E | PARTIAL — M3 PR-only evidence; not verified on M5 head; production/live smoke NOT RUN | PR #34 head `4d540c65f4963d154229214dd34e6dec8f679534`: [Browser E2E run #32](https://github.com/emt0147t/caroAI/actions/runs/39926139293) passed 13/13 Playwright tests; [CaroAI CI run #263](https://github.com/emt0147t/caroAI/actions/runs/39926139313) succeeded on the same SHA; [push run](https://github.com/emt0147t/caroAI/actions/runs/39916931396) failed on that same SHA. Neither is E2E evidence for the M5 head or production/live smoke. |
 | Deployed/live persistence | NOT RUN | Public HTTPS/live smoke and persistence after restart/redeploy in the deployed environment have no evidence. M1/M3/M4 own deployment/live validation; M5 records the evidence and limitation. |
 
 ### Evidence rules
 
 - Record the exact full commit SHA, command, environment, result, and workflow URL for every run.
-- Historical M1 PR #32 evidence remains pre-merge only. Final review-fix CI evidence is [push run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) on SHA `cc25a0f5eaf075ed1cee58944114b99e0d43971a`. Runs #231/#232 on `affbb23a90a12dd14f006d8ef692ffdead1e682c` are the pre-review-cleanup detailed-count snapshot. Run #219 on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36` is historical/pre-sync only.
+- Historical M1 PR #32 evidence remains pre-merge only. Earlier review-fix CI evidence is [push run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) on SHA `cc25a0f5eaf075ed1cee58944114b99e0d43971a`. Runs #231/#232 on `affbb23a90a12dd14f006d8ef692ffdead1e682c` are the pre-review-cleanup detailed-count snapshot. Run #219 on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36` is historical/pre-sync only.
 - SQLite evidence must not be presented as PostgreSQL evidence.
-- A successful workflow proves only the checks and commit recorded in that run. Runs #250/#251 validate the final review-fix SHA; runs #231/#232 are pre-review-cleanup evidence only.
+- A successful workflow proves only the checks and commit recorded in that run. Runs #250/#251 validate only the earlier review-fix SHA; runs #231/#232 are pre-review-cleanup evidence only.
 - SKIPPED, NOT RUN, BLOCKED and PARTIAL are not PASS.
 - Draw persistence and four malformed-history cases are covered by the current Python suite. Keep browser E2E and deployed/live smoke open until corresponding evidence is recorded.
 
@@ -224,3 +224,12 @@ python -m pytest tests/test_database_postgres.py -q
 ```
 
 The URL above is a placeholder, not a real credential. The final review-fix head is validated by runs #250/#251. The detailed PostgreSQL acceptance count (15 passed, zero skipped) is from pre-review-cleanup runs #231/#232 on SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`. For any additional manual run, use only an explicitly disposable test database.
+
+
+## Evidence snapshot clarification (2026-10-23)
+
+- Previously verified M5 head: `b333273da91bc2e6bceb8be891ec91112681c9e2`; push CI #260 and pull-request CI #261 passed five required validation jobs on that exact SHA only. They are not evidence for later commits.
+- Earlier `cc25a0f5eaf075ed1cee58944114b99e0d43971a` / runs #250/#251 are historical. Detailed counts 216 passed, 11 skipped, 1 warning and PostgreSQL acceptance 15 passed, 0 skipped are exclusively from `affbb23a90a12dd14f006d8ef692ffdead1e682c`, runs #231/#232. Run #219 on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36` is historical/pre-sync.
+- Latest supplied M3 PR #34 evidence is head `4d540c65f4963d154229214dd34e6dec8f679534`: Browser E2E run #32 passed 13/13 Playwright tests and CaroAI CI run #263 succeeded. Status: **PARTIAL — M3 PR-only evidence; not verified on M5 head; production/live smoke NOT RUN**.
+- `docker-compose.yml` exists; PostgreSQL acceptance runs in a dedicated job with a zero-skips guard; versioned migration runner is implemented; `/health` is liveness and `/ready` is database readiness. Compose persistence smoke creates a game/move, restarts the API in a disposable CI Compose stack, and reads persisted state. It is not production redeploy evidence. Docker image build does not establish image publication or deployment.
+- SQLite portable persistence tests and PostgreSQL acceptance tests are distinct suites/environments. Skipped tests are not counted as passed.
