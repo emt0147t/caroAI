@@ -234,13 +234,52 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.IMAGE_NAME }}:${{ steps.image-tags.outputs.short_sha }}
-      - name: Trigger Render deployment
+      - name: Trigger Render deployment for the exact SHA-tagged image
         if: env.RELEASE_RUN == 'true'
+        id: render-deploy
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
           test -n "$RENDER_DEPLOY_HOOK" || { echo "Missing RENDER_DEPLOY_HOOK secret"; exit 1; }
-          curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK"
+          response=$(curl --fail --silent --show-error --get \
+            --data-urlencode "imgURL=$IMAGE_NAME:$GITHUB_SHA" \
+            "$RENDER_DEPLOY_HOOK")
+          echo "$response"
+          deploy_id=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("deploy", {}).get("id", ""))')
+          test -n "$deploy_id" || { echo "Render did not return a deployment ID"; exit 1; }
+          echo "deploy_id=$deploy_id" >> "$GITHUB_OUTPUT"
+      - name: Wait for Render to confirm the exact image is live
+        if: env.RELEASE_RUN == 'true'
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          DEPLOY_ID: ${{ steps.render-deploy.outputs.deploy_id }}
+        run: |
+          test -n "$RENDER_API_KEY" || { echo "Missing RENDER_API_KEY secret"; exit 1; }
+          test -n "$RENDER_SERVICE_ID" || { echo "Missing RENDER_SERVICE_ID secret"; exit 1; }
+          for attempt in $(seq 1 60); do
+            response=$(curl --fail --silent --show-error \
+              --header "Authorization: Bearer $RENDER_API_KEY" \
+              --header "Accept: application/json" \
+              "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys/$DEPLOY_ID")
+            status=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("status", ""))')
+            image_ref=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("image", {}).get("ref", ""))')
+            echo "Render deploy status=$status image=$image_ref"
+            if [ "$status" = "live" ]; then
+              case "$image_ref" in
+                *":$GITHUB_SHA") echo "Render confirms the requested SHA image is live." ; break ;;
+                *) echo "Render reports live but the deployed image ref does not match $GITHUB_SHA"; exit 1 ;;
+              esac
+            fi
+            case "$status" in
+              build_failed|update_failed|pre_deploy_failed|canceled|deactivated)
+                echo "Render deployment failed with status: $status"; exit 1 ;;
+            esac
+            if [ "$attempt" -eq 60 ]; then
+              echo "Timed out waiting for Render deployment to become live"; exit 1
+            fi
+            sleep 10
+          done
       - name: Verify deployed public HTTPS application and database readiness
         if: env.RELEASE_RUN == 'true'
         env:
