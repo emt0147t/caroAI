@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "board_size": 15,
+  "players": {
+    "EMPTY": 0,
+    "X": 1,
+    "O": 2
+  },
+  "fixtures": [
+    {
+      "name": "demo_ai_win_now",
+      "category": "forced_win",
+      "description": "X has four contiguous stones and O blocks the left endpoint. AI must finish five at (7, 7).",
+      "ai_player": 1,
+      "stones": [
+        {"row": 7, "col": 2, "player": 2},
+        {"row": 7, "col": 3, "player": 1},
+        {"row": 7, "col": 4, "player": 1},
+        {"row": 7, "col": 5, "player": 1},
+        {"row": 7, "col": 6, "player": 1}
+      ],
+      "expected_moves": [[7, 7]],
+      "difficulty": ["EASY", "MEDIUM", "HARD"]
+    },
+    {
+      "name": "demo_forced_block",
+      "category": "forced_block",
+      "description": "O has four contiguous stones at row 0; X blocks the right endpoint, so AI must block at (0, 1).",
+      "ai_player": 1,
+      "stones": [
+        {"row": 0, "col": 2, "player": 2},
+        {"row": 0, "col": 3, "player": 2},
+        {"row": 0, "col": 4, "player": 2},
+        {"row": 0, "col": 5, "player": 2},
+        {"row": 0, "col": 6, "player": 1},
+        {"row": 7, "col": 7, "player": 1}
+      ],
+      "expected_moves": [[0, 1]],
+      "difficulty": ["EASY", "MEDIUM", "HARD"]
+    },
+    {
+      "name": "demo_midgame_search",
+      "category": "representative_midgame",
+      "description": "Eight-stone central position with no existing five and no immediate winning move for either player; record legal outputs for MEDIUM and HARD.",
+      "ai_player": 1,
+      "stones": [
+        {"row": 7, "col": 7, "player": 1},
+        {"row": 7, "col": 8, "player": 2},
+        {"row": 6, "col": 7, "player": 1},
+        {"row": 8, "col": 7, "player": 2},
+        {"row": 6, "col": 6, "player": 1},
+        {"row": 8, "col": 8, "player": 2},
+        {"row": 7, "col": 6, "player": 2},
+        {"row": 6, "col": 8, "player": 1}
+      ],
+      "expected_moves": [],
+      "difficulty": ["MEDIUM", "HARD"],
+      "require_no_immediate_win": true
+    }
+  ]
+}

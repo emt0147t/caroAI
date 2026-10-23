@@ -122,7 +122,7 @@ def find_best_move(
 
     candidates = get_candidate_moves(board, radius=2)
     if not candidates:
-        return ((7, 7), 0)
+        raise ValueError("No legal candidate moves available for this board")
 
     # 1. Thắng ngay lập tức nếu AI có nước tạo chuỗi 5 (ưu tiên tuyệt đối)
     for r, c in candidates:
