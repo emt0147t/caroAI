@@ -1,6 +1,6 @@
 # Sprint 3 QA Matrix — M5
 
-## Current-head evidence snapshot (2026-10-23)
+## Historical evidence snapshot (2026-10-23)
 
 - Earlier review-fix snapshot SHA: `cc25a0f5eaf075ed1cee58944114b99e0d43971a` (historical; superseded by later commits).
 - Push CI: [run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) — all five required validation jobs passed on this exact SHA.
@@ -46,7 +46,7 @@
 - Warning: StarletteDeprecationWarning from fastapi.testclient/httpx integration. Not a test failure.
 - Historical baseline SHA 2dd55cda274d7112e6d3244a4b457768178e98f8: 178 passed, 11 skipped, 1 warning; retained as historical baseline only.
 - PR #32 pre-merge CI runs #131/#139 remain historical PR-head evidence; use run #155 for evidence on the current M5 branch.
-- Browser E2E evidence exists on M3 PR #34 at a different SHA and is **not an E2E run on this M5 head**: pull_request workflow [run #30](https://github.com/emt0147t/caroAI/actions/runs/39916935723) passed **13/13 Playwright tests** on PR #34 head `31a000989408d86ff6cdc863913f45d69832ce0a` against the real Compose/API/frontend stack; older run #30 and its push-run result are historical only; runs #32/#263 are the latest supplied M3 evidence. These are CI E2E results, not production/live smoke. M5-head Playwright E2E is not verified by those runs.
+- Browser E2E evidence exists on M3 PR #34 at a different SHA and is **not an E2E run on this M5 head**: Browser E2E run #32 passed **13/13 Playwright tests** on PR #34 head `4d540c65f4963d154229214dd34e6dec8f679534`, and CaroAI CI run #263 succeeded on the same SHA. Older run #30 and its push-run result are historical only. These are CI E2E results, not production/live smoke. M5-head Playwright E2E is not verified.
 - Public deployment/HTTPS/live smoke and persistence after restart/redeploy in the deployed environment remain NOT RUN. Compose restart is a disposable CI-stack test only.
 
 ## Status definitions
@@ -78,7 +78,7 @@
 | QA-13 | PostgreSQL API acceptance | Human moves, terminal X win, AI move, history metadata | PASSED on M5 commit | M1/M4/M5 | CI run #155 PostgreSQL API acceptance passed |
 | QA-14 | PostgreSQL migration | Initialize empty DB; backfill existing public IDs; idempotent rerun | PASSED on M5 commit | M1/M4/M5 | CI run #155 PostgreSQL service/API/migration acceptance passed |
 | QA-15 | Compose persistence across API restart | Compose stack: create game, move, restart API container, GET state/history | PASSED on M5 commit (CI disposable stack) | M1/M4/M5 | CI run #155 Compose API/database persistence after restart passed |
-| QA-16 | Browser E2E | Verify PvP/PvAI and history in browser against Compose/API/frontend | PARTIAL — M3 PR-only evidence; not verified on M5 head; production/live smoke NOT RUN | M3/M5 | PR #34 head `4d540c65f4963d154229214dd34e6dec8f679534`: [Browser E2E run #32](https://github.com/emt0147t/caroAI/actions/runs/39926139293) passed 13/13 Playwright tests; [CaroAI CI run #263](https://github.com/emt0147t/caroAI/actions/runs/39926139313) succeeded on the same SHA; [push run](https://github.com/emt0147t/caroAI/actions/runs/39916931396) failed on same SHA. Neither validates final M5 SHA `cc25a0f5eaf075ed1cee58944114b99e0d43971a` or production/live smoke |
+| QA-16 | Browser E2E | Verify PvP/PvAI and history in browser against Compose/API/frontend | PARTIAL — M3 PR-only evidence; not verified on M5 head; production/live smoke NOT RUN | M3/M5 | PR #34 head `4d540c65f4963d154229214dd34e6dec8f679534`: [Browser E2E run #32](https://github.com/emt0147t/caroAI/actions/runs/39926139293) passed 13/13 Playwright tests; [CaroAI CI run #263](https://github.com/emt0147t/caroAI/actions/runs/39926139313) succeeded on the same SHA; [push run](https://github.com/emt0147t/caroAI/actions/runs/39916931396) failed on same SHA. Neither validates M5-head E2E or production/live smoke |
 | QA-17 | Publish/deploy/live smoke | Verify image publication, public HTTPS and persistence after deployment restart | NOT RUN | M1/M3/M4 (M5 records evidence only) | No deployment/live-smoke evidence identified; keep Issue #31 open until owners complete or team explicitly accepts the gap
 
 ## Merged M1 implementation test inventory (not M5-branch proof)
@@ -118,7 +118,7 @@ The repository implementation has `_rebuild_state` checks for contiguous move nu
 - One StarletteDeprecationWarning from fastapi.testclient/httpx remains; it did not fail the run.
 - Historical PR #32 runs #131/#139 and run #101 remain pre-merge evidence and must not override current M5 evidence from runs #197/#198.
 - Dedicated draw persistence and four corrupted-history cases are included in the Python suite for commit eeecfe569cc8b12cf5cc0f275ba4d5ced53a4192 and remain present at the current commit; the suite passed in runs #181 and #197.
-- The generic `python -m pytest -q tests/` job reports 11 skipped. `tests/test_database_postgres.py` explicitly skips its integration cases unless `TEST_DATABASE_URL` and `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database` are set. The separate PostgreSQL acceptance job passed with its zero-skips guard; do not conflate the two test invocations.
+- The generic `python -m pytest -q tests/` job reports 11 skipped on the recorded historical snapshot. `tests/test_database_postgres.py` explicitly skips its integration cases unless `TEST_DATABASE_URL` and `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database` are set. The separate PostgreSQL acceptance job passed with its zero-skips guard; do not conflate the two test invocations.
 - Browser E2E and public deployed/live smoke remain NOT RUN.
 
 ## Evidence rules
