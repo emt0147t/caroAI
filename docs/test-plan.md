@@ -197,19 +197,19 @@ This section records observed status separately from planned tests. The detailed
 |---|---|---|
 | M5 baseline suite | Historical baseline passed on M5 branch at SHA 2dd55cda274d7112e6d3244a4b457768178e98f8 | 178 passed, 11 skipped, 1 warning on local Windows; exact Python version not recorded. This is not a test result for later commits. |
 | Persistence implementation on M5 branch | INTEGRATED and CI-VERIFIED | M5 commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5 includes SQLAlchemy persistence; run #155 passed. |
-| M5 CI suite | PASS | Latest run #196 on 44367370ba5b16f7a2dfcc2908b63ebf3087f627: 194 passed, 11 skipped, 1 warning in 4.26 seconds; Flake8 passed; all five CI jobs passed. |
-| PostgreSQL integration / migrations | PASS on current M5 docs commit | Run #196 PostgreSQL service/API/migration acceptance passed with zero-skips guard. |
-| Compose persistence after API restart | PASS on M5 CI disposable stack | Run #196 created/moved a game, restarted API, read persisted state and cleaned up the stack. This is not public deployment evidence. |
-| Draw persistence and corrupted-history rejection tests | PASS in Python suite | Run #196 on 44367370ba5b16f7a2dfcc2908b63ebf3087f627: Python suite 194 passed, 11 skipped, 1 warning. Dedicated draw persistence and four corrupted-history cases are present in tests/test_repository_persistence.py. |
+| M5 CI suite | PASS | Latest run #197 on 3de3bc0477eb9a7308d175077e69e6d5d7141598: 194 passed, 11 skipped, 1 warning in 5.00 seconds; Flake8 passed; all five CI jobs passed. |
+| PostgreSQL integration / migrations | PASS on current M5 docs commit | Run #197 PostgreSQL service/API/migration acceptance passed with zero-skips guard. |
+| Compose persistence after API restart | PASS on M5 CI disposable stack | Run #197 created/moved a game, restarted API, read persisted state and cleaned up the stack. This is not public deployment evidence. |
+| Draw persistence and corrupted-history rejection tests | PASS in Python suite | Run #197 on 3de3bc0477eb9a7308d175077e69e6d5d7141598: Python suite 194 passed, 11 skipped, 1 warning. Dedicated draw persistence and four corrupted-history cases are present in tests/test_repository_persistence.py. |
 | Browser E2E | NOT RUN | No successful browser E2E result recorded. |
 | Deployed/live persistence | NOT RUN | No public HTTPS/live environment smoke test or deployed restart persistence evidence recorded.
 
 ### Evidence rules
 
 - Record the exact full commit SHA, command, environment, result, and workflow URL for every run.
-- Historical M1 PR #32 evidence must remain labeled as pre-merge evidence; current M5-branch full-suite status is supported by workflow run #196 on commit 44367370ba5b16f7a2dfcc2908b63ebf3087f627.
+- Historical M1 PR #32 evidence must remain labeled as pre-merge evidence; current M5-branch full-suite status is supported by workflow run #197 on commit 3de3bc0477eb9a7308d175077e69e6d5d7141598.
 - SQLite evidence must not be presented as PostgreSQL evidence.
-- A successful workflow proves only the checks and commit recorded in that run; run #196 is the latest M5-branch evidence.
+- A successful workflow proves only the checks and commit recorded in that run; run #197 is the latest M5-branch evidence.
 - SKIPPED, NOT RUN, BLOCKED and PARTIAL are not PASS.
 - Draw persistence and four malformed-history cases are covered by the current Python suite. Keep browser E2E and deployed/live smoke open until corresponding evidence is recorded.
 
@@ -223,4 +223,4 @@ $env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
 python -m pytest tests/test_database_postgres.py -q
 ```
 
-The URL above is a placeholder, not a real credential. The successful PostgreSQL acceptance job described above is from M5 branch commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5, workflow run #155. For any additional manual run, use only an explicitly disposable test database.
+The URL above is a placeholder, not a real credential. The latest successful PostgreSQL acceptance job is from M5 branch commit 3de3bc0477eb9a7308d175077e69e6d5d7141598, workflow run #197. For any additional manual run, use only an explicitly disposable test database.
