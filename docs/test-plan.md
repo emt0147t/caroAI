@@ -197,9 +197,9 @@ This section records observed status separately from planned tests. The detailed
 |---|---|---|
 | M5 baseline suite | Historical baseline passed on M5 branch at SHA 2dd55cda274d7112e6d3244a4b457768178e98f8 | 178 passed, 11 skipped, 1 warning on local Windows; exact Python version not recorded. This is not a test result for later commits. |
 | Persistence implementation on M5 branch | INTEGRATED and CI-VERIFIED | M5 commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5 includes SQLAlchemy persistence; run #155 passed. |
-| M5 CI suite | PASS | Run #197 on 3de3bc0477eb9a7308d175077e69e6d5d7141598: 194 passed, 11 skipped, 1 warning in 5.00 seconds. Latest run #203 on ccd5c2363acd7043044dfe6b246cf3bd42cd804d passed all five CI jobs; Flake8 and Docker Compose config validation passed. |
-| PostgreSQL integration / migrations | PASS | Run #203 PostgreSQL service/API/migration acceptance passed with zero-skips guard on the latest M5 QA/docs commit. |
-| Compose persistence after API restart | PASS on M5 CI disposable stack | Run #203 created/moved a game, restarted API, read persisted state and cleaned up the stack. This is not public deployment evidence. |
+| M5 CI suite | PASS | Run #197 on 3de3bc0477eb9a7308d175077e69e6d5d7141598: 194 passed, 11 skipped, 1 warning in 5.00 seconds. Latest run #219 on b9a87fe0759dfe51074ce71f5e01cfb45f088f36 passed all five CI jobs; Flake8 and Docker Compose config validation passed. |
+| PostgreSQL integration / migrations | PASS | Run #219 PostgreSQL service/API/migration acceptance passed with zero-skips guard on the latest M5 QA/docs commit. |
+| Compose persistence after API restart | PASS on M5 CI disposable stack | Run #219 created/moved a game, restarted API, read persisted state and cleaned up the stack. This is not public deployment evidence. |
 | Draw persistence and corrupted-history rejection tests | PASS in Python suite | Run #197 Python suite: 194 passed, 11 skipped, 1 warning; run #203 then passed all five CI jobs on the latest QA docs commit. Dedicated draw persistence and four corrupted-history cases are present in tests/test_repository_persistence.py. |
 | Browser E2E | NOT RUN | No successful browser E2E result recorded. |
 | Deployed/live persistence | NOT RUN | No public HTTPS/live environment smoke test or deployed restart persistence evidence recorded.
@@ -207,9 +207,9 @@ This section records observed status separately from planned tests. The detailed
 ### Evidence rules
 
 - Record the exact full commit SHA, command, environment, result, and workflow URL for every run.
-- Historical M1 PR #32 evidence must remain labeled as pre-merge evidence; current M5-branch full-suite count is from workflow run #197 on commit 3de3bc0477eb9a7308d175077e69e6d5d7141598. Latest full CI status is run #203 on commit ccd5c2363acd7043044dfe6b246cf3bd42cd804d.
+- Historical M1 PR #32 evidence must remain labeled as pre-merge evidence; current M5-branch full-suite count is from workflow run #197 on commit 3de3bc0477eb9a7308d175077e69e6d5d7141598. Latest full CI status is [run #219](https://github.com/emt0147t/caroAI/actions/runs/39920451798) on commit b9a87fe0759dfe51074ce71f5e01cfb45f088f36.
 - SQLite evidence must not be presented as PostgreSQL evidence.
-- A successful workflow proves only the checks and commit recorded in that run; run #197 is the latest M5-branch evidence.
+- A successful workflow proves only the checks and commit recorded in that run; run #197 contains the recorded Python suite count; run #219 is the latest full CI evidence.
 - SKIPPED, NOT RUN, BLOCKED and PARTIAL are not PASS.
 - Draw persistence and four malformed-history cases are covered by the current Python suite. Keep browser E2E and deployed/live smoke open until corresponding evidence is recorded.
 
@@ -223,4 +223,4 @@ $env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
 python -m pytest tests/test_database_postgres.py -q
 ```
 
-The URL above is a placeholder, not a real credential. The latest successful PostgreSQL acceptance job is from M5 branch commit 18b13bc2d056a0d8096ed5c13f5d4fe3b3164fe2, workflow run #198. For any additional manual run, use only an explicitly disposable test database.
+The URL above is a placeholder, not a real credential. The latest successful PostgreSQL acceptance job is from M5 branch commit b9a87fe0759dfe51074ce71f5e01cfb45f088f36, workflow run #219. For any additional manual run, use only an explicitly disposable test database.
