@@ -1,14 +1,28 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyo
 *$py.class
 .Python
+
+# Virtual environments
 .venv/
 venv/
 env/
 ENV/
 
-# Test and tooling outputs
+# Local environment files and secrets
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Tests and tooling
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -16,12 +30,10 @@ ENV/
 .coverage.*
 htmlcov/
 
-# Local environment and secrets
-.env
-.env.*
-!.env.example
+# ML artifacts
+*.pkl
+*.joblib
 
-# Frontend dependencies and OS files
-node_modules/
-.DS_Store
+# Logs / frontend dependencies
 *.log
+node_modules/

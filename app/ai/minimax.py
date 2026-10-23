@@ -1,5 +1,11 @@
-﻿from typing import List, Tuple, Optional
-from app.ai.evaluator import evaluate_board, SCORE_FIVE
+from typing import List, Tuple, Optional
+from app.ai.evaluator import (
+    SCORE_FIVE,
+    get_board_raw_scores,
+    get_cell_lines_scores,
+    check_win_at,
+    has_five_in_a_row,
+)
 from app.ai.move_generator import get_candidate_moves
 
 BOARD_SIZE = 15
@@ -18,43 +24,59 @@ def minimax(  # noqa: C901
     candidate_limit: int = 12
 ) -> Tuple[Optional[Tuple[int, int]], int]:
     """
-    Duyá»‡t cÃ¢y Minimax vá»›i cáº¯t tá»‰a Alpha-Beta vÃ  Backtracking.
+    Duyệt cây Minimax với cắt tỉa Alpha-Beta và Backtracking.
+    Sử dụng Incremental 4-Line Delta evaluation để đạt tốc độ tối đa.
     """
     candidates = get_candidate_moves(board, radius=2)
     if not candidates:
         return ((7, 7), 0)
 
-    # 1. Kiá»ƒm tra Ä‘iá»u kiá»‡n tháº¯ng / thua ngay láº­p tá»©c
-    for r, c in candidates:
-        board[r][c] = ai_player
-        score = evaluate_board(board, ai_player, human_player)
-        board[r][c] = EMPTY
-        if score >= SCORE_FIVE:
-            return ((r, c), SCORE_FIVE)
+    # 1. Kiểm tra trạng thái thắng/thua đã có sẵn trên bàn cờ (xác định bằng 5 quân thực tế)
+    if has_five_in_a_row(board, ai_player):
+        return (None, SCORE_FIVE)
+    if has_five_in_a_row(board, human_player):
+        return (None, -SCORE_FIVE)
 
-        board[r][c] = human_player
-        score_opp = evaluate_board(board, human_player, ai_player)
-        board[r][c] = EMPTY
-        if score_opp >= SCORE_FIVE:
-            if not is_maximizing:
-                return ((r, c), -SCORE_FIVE)
+    base_p1, base_p2 = get_board_raw_scores(board)
+    base_ai, base_hu = (base_p1, base_p2) if ai_player == 1 else (base_p2, base_p1)
 
-    if depth == 0:
-        return (None, evaluate_board(board, ai_player, human_player))
-
-    # 2. Sáº¯p xáº¿p sÆ¡ bá»™ cÃ¡c nÆ°á»›c Ä‘i (Move Ordering) Ä‘á»ƒ tÄƒng hiá»‡u quáº£ Alpha-Beta
+    # 2. Kiểm tra tactical và tính điểm move ordering cho lượt của current_player
     scored_candidates = []
     current_player = ai_player if is_maximizing else human_player
-    for r, c in candidates:
-        board[r][c] = current_player
-        s = evaluate_board(board, ai_player, human_player)
-        board[r][c] = EMPTY
-        scored_candidates.append(((r, c), s))
 
+    for r, c in candidates:
+        old_p1, old_p2 = get_cell_lines_scores(board, r, c)
+        old_ai, old_hu = (old_p1, old_p2) if ai_player == 1 else (old_p2, old_p1)
+
+        board[r][c] = current_player
+        if is_maximizing:
+            # AI có nước tạo chuỗi 5 ngay lập tức
+            if check_win_at(board, r, c, ai_player):
+                board[r][c] = EMPTY
+                return ((r, c), SCORE_FIVE)
+        else:
+            # Human có nước tạo chuỗi 5 ngay lập tức trong lượt của mình
+            if check_win_at(board, r, c, human_player):
+                board[r][c] = EMPTY
+                return ((r, c), -SCORE_FIVE)
+
+        new_p1, new_p2 = get_cell_lines_scores(board, r, c)
+        board[r][c] = EMPTY
+        new_ai, new_hu = (new_p1, new_p2) if ai_player == 1 else (new_p2, new_p1)
+
+        ai_total = base_ai - old_ai + new_ai
+        hu_total = base_hu - old_hu + new_hu
+        score = int(ai_total - 1.2 * hu_total)
+        scored_candidates.append(((r, c), score))
+
+    if depth == 0:
+        return (None, int(base_ai - 1.2 * base_hu))
+
+    # 3. Sắp xếp sơ bộ các nước đi (Move Ordering) để tăng hiệu quả Alpha-Beta
     scored_candidates.sort(key=lambda item: item[1], reverse=is_maximizing)
     limited_candidates = [m for m, _ in scored_candidates[:candidate_limit]]
 
-    # 3. Duyá»‡t Minimax
+    # 4. Duyệt Minimax
     best_move = None
 
     if is_maximizing:
@@ -94,22 +116,29 @@ def find_best_move(
     candidate_limit: int = 12
 ) -> Tuple[Tuple[int, int], int]:
     """
-    Entry point tÃ¬m nÆ°á»›c Ä‘i tá»‘i Æ°u cho AI.
+    Entry point tìm nước đi tối ưu cho AI.
     """
     human_player = 2 if ai_player == 1 else 1
 
-    # Kiá»ƒm tra cháº·n Ä‘e dá»a trá»±c tiáº¿p trÆ°á»›c khi duyá»‡t cÃ¢y sÃ¢u
     candidates = get_candidate_moves(board, radius=2)
     if not candidates:
-        return ((7, 7), 0)
+        raise ValueError("No legal candidate moves available for this board")
 
-    # Cháº·n ngay náº¿u Ä‘á»‘i thá»§ cÃ³ nÆ°á»›c táº¡o chuá»—i 5
+    # 1. Thắng ngay lập tức nếu AI có nước tạo chuỗi 5 (ưu tiên tuyệt đối)
+    for r, c in candidates:
+        board[r][c] = ai_player
+        if check_win_at(board, r, c, ai_player):
+            board[r][c] = EMPTY
+            return ((r, c), SCORE_FIVE)
+        board[r][c] = EMPTY
+
+    # 2. Chặn ngay nếu đối thủ có nước tạo chuỗi 5 trong lượt tiếp theo
     for r, c in candidates:
         board[r][c] = human_player
-        score_opp = evaluate_board(board, human_player, ai_player)
+        if check_win_at(board, r, c, human_player):
+            board[r][c] = EMPTY
+            return ((r, c), -SCORE_FIVE)
         board[r][c] = EMPTY
-        if score_opp >= SCORE_FIVE:
-            return ((r, c), -score_opp)
 
     best_move, score = minimax(
         board,

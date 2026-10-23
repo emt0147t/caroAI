@@ -17,7 +17,7 @@ def test_minimax_takes_immediate_win():
     for c in range(3, 7):
         board[7][c] = PLAYER_O
 
-    best_move, _ = find_best_move(board, ai_player=PLAYER_O, depth=2)
+    best_move, score = find_best_move(board, ai_player=PLAYER_O, depth=2)
     assert best_move == (7, 7) or best_move == (7, 2)
 
 
@@ -30,6 +30,6 @@ def test_minimax_blocks_opponent_four():
     # AI có 1 quân rời rạc ở chỗ khác
     board[0][0] = PLAYER_O
 
-    best_move, _ = find_best_move(board, ai_player=PLAYER_O, depth=2)
+    best_move, score = find_best_move(board, ai_player=PLAYER_O, depth=2)
     # AI buộc phải đi vào 1 trong 2 đầu (7, 2) hoặc (7, 7) để chặn
     assert best_move in [(7, 2), (7, 7)]

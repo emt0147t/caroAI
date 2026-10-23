@@ -33,23 +33,26 @@ Khởi chạy dịch vụ `app` cùng với PostgreSQL `db` container.
 ## 4. CI Quality Gate — Sprint 2 / Issue #16
 
 ### 4.1. Triggers
-- Push lên `develop` hoặc `feature/devops` sẽ chạy workflow.
+- Push lên `develop` hoặc bất kỳ nhánh `feature/**` nào sẽ chạy workflow.
 - Pull request có nhánh đích là `develop` sẽ chạy workflow.
 - Có thể kích hoạt thủ công bằng `workflow_dispatch` khi workflow đã có trên nhánh mặc định của repository.
 
 ### 4.2. Dependencies và runtime
 - GitHub-hosted runner `ubuntu-latest`, Python 3.11.
-- `requirements-dev.txt` kế thừa `requirements.txt` và bổ sung `flake8`, `httpx`; `httpx` được dùng bởi FastAPI TestClient.
+- `requirements-dev.txt` kế thừa `requirements.txt` và bổ sung `flake8`, `httpx`; `httpx` phục vụ FastAPI TestClient.
 - Pip cache gắn với `requirements-dev.txt` để tự làm mới khi dependencies thay đổi.
 
 ### 4.3. Quality gates
 - Lint: `python -m flake8 app tests --count --max-complexity=10 --max-line-length=127 --statistics`.
 - Tests: `python -m pytest -q tests/`.
-- Không dùng `--exit-zero`, `|| true`, hoặc cấu hình bỏ qua lỗi. Bất kỳ lỗi lint/test nào làm job `test` thất bại.
-- Docker build nằm trong job riêng có `needs: test`; image chỉ build khi toàn bộ lint và tests đã pass.
+- Không dùng `--exit-zero`, `|| true`, hoặc cấu hình bỏ qua lỗi. Lỗi lint/test làm job `test` thất bại.
+- Docker build chạy ở job riêng có `needs: test`, nên image chỉ build khi quality gates thành công.
 
 ### 4.4. Chạy kiểm tra tại máy local
+Tạo file environment cục bộ rồi cài dependency và chạy kiểm tra:
+
 ```bash
+cp .env.example .env
 python -m pip install -r requirements-dev.txt
 python -m flake8 app tests --count --max-complexity=10 --max-line-length=127 --statistics
 python -m pytest -q tests/
@@ -68,5 +71,5 @@ Workflow CI hiện kiểm tra khả năng build image sau khi quality gates thà
 
 ### 4.7. Environment và secrets
 - `.env.example` chỉ chứa giá trị mẫu cho local development.
-- File `.env` và các file environment cục bộ bị bỏ qua bởi Git.
+- File `.env` và các file environment cục bộ bị bỏ qua bởi Git; ngoại lệ được giữ lại cho `.env.example`.
 - Không commit credentials thật hoặc secrets production vào repository.
