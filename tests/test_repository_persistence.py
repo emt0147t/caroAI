@@ -203,6 +203,7 @@ def test_service_transaction_rolls_back_if_move_persistence_fails(database, monk
         assert record.result is None
         assert move_count == 0
 
+
 def test_history_api_returns_persisted_metadata_and_move_count(database):
     _engine, session_factory = database
 
