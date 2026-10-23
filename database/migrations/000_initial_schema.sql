@@ -3,7 +3,7 @@
 -- tables are not altered here, and later migrations handle schema changes.
 CREATE TABLE IF NOT EXISTS games (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    public_id VARCHAR(36) NOT NULL UNIQUE,
+    public_id VARCHAR(36) NOT NULL,
     mode VARCHAR(32) NOT NULL,
     difficulty VARCHAR(16),
     status VARCHAR(16) NOT NULL DEFAULT 'IN_PROGRESS',
