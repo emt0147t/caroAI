@@ -208,7 +208,7 @@ jobs:
     permissions:
       contents: read
     env:
-      IMAGE_NAME: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/caroai
+      IMAGE_NAME: docker.io/${{ secrets.DOCKERHUB_USERNAME || 'local-ci' }}/caroai
       RELEASE_RUN: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_approved }}
     steps:
       - uses: actions/checkout@v4
@@ -250,8 +250,7 @@ jobs:
           test -n "$PUBLIC_URL" || { echo "Set repository variable CAROAI_PUBLIC_URL to the public HTTPS base URL"; exit 1; }
           case "$PUBLIC_URL" in https://*) ;; *) echo "Public URL must use HTTPS"; exit 1 ;; esac
           for attempt in $(seq 1 36); do
-            if curl --fail --silent --show-error "$PUBLIC_URL/health" >/dev/null \\
-              && curl --fail --silent --show-error "$PUBLIC_URL/ready" >/dev/null; then
+            if curl --fail --silent --show-error "$PUBLIC_URL/health" >/dev/null && curl --fail --silent --show-error "$PUBLIC_URL/ready" >/dev/null; then
               echo "Public app liveness and database readiness checks passed: $PUBLIC_URL"
               exit 0
             fi
