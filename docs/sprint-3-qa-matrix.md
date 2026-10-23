@@ -88,13 +88,14 @@ The repository implementation has `_rebuild_state` checks for contiguous move nu
 - Persistence integration workflow run #155: https://github.com/emt0147t/caroAI/actions/runs/39914292428 — SUCCESS on commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5.
 - QA documentation workflow run #171: https://github.com/emt0147t/caroAI/actions/runs/39914848382 — SUCCESS on commit b35e8059bb5ecb430214d4176a322385e8ed6688.
 - Persistence test workflow run #181, attempt 2: https://github.com/emt0147t/caroAI/actions/runs/39916011771 — SUCCESS on commit eeecfe569cc8b12cf5cc0f275ba4d5ced53a4192; all five jobs passed.
-- Latest workflow run #197: https://github.com/emt0147t/caroAI/actions/runs/39918816443 — SUCCESS on current QA/docs commit 3de3bc0477eb9a7308d175077e69e6d5d7141598; all five jobs passed. Python suite: 194 passed, 11 skipped, 1 warning in 5.00 seconds.
+- Workflow run #197: https://github.com/emt0147t/caroAI/actions/runs/39918816443 — SUCCESS on code/test commit 3de3bc0477eb9a7308d175077e69e6d5d7141598; Python suite: 194 passed, 11 skipped, 1 warning in 5.00 seconds.
+- Latest workflow run #198: https://github.com/emt0147t/caroAI/actions/runs/39919251420 — SUCCESS on QA/docs commit 18b13bc2d056a0d8096ed5c13f5d4fe3b3164fe2; all five jobs passed.
 - All five jobs passed: Run tests and lint; PostgreSQL service/API/migration acceptance; Compose API/database persistence after restart; frontend syntax and regression checks; Docker image build.
 - Python suite: 189 passed, 11 skipped, 1 warning in 4.34 seconds. Flake8 reported 0 issues; Docker Compose config validation passed.
 - PostgreSQL acceptance passed with the zero-skips guard. Compose restart smoke passed on a disposable CI stack.
 - The Compose smoke is not evidence of public deployment, public HTTPS, or deployed persistence after restart.
 - One StarletteDeprecationWarning from fastapi.testclient/httpx remains; it did not fail the run.
-- Historical PR #32 runs #131/#139 and run #101 remain pre-merge evidence and must not override current M5 evidence from run #197.
+- Historical PR #32 runs #131/#139 and run #101 remain pre-merge evidence and must not override current M5 evidence from runs #197/#198.
 - Dedicated draw persistence and four corrupted-history cases are included in the Python suite for commit eeecfe569cc8b12cf5cc0f275ba4d5ced53a4192 and remain present at the current commit; the suite passed in runs #181 and #197.
 - The generic `python -m pytest -q tests/` job reports 11 skipped. `tests/test_database_postgres.py` explicitly skips its integration cases unless `TEST_DATABASE_URL` and `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database` are set. The separate PostgreSQL acceptance job passed with its zero-skips guard; do not conflate the two test invocations.
 - Browser E2E and public deployed/live smoke remain NOT RUN.
@@ -109,4 +110,4 @@ The repository implementation has `_rebuild_state` checks for contiguous move nu
 - Do not store credentials, tokens, or production database URLs in this file.
 - Dedicated draw persistence and four malformed-history corruption cases are implemented and passed in the Python suite on runs #181 and #197.
 - Browser E2E and public deployed/live smoke remain NOT RUN; the successful Compose smoke is limited to a disposable CI environment.
-- The current M5 QA/docs head is 3de3bc0477eb9a7308d175077e69e6d5d7141598 with full CI evidence in run #197. Persistence integration originally landed at 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5 in run #155.
+- The current M5 QA/docs head is 18b13bc2d056a0d8096ed5c13f5d4fe3b3164fe2 with full CI evidence in run #198. The Python suite count of 194 passed, 11 skipped, 1 warning was captured in run #197 on the immediately preceding code-equivalent commit. Persistence integration originally landed at 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5 in run #155.
