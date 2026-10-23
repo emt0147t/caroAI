@@ -5,16 +5,16 @@
 - Issue: [#31 — Persistence API integration QA + release evidence/docs](https://github.com/emt0147t/caroAI/issues/31)
 - Repository: `emt0147t/caroAI`
 - M5 working branch: `feature/m5-sprint3-qa`
-- Latest evidence at the time of this handover: [CI run #219](https://github.com/emt0147t/caroAI/actions/runs/39920451798)
-- Run #219 head SHA: `b9a87fe0759dfe51074ce71f5e01cfb45f088f36`
-- Run #219 result: **SUCCESS — all 5 jobs passed**.
+- Pre-sync CI evidence: [Run #219](https://github.com/emt0147t/caroAI/actions/runs/39920451798)
+- Run #219 head SHA: `b9a87fe0759dfe51074ce71f5e01cfb45f088f36` (pre-sync docs commit; not the post-sync head)
+- Run #219 result: **SUCCESS — all 5 jobs passed** on the pre-sync commit.
 - This is evidence on the M5 feature branch. It does not mean the branch has been merged to `develop`.
 
 ## Evidence links
 
 | Evidence | Link | What it establishes |
 |---|---|---|
-| Latest full CI | [Run #219](https://github.com/emt0147t/caroAI/actions/runs/39920451798) | Latest handover commit passed all five CI jobs |
+| Pre-sync full CI | [Run #219](https://github.com/emt0147t/caroAI/actions/runs/39920451798) | Commit b9a87fe passed all five CI jobs before syncing develop |
 | Python suite detail | [Run #197](https://github.com/emt0147t/caroAI/actions/runs/39918816443) | 194 passed, 11 skipped, 1 warning in 5.00 seconds on code-equivalent preceding commit |
 | PostgreSQL persistence integration | [Run #155](https://github.com/emt0147t/caroAI/actions/runs/39914292428) | Persistence implementation integration checkpoint; later runs also passed PostgreSQL acceptance |
 | Persistence regression test commit | [Commit eeecfe5](https://github.com/emt0147t/caroAI/commit/eeecfe569cc8b12cf5cc0f275ba4d5ced53a4192) | Added draw persistence and four malformed-history rejection cases |
@@ -23,7 +23,7 @@
 
 ## Verified in CI
 
-Run #219 completed successfully for all of these jobs:
+Run #219 completed successfully for all of these jobs on the pre-sync commit:
 
 1. Run tests and lint.
 2. PostgreSQL service/API/migration acceptance.
@@ -60,11 +60,11 @@ The successful Compose smoke is not proof of public deployment, public HTTPS, or
 - [x] Dedicated draw persistence and malformed-history regression tests added.
 - [x] QA matrix reconciled with actual test coverage and evidence.
 - [x] Test plan updated with current CI links and limitations.
-- [x] Latest M5 handover commit passed all five CI jobs in run #219.
+- [x] Pre-sync M5 handover commit b9a87fe passed all five CI jobs in run #219.
 - [ ] Browser E2E evidence collected.
 - [ ] Public deployment/live smoke and deployed restart-persistence evidence collected.
 - [ ] Issue #31 acceptance checklist reviewed with M1/M3/M4 and final owner sign-off recorded.
 
 ## Recommended disposition
 
-The **automated persistence/API/DB/Compose QA evidence is in good shape**, but Issue #31 should remain open until the team either completes the browser/deployment evidence or explicitly accepts those items as out of scope. Do not describe unrun checks as passed. No merge to `develop` is performed by this handover.
+The M5 branch was subsequently synchronized with develop at merge commit `e4f9452e684e0eeef5e08e9bbf443920c00dc484`; CI on that merged head must pass before opening the PR. The **automated persistence/API/DB/Compose QA evidence is in good shape**, but Issue #31 should remain open until the team either completes the browser/deployment evidence or explicitly accepts those items as out of scope. Do not describe unrun checks as passed. No merge to `develop` is performed by this handover.
