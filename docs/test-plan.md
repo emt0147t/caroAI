@@ -196,12 +196,13 @@ This section records observed status separately from planned tests. The detailed
 | Area | Current status | Evidence / limitation |
 |---|---|---|
 | M5 baseline suite | Historical baseline passed on M5 branch at SHA 2dd55cda274d7112e6d3244a4b457768178e98f8 | 178 passed, 11 skipped, 1 warning on local Windows; exact Python version not recorded. This is not a test result for later commits. |
-| Persistence implementation on M5 branch | BLOCKED / NOT RUN | At the current M5 branch snapshot, app/services/game_service.py still stores games in an in-memory dictionary and app/db/repository.py remains a placeholder. |
-| M1 persistence implementation | MERGED to develop; M5 branch not yet integrated | PR #32 is merged. Its pre-merge CI run #139 passed all five jobs: https://github.com/emt0147t/caroAI/actions/runs/39913192666. This is evidence for the PR head before merge, not a run on the M5 branch. |
-| PostgreSQL integration / migrations | PASS on M1 PR CI; NOT RUN on M5 branch | Run #139 PostgreSQL acceptance job passed with zero-skips guard. Do not claim the M5 branch has this coverage until it contains the implementation and reruns the checks. |
-| Compose persistence after API restart | PASS on M1 PR CI; NOT RUN on M5 branch | Run #139 Compose job created/moved a game, restarted the API, read persisted state and cleaned up the disposable stack. |
-| Draw persistence and corrupted-history rejection tests | NOT RUN / coverage gap | No dedicated draw persistence test or dedicated test for each malformed persisted-history invariant was identified in the reviewed M1 test files. |
-| Browser E2E and deployed/live persistence | NOT RUN | No successful browser E2E or public deployed/live smoke evidence recorded in the M5 matrix. |
+| Persistence implementation on M5 branch | INTEGRATED and CI-VERIFIED | M5 commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5 includes SQLAlchemy persistence; run #155 passed. |
+| M5 CI suite | PASS | Run #155: 189 passed, 11 skipped, 1 warning; Flake8 0 issues; Compose config validation passed. |
+| PostgreSQL integration / migrations | PASS on M5 commit | Run #155 PostgreSQL service/API/migration acceptance passed with zero-skips guard. |
+| Compose persistence after API restart | PASS on M5 CI disposable stack | Run #155 created/moved a game, restarted API, read persisted state and cleaned up the stack. This is not public deployment evidence. |
+| Draw persistence and corrupted-history rejection tests | NOT RUN / coverage gap | No dedicated draw persistence test or dedicated test for each malformed persisted-history invariant was identified in the reviewed test files. |
+| Browser E2E | NOT RUN | No successful browser E2E result recorded. |
+| Deployed/live persistence | NOT RUN | No public HTTPS/live environment smoke test or deployed restart persistence evidence recorded.
 
 ### Evidence rules
 
@@ -222,4 +223,4 @@ $env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
 python -m pytest tests/test_database_postgres.py -q
 ```
 
-The URL above is a placeholder, not a real credential. The successful PostgreSQL acceptance job described above belongs to M1's PR #32. The M5 branch itself still requires integration with the current implementation and a dedicated test run against an explicitly disposable test database.
+The URL above is a placeholder, not a real credential. The successful PostgreSQL acceptance job described above is from M5 branch commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5, workflow run #155. For any additional manual run, use only an explicitly disposable test database.
