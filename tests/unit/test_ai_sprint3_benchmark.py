@@ -39,6 +39,16 @@ def test_sprint3_benchmark_has_at_least_ten_unique_nonterminal_fixtures():
         assert not has_five_in_a_row(board, 2), item["name"]
 
 
+
+
+def test_full_source_sha_validation_rejects_abbreviated_or_malformed_values():
+    assert benchmark.validate_full_sha("A" * 40) == "a" * 40
+    with pytest.raises(ValueError, match="full 40-character Git SHA"):
+        benchmark.validate_full_sha("1234")
+    with pytest.raises(ValueError, match="full 40-character Git SHA"):
+        benchmark.validate_full_sha("g" * 40)
+
+
 def test_nearest_rank_p95_method_is_explicit_and_stable():
     assert benchmark.nearest_rank_percentile([1, 2, 3, 4, 5], 0.95) == 5
     assert benchmark.nearest_rank_percentile([1, 2, 3, 4, 5], 0.50) == 3
