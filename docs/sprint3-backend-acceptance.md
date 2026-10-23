@@ -18,5 +18,18 @@ Scope: M1 application persistence and Basic Game History API. This does not repl
 
 ## Still requires external evidence
 - Human reviewer approval and merge of PR #32.
-- Compose/runtime smoke on the exact built image and database.
+- CI Compose smoke on a disposable PostgreSQL database is now implemented: create game, record a move, restart the API container, and verify GET/history persistence. Public/deployed runtime smoke on the published release image remains external.
 - Release image publication, deployment, public HTTPS/browser E2E, and team-wide go/no-go.
+
+
+## Latest CI evidence (2026-10-23)
+
+- Tested source head: `4e63747430ce372772d8903b7c8cd2004dadad94`
+- Workflow: https://github.com/emt0147t/caroAI/actions/runs/39912878999
+- Frontend checks: PASSED.
+- Flake8 and portable pytest: PASSED — 189 passed, 11 skipped, 1 warning. The 11 skips are the opt-in PostgreSQL checks in the generic test job; do not count them as PostgreSQL passes.
+- Dedicated PostgreSQL 15 acceptance: PASSED — 15 passed, zero skipped. Coverage includes API/service persistence, human/AI moves, terminal result/time, rollback, migration/backfill and fresh-schema bootstrap.
+- Compose runtime smoke: PASSED — built and started the stack with a disposable database, created a game and move, restarted the API container, then verified the board and History API still returned the persisted state.
+- Docker image build: PASSED. The image was not published to a registry and the app was not deployed publicly.
+
+Approval/merge of PR #32, release publication, public HTTPS/browser E2E, and the team-wide release decision remain pending.
