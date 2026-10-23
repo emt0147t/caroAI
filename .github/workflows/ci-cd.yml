@@ -9,6 +9,12 @@ on:
     branches:
       - develop
   workflow_dispatch:
+    inputs:
+      release_approved:
+        description: "Release candidate approved for production deployment"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -29,6 +35,13 @@ jobs:
     name: Run tests and lint
     runs-on: ubuntu-latest
     steps:
+      - name: Enforce explicit main-branch release approval
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          RELEASE_APPROVED: ${{ inputs.release_approved }}
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main" || { echo "Release dispatch must target main"; exit 1; }
+          test "$RELEASE_APPROVED" = "true" || { echo "Release candidate approval is required"; exit 1; }
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
@@ -189,14 +202,62 @@ jobs:
         run: docker compose down --volumes --remove-orphans
 
   build:
-    name: Build Docker image
+    name: Build Docker image and publish approved release
     needs: [frontend, test, postgres-integration, compose-smoke]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      IMAGE_NAME: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/caroai
+      RELEASE_RUN: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_approved }}
     steps:
       - uses: actions/checkout@v4
+      - name: Derive traceable image tags
+        id: image-tags
+        shell: bash
+        run: |
+          echo "short_sha=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
+          echo "source_sha=$GITHUB_SHA"
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v5
+      - name: Log in to Docker Hub for approved release
+        if: env.RELEASE_RUN == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and publish SHA-tagged image
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          push: false
+          push: ${{ env.RELEASE_RUN == 'true' }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:${{ steps.image-tags.outputs.short_sha }}
+      - name: Trigger Render deployment
+        if: env.RELEASE_RUN == 'true'
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          test -n "$RENDER_DEPLOY_HOOK" || { echo "Missing RENDER_DEPLOY_HOOK secret"; exit 1; }
+          curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK"
+      - name: Verify deployed public HTTPS application and database readiness
+        if: env.RELEASE_RUN == 'true'
+        env:
+          PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
+        shell: bash
+        run: |
+          test -n "$PUBLIC_URL" || { echo "Set repository variable CAROAI_PUBLIC_URL to the public HTTPS base URL"; exit 1; }
+          case "$PUBLIC_URL" in https://*) ;; *) echo "Public URL must use HTTPS"; exit 1 ;; esac
+          for attempt in $(seq 1 36); do
+            if curl --fail --silent --show-error "$PUBLIC_URL/health" >/dev/null \\
+              && curl --fail --silent --show-error "$PUBLIC_URL/ready" >/dev/null; then
+              echo "Public app liveness and database readiness checks passed: $PUBLIC_URL"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Deployment did not become healthy; collecting final public endpoint responses."
+          curl --fail --show-error "$PUBLIC_URL/health"
+          curl --fail --show-error "$PUBLIC_URL/ready"
+          exit 1
