@@ -124,17 +124,9 @@ M5 không tự định nghĩa hoặc kiểm thử chiến thuật, độ khó ha
 
 ## 8. Docker Smoke Test
 
-Khi project có Docker Compose configuration, thực hiện smoke test theo thứ tự:
+CI hiện có job Compose smoke trên một PostgreSQL database dùng riêng cho workflow. Job build và khởi động stack, kiểm tra API/database bằng cách tạo game và một nước đi, restart container API, rồi đọc lại game cùng `GET /api/history`. Job luôn dọn container, network và disposable volume sau khi chạy.
 
-1. Build image bằng `docker compose build`.
-2. Khởi động application container và PostgreSQL container theo cấu hình team.
-3. Xác nhận application kết nối được PostgreSQL.
-4. Gọi `GET /health` và kiểm tra kết quả theo contract.
-5. Tạo game thành công qua API đã chốt.
-6. Ghi một move hợp lệ.
-7. Đọc lại game và moves để xác nhận dữ liệu được lưu.
-
-Repository hiện chưa có Docker Compose configuration; test này phụ thuộc việc team cung cấp môi trường/configuration. Không giả định tên service, port, biến môi trường bổ sung hoặc migration command.
+Kết quả smoke mới nhất: PASSED trên source SHA `4e63747430ce372772d8903b7c8cd2004dadad94`, workflow https://github.com/emt0147t/caroAI/actions/runs/39912878999. Đây là runtime evidence của image được build trong CI; nó không chứng minh image đã được publish hoặc deployment công khai đã hoạt động.
 
 ## 9. Test Environment
 
@@ -180,16 +172,16 @@ Test plan Sprint 1 được coi là hoàn tất khi:
 3. **M1 — Difficulty:** Quy tắc null/bắt buộc cho `difficulty` theo `mode`.
 4. **M1 — Game ID:** Kiểu, format và validation của `game_id` trong API so với kiểu ID database.
 5. **M2 — AI:** AI design, AI contract, behavior và criteria cho AI move/legal move/hint/analyze. **M1:** API request/response và game-state contract liên quan. **M4:** runtime/deployment environment nếu cần. M5 chỉ lập test plan/QA coverage theo các contract đã xác nhận, không tự định nghĩa AI behavior.
-6. **Team — Test database:** Database riêng hay strategy khác, isolation/reset và hỗ trợ chạy test song song.
-7. **Team — Migration:** Cách thiết lập schema cho integration tests và môi trường smoke test.
-8. **M1/Team — Transaction:** Ranh giới transaction, rollback behavior và xử lý lỗi persistence cần được kiểm thử.
+6. **Team — Test database:** PostgreSQL integration uses an ephemeral CI service and isolated schemas; use the same isolation rules for manual runs, never production/shared databases.
+7. **Team — Migration:** The branch implements a versioned migration runner and Docker startup migration. M4/reviewer still needs to approve migration ordering and external deployment behavior.
+8. **M1/Team — Transaction:** Keep the write unit-of-work atomic and maintain API/service rollback regression coverage.
 9. **M1 — Database constraints:** Chấp thuận `UNIQUE (game_id, row, col)`, composite FK cho analysis, chính sách cascade và rules khác.
-10. **Team — Docker:** Dockerfile/Compose configuration, service readiness và cách cấu hình kết nối database.
-11. **M1 — History:** Phạm vi dữ liệu, thứ tự, pagination/filtering (nếu có) của `GET /api/history`.
+10. **Team — Docker:** Compose configuration and CI runtime smoke now exist. Published image, deployment, and public HTTPS smoke remain pending.
+11. **M1 — History:** MVP contract is implemented as `GET /api/history?limit=50&offset=0` with newest-first summaries; filtering and user-scoped ownership are outside this MVP.
 
 
 
-## 13. Current implementation and QA evidence (2026-10-16)
+## 13. Historical implementation and QA snapshot (2026-10-16)
 
 This section records observed status separately from the planned test cases above.
 
@@ -198,9 +190,9 @@ This section records observed status separately from the planned test cases abov
 | Game rules, service, AI unit, game API and health regression | Historical pass on Windows CPython 3.13.15 | 36 passed, 0 failed, 1 Starlette deprecation warning in a consolidated run. This is historical evidence and does not establish Python 3.11 compatibility. |
 | PostgreSQL model/session checks | Historical result reported as 11 passed in 6.34s | The suite validates SQLAlchemy models and sessions directly. The available report does not record interpreter, run date, host, or database name. It does not prove GameService/API persistence. |
 | Python 3.11 CI | Previous branch commit passed; rerun after this documentation update | The passing run is recorded below. The next push triggers a fresh workflow run. |
-| PostgreSQL in ordinary CI | Not configured as an integration job | The test fixture skips unless `TEST_DATABASE_URL` and `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database` are set. Ordinary CI does not provision a dedicated PostgreSQL service or set these values; a skip is not a PostgreSQL pass. |
+| PostgreSQL in ordinary CI | Historical status as of 2026-10-16 | On that snapshot, the ordinary CI job did not provision PostgreSQL. See the current Sprint 3 evidence below for the dedicated PostgreSQL job added later. |
 | Service/API persistence and transaction rollback | Backend implementation/tests added in PR #32 (branch) | SQLite-backed tests verify API create/move/get across requests, read-back through a new session and rollback after a staged write failure. PostgreSQL CI/runtime validation remains pending migration and M4's disposable DB job. |
-| Docker database smoke / migration lifecycle | Not verified in this M5 run | Coordinate with M4 for database readiness, application connectivity, and migration strategy. |
+| Docker database smoke / migration lifecycle | Historical status as of 2026-10-16 | The current Sprint 3 workflow now runs a disposable PostgreSQL Compose smoke and applies the versioned migration before starting the API; public deployment smoke remains separate. |
 
 ### Recorded CI run — commit 11319012dc086029efb15da175591cf4f170c062
 
@@ -218,7 +210,7 @@ $env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
 python -m pytest tests/test_database_postgres.py -q
 ```
 
-The URL above is a placeholder, not a real credential. This suite remains manual-only until a separate CI job provisions a disposable database and sets the opt-in environment variables. Do not report PostgreSQL coverage from a run where this suite was skipped.
+The URL above is a placeholder, not a real credential. The suite is now invoked from a dedicated CI job that provisions disposable PostgreSQL and sets the opt-in variables. Do not report PostgreSQL coverage from a run where this suite was skipped.
 
 ### Outstanding acceptance criteria — application persistence
 
@@ -234,3 +226,16 @@ M1 and M5 must agree on the repository/session contract and game-ID mapping. Bef
 - The 11 skipped tests are the opt-in PostgreSQL model/session tests because the current workflow does not provision a disposable PostgreSQL service. They are not PostgreSQL integration passes.
 - New SQLite-backed tests exercise service persistence across new sessions, API create/move/get across separate requests, and rollback. This is portable regression evidence, but not a substitute for PostgreSQL CI, schema migration/backfill, or deployed PostgreSQL smoke tests.
 - Database mapping in PR #32: `GameResponse.id` remains UUID-shaped as `games.public_id`; `games.id` stays BIGINT internal. A versioned migration/backfill is required before running against an existing PostgreSQL schema.
+
+
+## 14. Current Sprint 3 implementation evidence (2026-10-23)
+
+- **Source SHA:** `4e63747430ce372772d8903b7c8cd2004dadad94`
+- **Workflow:** https://github.com/emt0147t/caroAI/actions/runs/39912878999
+- Flake8 and portable pytest: PASSED — 189 passed, 11 skipped, 1 warning. The 11 skips are opt-in PostgreSQL tests inside the generic job, not PostgreSQL passes.
+- Dedicated PostgreSQL 15 acceptance: PASSED — 15 passed, 0 skipped. It covers model constraints, service/API persistence, human and AI moves, terminal results/time, write rollback, migration backfill/idempotency, and empty-database initialization.
+- Compose runtime smoke: PASSED — create game + move, restart API container, then read game/history from persisted PostgreSQL state.
+- Docker image build: PASSED (not pushed to a registry).
+- PostgreSQL driver fix: common `postgres://` and `postgresql://` values are normalized to the installed `psycopg2-binary` driver, preventing the Docker startup failure seen in the first Compose smoke attempt.
+
+This evidence applies to the source SHA and workflow above. Approval/merge, registry publication, public deployment/HTTPS, browser-driven E2E and team-wide release acceptance remain separate gates.
