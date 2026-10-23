@@ -506,7 +506,7 @@ def run_trial(
     expected_moves = fixture.get("expected_moves", [])
     expected_move_ok = None
     if expected_moves and has_expected_keys and in_bounds:
-        expected_move_ok = [row, col] in expected_moves
+        expected_move_ok = (row, col) in expected_moves
     if not has_expected_keys and not error_type:
         error_type = "InvalidOutput"
         error_message = "AI output did not match the expected response contract"
