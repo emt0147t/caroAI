@@ -1,6 +1,6 @@
 # Sprint 3 — M5 Handover Evidence (Issue #31)
 
-## Current-head evidence snapshot (2026-10-23)
+## Historical evidence snapshot (2026-10-23)
 
 - Earlier review-fix snapshot: `cc25a0f5eaf075ed1cee58944114b99e0d43971a` (historical; superseded by later commits).
 - [Push CI run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request CI run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) both passed all five required validation jobs on that exact SHA.
@@ -31,8 +31,8 @@
 | Pre-sync full CI | [Run #219](https://github.com/emt0147t/caroAI/actions/runs/39920451798) | Commit b9a87fe passed all five CI jobs before syncing develop |
 | Pre-review-cleanup push CI | [Run #231](https://github.com/emt0147t/caroAI/actions/runs/39921750450) | All five jobs passed on `affbb23a90a12dd14f006d8ef692ffdead1e682c`; portable suite 216 passed, 11 skipped, 1 warning; PostgreSQL acceptance 15 passed, zero skipped |
 | Pre-review-cleanup PR CI | [Run #232](https://github.com/emt0147t/caroAI/actions/runs/39922033030) | All five required validation jobs passed on the same pre-cleanup M5 SHA; publish/deploy verification skipped by design |
-| Final review-fix push CI | [Run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) | All five required validation jobs passed on `cc25a0f5eaf075ed1cee58944114b99e0d43971a` |
-| Final review-fix PR CI | [Run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) | All five required validation jobs passed on the same SHA; publish/deploy verification skipped by design |
+| Earlier review-fix push CI (historical) | [Run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) | All five required validation jobs passed on `cc25a0f5eaf075ed1cee58944114b99e0d43971a` |
+| Earlier review-fix PR CI (historical) | [Run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) | All five required validation jobs passed on the same SHA; publish/deploy verification skipped by design |
 | Historical Python suite detail | [Run #197](https://github.com/emt0147t/caroAI/actions/runs/39918816443) | 194 passed, 11 skipped, 1 warning on an earlier commit; historical only |
 | PostgreSQL persistence integration | [Run #155](https://github.com/emt0147t/caroAI/actions/runs/39914292428) | Persistence implementation integration checkpoint; later runs also passed PostgreSQL acceptance |
 | Persistence regression test commit | [Commit eeecfe5](https://github.com/emt0147t/caroAI/commit/eeecfe569cc8b12cf5cc0f275ba4d5ced53a4192) | Added draw persistence and four malformed-history rejection cases |
@@ -87,4 +87,4 @@ The successful Compose smoke is not proof of public deployment, public HTTPS, or
 
 ## Recommended disposition
 
-The M5 PR contains the scoped QA, persistence-test, and handover changes on branch `feature/m5-sprint3-qa`; branch synchronization with `develop` is not claimed here. The earlier review-fix snapshot `cc25a0f5eaf075ed1cee58944114b99e0d43971a` passed all five required validation jobs in push #250 and pull_request #251. M3's PR #34 E2E workflow passed 13/13 Playwright tests, but only on SHA `31a000989408d86ff6cdc863913f45d69832ce0a`; the push-triggered workflow on that same SHA failed. This is partial PR-only E2E evidence, not an M5-head E2E run or production/live smoke. Public deployment/HTTPS/live smoke and deployed restart/redeploy persistence remain NOT RUN. M3/M4/M1 own those release dependencies; M5's responsibility is to document exact evidence. Keep Issue #31 open until the team completes or explicitly accepts the remaining acceptance items. No merge to `develop` is performed by this handover.
+The M5 PR contains the scoped QA, persistence-test, and handover changes on branch `feature/m5-sprint3-qa`; branch synchronization with `develop` is not claimed here. Previously verified M5 head `b333273da91bc2e6bceb8be891ec91112681c9e2` passed all five required validation jobs in push #260 and pull_request #261; those runs do not validate later commits. Latest supplied M3 PR #34 E2E evidence is head `4d540c65f4963d154229214dd34e6dec8f679534`, where Browser E2E run #32 passed 13/13 Playwright tests and CaroAI CI run #263 succeeded. This remains partial PR-only E2E evidence, not an M5-head E2E run or production/live smoke. Public deployment/HTTPS/live smoke and deployed restart/redeploy persistence remain NOT RUN. M3/M4/M1 own those release dependencies; M5 documents exact evidence. Keep Issue #31 open until the team completes or explicitly accepts the remaining acceptance items. No merge to `develop` is performed by this handover.
