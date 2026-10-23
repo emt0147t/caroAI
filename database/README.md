@@ -9,7 +9,7 @@ The container entrypoint runs python -m scripts.migrate_database before starting
     docker compose up -d db
     docker compose run --rm --no-deps --entrypoint python app -m scripts.migrate_database
 
-Migrations in database/migrations are applied in filename/version order and recorded in schema_migrations. The versioned 000_initial_schema.sql creates the schema for a fresh database and uses CREATE TABLE IF NOT EXISTS to leave existing tables untouched. The versioned 001_games_public_id.sql adds/backfills public_id on legacy games tables, creates a unique index, and enforces NOT NULL. Production migration does not use SQLAlchemy metadata create_all. Future schema changes must use a new versioned SQL file.
+Migrations in database/migrations are applied in filename/version order and recorded in schema_migrations. The versioned 000_initial_schema.sql creates the schema for a fresh database and uses CREATE TABLE IF NOT EXISTS to leave existing tables untouched. It declares public_id NOT NULL but leaves uniqueness to the versioned 001_games_public_id.sql migration. That migration adds/backfills public_id on legacy games tables, creates the single unique index ix_games_public_id, and enforces NOT NULL. PostgreSQL acceptance asserts that both fresh and legacy migration paths leave exactly one unique index on public_id. Production migration does not use SQLAlchemy metadata create_all. Future schema changes must use a new versioned SQL file.
 
 The migration command is idempotent for already-recorded versions. Test migration/backfill against a disposable copy before applying it to important data. Never run destructive test fixtures against production/shared databases.
 
