@@ -9,10 +9,10 @@
 - Baseline environment: local Windows; exact Python version not recorded
 - PostgreSQL test run on the M5 baseline: NOT RUN; TEST_DATABASE_URL was not configured
 - Current M5 branch does not yet contain M1's SQLAlchemy persistence implementation; the matrix records PR #32 evidence separately.
-- M1 PR #32 latest reviewed head SHA: 4e63747430ce372772d8903b7c8cd2004dadad94. Evidence below is PR-only until the implementation is integrated into the M5 branch.
-- Earlier workflow run #101 failed at Flake8 E302; that result has been superseded by run #131 on the later PR head.
-- Latest observed PR #32 workflow run #131: https://github.com/emt0147t/caroAI/actions/runs/39912882803 — overall SUCCESS at head 4e63747430ce372772d8903b7c8cd2004dadad94.
-- Run #131 jobs all PASSED: frontend syntax/regression; test and lint; PostgreSQL service/API/migration acceptance with zero-skips guard; Compose API/database persistence after API restart; Docker image build.
+- M1 PR #32 head at latest inspection: 50435a02bca65e08cace8ad3d0a539981bc4c0d8; PR remains open and unmerged. Evidence below is PR-only until the implementation is integrated into the M5 branch.
+- Earlier workflow run #101 failed at Flake8 E302. It was superseded by run #131 at the then-current PR head 4e63747430ce372772d8903b7c8cd2004dadad94.
+- Run #131: https://github.com/emt0147t/caroAI/actions/runs/39912882803 — overall SUCCESS for SHA 4e63747430ce372772d8903b7c8cd2004dadad94. All five jobs passed: frontend, test/lint, PostgreSQL acceptance with zero-skips guard, Compose persistence after API restart, and Docker image build.
+- PR #32 has since advanced to SHA 50435a02bca65e08cace8ad3d0a539981bc4c0d8. Its new workflow run #139 is IN PROGRESS: https://github.com/emt0147t/caroAI/actions/runs/39913192666. Do not infer a result until that run completes.
 - The Compose job explicitly built and started a disposable stack, created/moved a game, restarted the API, read persisted state, and cleaned up resources.
 - Important: run #131 is evidence for PR #32's head, not for feature/m5-sprint3-qa, because M1 persistence has not been integrated into the M5 branch.
 
@@ -78,7 +78,7 @@ The reviewed repository implementation has _rebuild_state checks for contiguous 
 - Docker build: SKIPPED because required jobs did not all pass.
 - The PR workflow file currently defines a Compose smoke job, but the run #101 job list returned by GitHub did not include it. Its result is therefore not verified for run #101.
 - A prior local review reported 5 passed in tests/test_repository_persistence.py and 183 passed, 11 skipped in the full suite. These are historical PR worktree results, not current M5 branch results.
-- A successful PostgreSQL job does not mean the overall workflow passed, nor does it prove browser E2E, published image, public HTTPS or live restart persistence.
+- A successful PostgreSQL job does not mean the overall workflow passed, nor does it prove browser E2E, published image, public HTTPS or live deployed restart persistence.
 
 ## Evidence rules
 
