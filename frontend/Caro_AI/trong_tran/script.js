@@ -15,6 +15,7 @@ function setBusy(value, message = "Đang xử lý...") {
   loading.lastChild.textContent = " " + message;
   board.classList.toggle("is-loading", value); newBtn.disabled = value; mode.disabled = value;
   if (difficulty) difficulty.disabled = value;
+  render();
 }
 function setError(message = "", retry = null) {
   s.retry = retry; errorBox.classList.toggle("hidden", !message); errorMsg.textContent = message;

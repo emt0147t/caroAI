@@ -2,36 +2,22 @@
 
 from pathlib import Path
 
-from sqlalchemy import inspect, text
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from app.db.database import get_engine
-from app.db.models import Base
 
 
-MIGRATION_VERSION = "001_games_public_id"
-MIGRATION_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "database"
-    / "migrations"
-    / "001_games_public_id.sql"
-)
+MIGRATIONS_DIR = Path(__file__).resolve().parents[1] / "database" / "migrations"
 
 
 def run_migrations(engine: Engine) -> bool:
-    """Apply pending migrations; return True when one was applied.
+    """Apply each pending SQL migration in filename/version order.
 
-    An empty database is initialized from current metadata. Existing databases
-    are altered only by versioned SQL migrations, not by create_all.
+    Production startup uses only explicit versioned SQL. SQLAlchemy metadata
+    create_all is deliberately not used as an implicit migration mechanism.
     """
-    if not inspect(engine).has_table("games"):
-        Base.metadata.create_all(engine)
-
-    statements = [
-        statement.strip()
-        for statement in MIGRATION_PATH.read_text(encoding="utf-8").split(";")
-        if statement.strip()
-    ]
+    changed = False
     with engine.begin() as connection:
         connection.execute(
             text(
@@ -43,31 +29,38 @@ def run_migrations(engine: Engine) -> bool:
                 """
             )
         )
-        applied = connection.execute(
-            text("SELECT 1 FROM schema_migrations WHERE version = :version"),
-            {"version": MIGRATION_VERSION},
-        ).first()
-        if applied:
-            return False
+        for migration_path in sorted(MIGRATIONS_DIR.glob("*.sql")):
+            version = migration_path.stem
+            applied = connection.execute(
+                text("SELECT 1 FROM schema_migrations WHERE version = :version"),
+                {"version": version},
+            ).first()
+            if applied:
+                continue
 
-        for statement in statements:
-            connection.exec_driver_sql(statement)
-        connection.execute(
-            text("INSERT INTO schema_migrations (version) VALUES (:version)"),
-            {"version": MIGRATION_VERSION},
-        )
-    return True
+            statements = [
+                statement.strip()
+                for statement in migration_path.read_text(encoding="utf-8").split(";")
+                if statement.strip()
+            ]
+            for statement in statements:
+                connection.exec_driver_sql(statement)
+            connection.execute(
+                text("INSERT INTO schema_migrations (version) VALUES (:version)"),
+                {"version": version},
+            )
+            changed = True
+            print(f"Applied migration: {version}")
+
+    if not changed:
+        print("Database schema is up to date.")
+    return changed
 
 
 def main() -> None:
     engine = get_engine()
     try:
-        changed = run_migrations(engine)
-        print(
-            f"Applied migration: {MIGRATION_VERSION}"
-            if changed
-            else "Database schema is up to date."
-        )
+        run_migrations(engine)
     finally:
         engine.dispose()
 

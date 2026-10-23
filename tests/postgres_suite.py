@@ -199,6 +199,19 @@ def test_postgres_api_write_failure_rolls_back(monkeypatch):
         _drop_schema(admin_engine, engine, schema)
 
 
+def _assert_single_public_id_unique_index(connection):
+    """The baseline and backfill lifecycle must leave exactly one unique index."""
+    indexes = connection.execute(
+        text(
+            "SELECT indexname FROM pg_indexes "
+            "WHERE schemaname = current_schema() AND tablename = 'games' "
+            "AND indexdef ILIKE '%UNIQUE%' "
+            "AND indexdef ILIKE '%(public_id)%'"
+        )
+    ).scalars().all()
+    assert indexes == ["ix_games_public_id"], indexes
+
+
 def test_migration_backfills_existing_public_ids_and_is_idempotent():
     admin_engine, engine, schema = _new_schema()
     try:
@@ -241,6 +254,7 @@ def test_migration_backfills_existing_public_ids_and_is_idempotent():
                 )
             ).scalar_one()
             assert nullable == "NO"
+            _assert_single_public_id_unique_index(connection)
     finally:
         _drop_schema(admin_engine, engine, schema)
 
@@ -266,5 +280,6 @@ def test_migration_initializes_an_empty_database():
                 )
             ).scalar_one()
             assert version == "001_games_public_id"
+            _assert_single_public_id_unique_index(connection)
     finally:
         _drop_schema(admin_engine, engine, schema)
