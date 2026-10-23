@@ -379,6 +379,8 @@ def collect_environment(source_sha: str, command: str) -> dict[str, Any]:
         "captured_at_utc": utc_now(),
         "source_sha": source_sha,
         "python_version": sys.version.replace("\n", " "),
+        "python_executable": sys.executable,
+        "argv": list(sys.argv),
         "platform": platform.platform(),
         "system": platform.system(),
         "machine": platform.machine(),
@@ -755,8 +757,9 @@ def main() -> int:
         args.output_dir = ROOT / args.output_dir
 
     source_sha = get_source_sha()
+    launcher = "py -3" if os.name == "nt" else "python3"
     command = (
-        f"py -3 scripts/benchmark_ai_sprint3.py --runs {args.runs} "
+        f"{launcher} scripts/benchmark_ai_sprint3.py --runs {args.runs} "
         f"--warmup {args.warmup}"
     )
     if args.output_dir != REPORTS_DIR:
