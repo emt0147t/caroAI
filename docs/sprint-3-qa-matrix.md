@@ -2,12 +2,18 @@
 
 ## Current-head evidence snapshot (2026-10-23)
 
-- Final review-fix head SHA: `cc25a0f5eaf075ed1cee58944114b99e0d43971a`.
+- Earlier review-fix snapshot SHA: `cc25a0f5eaf075ed1cee58944114b99e0d43971a` (historical; superseded by later commits).
 - Push CI: [run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) — all five required validation jobs passed on this exact SHA.
 - Pull-request CI: [run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) — all five required validation jobs passed on the same SHA; production publish/deploy verification was skipped by design.
 - The five successful validation jobs cover Python tests/lint, PostgreSQL service/API/migration acceptance, Compose persistence after API restart, frontend syntax/regression, and Docker image build.
 - Detailed counts from the pre-review-cleanup snapshot only: [push #231](https://github.com/emt0147t/caroAI/actions/runs/39921750450) and [pull_request #232](https://github.com/emt0147t/caroAI/actions/runs/39922033030), SHA `affbb23a90a12dd14f006d8ef692ffdead1e682c`: portable suite 216 passed, 11 skipped, 1 warning; dedicated PostgreSQL acceptance 15 passed, zero skipped.
 - Historical/pre-sync only: [run #219](https://github.com/emt0147t/caroAI/actions/runs/39920451798) on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36`.
+
+## Current evidence interpretation
+
+- The last previously verified M5 head is `b333273da91bc2e6bceb8be891ec91112681c9e2`; runs #260/#261 passed on that SHA only and do not cover later commits.
+- The earlier `cc25a0f5eaf075ed1cee58944114b99e0d43971a` with runs #250/#251 is historical. Counts 216 passed / 11 skipped / 1 warning and PostgreSQL acceptance 15 passed / 0 skipped belong only to `affbb23a90a12dd14f006d8ef692ffdead1e682c`, runs #231/#232. Run #219 on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36` is historical/pre-sync.
+- Latest supplied M3 PR #34 evidence: head `4d540c65f4963d154229214dd34e6dec8f679534`; Browser E2E run #32 passed 13/13 Playwright tests and CaroAI CI run #263 succeeded on that SHA. This is **PARTIAL — M3 PR-only evidence; not verified on M5 head; production/live smoke NOT RUN**.
 
 ## Run context
 
@@ -40,7 +46,7 @@
 - Warning: StarletteDeprecationWarning from fastapi.testclient/httpx integration. Not a test failure.
 - Historical baseline SHA 2dd55cda274d7112e6d3244a4b457768178e98f8: 178 passed, 11 skipped, 1 warning; retained as historical baseline only.
 - PR #32 pre-merge CI runs #131/#139 remain historical PR-head evidence; use run #155 for evidence on the current M5 branch.
-- Browser E2E evidence exists on M3 PR #34 at a different SHA and is **not an E2E run on this M5 head**: pull_request workflow [run #30](https://github.com/emt0147t/caroAI/actions/runs/39916935723) passed **13/13 Playwright tests** on PR #34 head `31a000989408d86ff6cdc863913f45d69832ce0a` against the real Compose/API/frontend stack; the push-triggered run on that same SHA [failed](https://github.com/emt0147t/caroAI/actions/runs/39916931396). These are CI E2E results, not production/live smoke. M5-head Playwright E2E is not verified by those runs.
+- Browser E2E evidence exists on M3 PR #34 at a different SHA and is **not an E2E run on this M5 head**: pull_request workflow [run #30](https://github.com/emt0147t/caroAI/actions/runs/39916935723) passed **13/13 Playwright tests** on PR #34 head `31a000989408d86ff6cdc863913f45d69832ce0a` against the real Compose/API/frontend stack; older run #30 and its push-run result are historical only; runs #32/#263 are the latest supplied M3 evidence. These are CI E2E results, not production/live smoke. M5-head Playwright E2E is not verified by those runs.
 - Public deployment/HTTPS/live smoke and persistence after restart/redeploy in the deployed environment remain NOT RUN. Compose restart is a disposable CI-stack test only.
 
 ## Status definitions
@@ -72,7 +78,7 @@
 | QA-13 | PostgreSQL API acceptance | Human moves, terminal X win, AI move, history metadata | PASSED on M5 commit | M1/M4/M5 | CI run #155 PostgreSQL API acceptance passed |
 | QA-14 | PostgreSQL migration | Initialize empty DB; backfill existing public IDs; idempotent rerun | PASSED on M5 commit | M1/M4/M5 | CI run #155 PostgreSQL service/API/migration acceptance passed |
 | QA-15 | Compose persistence across API restart | Compose stack: create game, move, restart API container, GET state/history | PASSED on M5 commit (CI disposable stack) | M1/M4/M5 | CI run #155 Compose API/database persistence after restart passed |
-| QA-16 | Browser E2E | Verify PvP/PvAI and history in browser against Compose/API/frontend | PARTIAL — M3 PR-only evidence; not verified on M5 head | M3/M5 | PR #34 head `31a000989408d86ff6cdc863913f45d69832ce0a`: [pull_request run #30](https://github.com/emt0147t/caroAI/actions/runs/39916935723) passed 13/13 Playwright tests; [push run](https://github.com/emt0147t/caroAI/actions/runs/39916931396) failed on same SHA. Neither validates final M5 SHA `cc25a0f5eaf075ed1cee58944114b99e0d43971a` or production/live smoke |
+| QA-16 | Browser E2E | Verify PvP/PvAI and history in browser against Compose/API/frontend | PARTIAL — M3 PR-only evidence; not verified on M5 head; production/live smoke NOT RUN | M3/M5 | PR #34 head `4d540c65f4963d154229214dd34e6dec8f679534`: [Browser E2E run #32](https://github.com/emt0147t/caroAI/actions/runs/39926139293) passed 13/13 Playwright tests; [CaroAI CI run #263](https://github.com/emt0147t/caroAI/actions/runs/39926139313) succeeded on the same SHA; [push run](https://github.com/emt0147t/caroAI/actions/runs/39916931396) failed on same SHA. Neither validates final M5 SHA `cc25a0f5eaf075ed1cee58944114b99e0d43971a` or production/live smoke |
 | QA-17 | Publish/deploy/live smoke | Verify image publication, public HTTPS and persistence after deployment restart | NOT RUN | M1/M3/M4 (M5 records evidence only) | No deployment/live-smoke evidence identified; keep Issue #31 open until owners complete or team explicitly accepts the gap
 
 ## Merged M1 implementation test inventory (not M5-branch proof)
@@ -98,7 +104,7 @@ The repository implementation has `_rebuild_state` checks for contiguous move nu
 
 ## CI evidence and limitations
 
-- Final review-fix head `cc25a0f5eaf075ed1cee58944114b99e0d43971a`: [push run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) both passed all five required validation jobs. The publish/deploy verification job in #251 was skipped by design.
+- Earlier review-fix snapshot `cc25a0f5eaf075ed1cee58944114b99e0d43971a`: [push run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) both passed all five required validation jobs. The publish/deploy verification job in #251 was skipped by design.
 - Pre-review-cleanup detailed-count snapshot `affbb23a90a12dd14f006d8ef692ffdead1e682c`: [push run #231](https://github.com/emt0147t/caroAI/actions/runs/39921750450) and [pull_request run #232](https://github.com/emt0147t/caroAI/actions/runs/39922033030); portable suite 216 passed, 11 skipped, 1 warning; PostgreSQL acceptance 15 passed, zero skipped.
 - Persistence integration workflow run #155: https://github.com/emt0147t/caroAI/actions/runs/39914292428 — SUCCESS on commit 67a4dae0694e76264a3f2d06b6fca8fa7368d3b5.
 - QA documentation workflow run #171: https://github.com/emt0147t/caroAI/actions/runs/39914848382 — SUCCESS on commit b35e8059bb5ecb430214d4176a322385e8ed6688.
@@ -125,4 +131,4 @@ The repository implementation has `_rebuild_state` checks for contiguous move nu
 - Do not store credentials, tokens, or production database URLs in this file.
 - Dedicated draw persistence and four malformed-history corruption cases are implemented and passed in the Python suite on runs #181 and #197.
 - Browser E2E is PARTIAL: M3 PR #34 pull_request run #30 passed 13/13 on SHA `31a000989408d86ff6cdc863913f45d69832ce0a`, while its push run failed; neither run is an E2E result for this M5 head. Public deployment/live smoke and deployed restart/redeploy persistence remain NOT RUN. Compose smoke is limited to a disposable CI environment.
-- Final review-fix head `cc25a0f5eaf075ed1cee58944114b99e0d43971a`: [push run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) passed all five required validation jobs on that exact SHA. Pre-review-cleanup runs #231/#232 on `affbb23a90a12dd14f006d8ef692ffdead1e682c` hold the detailed test counts above. Run #219 on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36` is historical/pre-sync only. Persistence integration originally landed at `67a4dae0694e76264a3f2d06b6fca8fa7368d3b5` in run #155.
+- Earlier review-fix snapshot `cc25a0f5eaf075ed1cee58944114b99e0d43971a`: [push run #250](https://github.com/emt0147t/caroAI/actions/runs/39923635191) and [pull_request run #251](https://github.com/emt0147t/caroAI/actions/runs/39923640767) passed all five required validation jobs on that exact SHA. Pre-review-cleanup runs #231/#232 on `affbb23a90a12dd14f006d8ef692ffdead1e682c` hold the detailed test counts above. Run #219 on `b9a87fe0759dfe51074ce71f5e01cfb45f088f36` is historical/pre-sync only. Persistence integration originally landed at `67a4dae0694e76264a3f2d06b6fca8fa7368d3b5` in run #155.
