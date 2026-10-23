@@ -1,28 +1,28 @@
 # Database and migration operations
 
-PostgreSQL is the application database. Set DATABASE_URL before starting the backend. Common `postgres://` and `postgresql://` URL forms are normalized to the project's installed `psycopg2-binary` driver; explicitly driver-qualified URLs are preserved.
+PostgreSQL is the application database. Set DATABASE_URL before starting the backend. Common postgres:// and postgresql:// URLs are normalized to the installed psycopg2-binary driver.
 
-## Apply schema migration
+## Apply schema migrations
 
-The Docker entrypoint runs:
+The container entrypoint runs python -m scripts.migrate_database before starting Uvicorn. To run explicitly from the repository root:
 
-```bash
-python -m scripts.migrate_database
-```
+    docker compose up -d db
+    docker compose run --rm --no-deps --entrypoint python app -m scripts.migrate_database
 
-- An empty database is initialized from current SQLAlchemy metadata; version 001_games_public_id is then recorded.
-- If a legacy games table already exists, the migration runner does not use create_all to alter that table. It applies the versioned SQL migration to add public_id, backfill UUID values for existing rows, create the unique index, and enforce NOT NULL before recording the version.
-- The migration command is idempotent for the recorded version. Future schema changes must use a new migration version.
+Migrations in database/migrations are applied in filename/version order and recorded in schema_migrations. The versioned 000_initial_schema.sql creates the schema for a fresh database and uses CREATE TABLE IF NOT EXISTS to leave existing tables untouched. It declares public_id NOT NULL but leaves uniqueness to the versioned 001_games_public_id.sql migration. That migration adds/backfills public_id on legacy games tables, creates the single unique index ix_games_public_id, and enforces NOT NULL. PostgreSQL acceptance asserts that both fresh and legacy migration paths leave exactly one unique index on public_id. Production migration does not use SQLAlchemy metadata create_all. Future schema changes must use a new versioned SQL file.
 
-The first migration assumes that an existing database already has the project’s legacy games table and internal primary key. Test migration/backfill against a disposable copy before applying it to important data. Never run destructive test fixtures against production/shared databases.
+The migration command is idempotent for already-recorded versions. Test migration/backfill against a disposable copy before applying it to important data. Never run destructive test fixtures against production/shared databases.
+
+## Readiness
+
+/health is application liveness only. /ready runs SELECT 1 against DATABASE_URL and returns HTTP 503 if the database is unavailable. Compose waits for PostgreSQL health, runs the migration command before Uvicorn, and only marks the API healthy when /ready succeeds.
 
 ## PostgreSQL acceptance tests
 
-The dedicated CI job provisions a disposable PostgreSQL 15 database and runs model tests plus tests through the actual FastAPI/GameService routes, including ordered move persistence, terminal result/time, history listing, rollback, and migration/backfill. The workflow fails if any acceptance test is skipped.
+The dedicated CI job provisions a disposable PostgreSQL 15 database and runs model/session plus FastAPI/GameService/API persistence tests, including ordered moves, terminal state, history, rollback, and migration/backfill. It fails if any acceptance test is skipped.
 
-For manual execution, TEST_DATABASE_URL must point to a disposable PostgreSQL database whose name contains a test token. Set CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database only after verifying the target is disposable. Fixtures create and drop unique per-run schemas and require schema DDL privileges. Database-name checks are guardrails, not proof that a database is safe.
+For manual execution, TEST_DATABASE_URL must point to a disposable PostgreSQL database whose name visibly contains a test token. Set CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database only after verifying the target is disposable. Fixtures create and drop unique per-run schemas and require schema DDL privileges. Database-name checks are guardrails, not proof that a database is safe.
 
+## Evidence boundary
 
-## Verified Compose smoke (2026-10-23)
-
-CI builds and starts the Compose stack against an ephemeral PostgreSQL database, creates a game and human move through the API, restarts the API container, then verifies the board and `GET /api/history` still return the persisted game. The test tears down the containers, network, and disposable volume. This validates the CI-built source image, not the separately published release image or public HTTPS deployment.
+The Compose smoke creates a game, records a move, restarts the API container, and reads the game/history back. This validates the CI-built source image, not a separately published release image or public HTTPS deployment. Release success requires Render to report the exact SHA-tagged image as live and the public /health and /ready checks to pass.
