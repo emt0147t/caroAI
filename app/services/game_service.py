@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.ai.adapter import board_to_ai
@@ -21,11 +22,36 @@ class GameService:
 
     def __init__(self) -> None:
         self._games: dict[str, GameState] = {}
+        self._created_at: dict[str, datetime] = {}
 
     def create_game(self, mode: GameMode) -> str:
         game_id = str(uuid4())
         self._games[game_id] = GameState(mode=mode)
+        self._created_at[game_id] = datetime.now(timezone.utc)
         return game_id
+
+    def list_history(self, limit: int, offset: int) -> list[dict[str, str | int | None]]:
+        ordered_ids = sorted(
+            self._games.keys(),
+            key=lambda game_id: self._created_at.get(game_id, datetime.min.replace(tzinfo=timezone.utc)),
+            reverse=True,
+        )
+        page_ids = ordered_ids[offset : offset + limit]
+        items: list[dict[str, str | int | None]] = []
+        for game_id in page_ids:
+            state = self._games[game_id]
+            started_at = self._created_at.get(game_id)
+            items.append(
+                {
+                    "id": game_id,
+                    "mode": state.mode.value,
+                    "status": state.status.value,
+                    "result": state.status.value if state.status.value != "IN_PROGRESS" else None,
+                    "move_count": state.move_count,
+                    "started_at": started_at.isoformat() if started_at else None,
+                }
+            )
+        return items
 
     def get_game(self, game_id: str) -> GameState:
         state = self._games.get(game_id)

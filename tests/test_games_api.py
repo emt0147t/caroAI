@@ -222,3 +222,27 @@ def test_ai_move_rejects_invalid_difficulty(difficulty):
     )
 
     assert response.status_code == 422
+
+
+def test_history_endpoint_is_available():
+    response = client.get("/api/history?limit=20&offset=0")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data.get("items"), list)
+
+
+def test_history_contains_new_games_and_honors_pagination():
+    first = client.post("/api/games", json={"mode": "HUMAN_VS_HUMAN"})
+    second = client.post("/api/games", json={"mode": "HUMAN_VS_AI"})
+    first_id = first.json()["id"]
+    second_id = second.json()["id"]
+
+    latest_two = client.get("/api/history?limit=2&offset=0")
+    assert latest_two.status_code == 200
+    latest_two_items = latest_two.json()["items"]
+    assert [item["id"] for item in latest_two_items] == [second_id, first_id]
+
+    paged = client.get("/api/history?limit=1&offset=1")
+    assert paged.status_code == 200
+    paged_items = paged.json()["items"]
+    assert [item["id"] for item in paged_items] == [first_id]
