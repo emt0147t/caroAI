@@ -102,21 +102,56 @@ class SQLAlchemyGameUnitOfWork:
     def get_game_state(
         self, game_id: str, *, for_update: bool = False
     ) -> GameState:
-        statement = select(GameRecord).where(GameRecord.public_id == game_id)
         if for_update:
-            statement = statement.with_for_update()
+            # Writers lock the parent row before reading moves. Keep these as
+            # separate queries: after a lock wait, the moves query must observe
+            # the committed state of the row that was actually locked.
+            statement = (
+                select(GameRecord)
+                .where(GameRecord.public_id == game_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+            record = self.session.execute(statement).scalar_one_or_none()
+            if record is None:
+                raise RepositoryGameNotFoundError(
+                    f"Game '{game_id}' not found"
+                )
 
-        record = self.session.execute(statement).scalar_one_or_none()
-        if record is None:
+            self._loaded_records[game_id] = record
+            moves = self.session.scalars(
+                select(PersistedMove)
+                .where(PersistedMove.game_id == record.id)
+                .order_by(PersistedMove.move_number.asc())
+            ).all()
+            return _rebuild_state(record, list(moves))
+
+        # A non-locking GET must read metadata and move history from the same
+        # SQL statement snapshot. Two SELECTs under PostgreSQL READ COMMITTED
+        # can otherwise straddle a concurrent move commit (old game status,
+        # new move history) and report a false persistence inconsistency.
+        statement = (
+            select(GameRecord, PersistedMove)
+            .outerjoin(
+                PersistedMove,
+                PersistedMove.game_id == GameRecord.id,
+            )
+            .where(GameRecord.public_id == game_id)
+            .order_by(PersistedMove.move_number.asc())
+            .execution_options(populate_existing=True)
+        )
+        rows = self.session.execute(statement).all()
+        if not rows:
             raise RepositoryGameNotFoundError(f"Game '{game_id}' not found")
 
+        record = rows[0][0]
+        moves = [
+            persisted_move
+            for _record, persisted_move in rows
+            if persisted_move is not None
+        ]
         self._loaded_records[game_id] = record
-        moves = self.session.scalars(
-            select(PersistedMove)
-            .where(PersistedMove.game_id == record.id)
-            .order_by(PersistedMove.move_number.asc())
-        ).all()
-        return _rebuild_state(record, list(moves))
+        return _rebuild_state(record, moves)
 
     def persist_move(self, game_id: str, move: Move, state: GameState) -> None:
         record = self._loaded_records.get(game_id)
