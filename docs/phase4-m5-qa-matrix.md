@@ -101,3 +101,29 @@ Reasons:
 - PR #35 requires explicit contract triage before any merge decision.
 
 This matrix is an evidence register, not release approval. Keep the release blocked until the P0 evidence is complete and independently reviewed.
+
+
+## 7. C1 regression-acceptance checkpoint — 2026-10-29
+
+This checkpoint records the current Sprint 4 PR validation separately from the historical baseline above. It does not change the release decision.
+
+| Gate | Current evidence | Exact scope and limitation |
+|---|---|---|
+| PR #39 candidate | `44c37bb52f9e4e131f85e532482d39bc311c9f9c`; [PR #39](https://github.com/emt0147t/caroAI/pull/39) | Documentation-only changes in two files; no application or production configuration changes. |
+| CaroAI CI #307 | [Workflow run](https://github.com/emt0147t/caroAI/actions/runs/40874711154) — **SUCCESS** on the PR #39 head SHA | Python/lint: 218 passed, 11 skipped, 1 warning. The 11 general-suite skips remain skips, not passes. Frontend syntax/regression, Compose persistence after API restart, Docker image build (without publishing), and Compose config validation passed. |
+| PostgreSQL acceptance in CI #307 | [Workflow run](https://github.com/emt0147t/caroAI/actions/runs/40874711154) — **15 passed, 0 skipped, 1 warning** | The dedicated zero-skip guard passed. This is disposable CI PostgreSQL evidence, not production database or post-redeploy evidence. |
+| Frontend Browser E2E #50 | [Workflow run](https://github.com/emt0147t/caroAI/actions/runs/40874711121) — **13 passed** | Real API + frontend in a disposable Compose stack; PR-only evidence for the same PR #39 head. Not public/production smoke. |
+| Production publish/deploy | **SKIPPED** in CI #307 | No approved production promotion, published immutable image, deployment identity, or live service verification was produced by this run. |
+
+### C1 acceptance interpretation
+
+- **Regression checks for the current PR #39 head: PASS.** Both CI #307 and Browser E2E #50 completed successfully against `44c37bb52f9e4e131f85e532482d39bc311c9f9c`.
+- **Application regression after an application-code change: NOT EXERCISED by PR #39.** The PR is documentation-only. These passing workflows validate the PR candidate's workflow gates, but do not prove that application code changed or that previously recorded historical evidence now applies to a new application release candidate.
+- **Release acceptance: OPEN / NO-GO.** T-12 benchmark acceptance, T-13 published image identity, T-14 public HTTPS health/readiness, T-15 public game-flow smoke, T-16 production persistence after redeploy, T-17 rollback exercise, and the explicit PR #35 History-contract decision remain unresolved until their own evidence is recorded.
+- **PR #35:** remains a separate, draft PR targeting `main` at `d444119d5eb757e364f904bb9eacddd27e14e507`, not the `develop` baseline used for PR #39. Its in-memory `GET /api/history` implementation must not be treated as satisfying persisted History. Do not merge it as a release fix without reconciling the base branch and persistence contract.
+
+Evidence links:
+- [CI #307](https://github.com/emt0147t/caroAI/actions/runs/40874711154)
+- [Browser E2E #50](https://github.com/emt0147t/caroAI/actions/runs/40874711121)
+- [PR #39](https://github.com/emt0147t/caroAI/pull/39)
+- [PR #35](https://github.com/emt0147t/caroAI/pull/35)
