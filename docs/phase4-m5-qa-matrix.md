@@ -172,3 +172,44 @@ This is the operational owner map for the remaining release gates. Assignments f
 5. **M4 completes T-17 rollback evidence**, then M5 assembles the final packet for independent review.
 
 No target dates are invented here because the repository evidence does not contain owner-approved dates. The owner map is documented, but acknowledgement, implementation and acceptance remain outstanding until the corresponding evidence is linked. Release remains **BLOCKED / NO-GO**.
+
+
+## 10. C3 evidence reconciliation and scoped acceptance decision — 2026-10-29
+
+### Exact latest-head evidence
+
+The previous note that no workflows existed for the latest docs-only head is superseded by the following completed runs. All listed pull-request workflows identify the same current PR #39 head SHA: `006354cbdd76b38cc8c78e9d9d2806f2ee39b095`.
+
+| Gate | Current run / result | Exact scope and interpretation |
+|---|---|---|
+| PR head | `006354cbdd76b38cc8c78e9d9d2806f2ee39b095` | Current head of [PR #39](https://github.com/emt0147t/caroAI/pull/39), targeting `develop` at `138164803f3537d15ca90d9bc358f3f86528c4f3`. |
+| CaroAI CI — push | [Run #40896236338](https://github.com/emt0147t/caroAI/actions/runs/40896236338) — **SUCCESS** | Run head SHA matches the latest PR head. Frontend regression, PostgreSQL acceptance, Python tests/lint, Compose persistence and Docker image build succeeded. Production publish/deploy job was skipped. |
+| CaroAI CI — pull request | [Run #40896239232](https://github.com/emt0147t/caroAI/actions/runs/40896239232) — **SUCCESS** | Pull-request validation for the same head SHA. |
+| General Python tests/lint | **226 passed, 11 skipped, 1 warning** | [Job log](https://github.com/emt0147t/caroAI/actions/runs/40896236338/job/123525982635). Skips are not passes and do not replace dedicated PostgreSQL acceptance. Warning includes Starlette/httpx TestClient deprecation. |
+| PostgreSQL service/API/migration acceptance | **15 passed, 0 skipped**; explicit zero-skip guard printed | [Job log](https://github.com/emt0147t/caroAI/actions/runs/40896236338/job/123525982538). Disposable CI PostgreSQL; not production data or production redeploy evidence. |
+| Compose persistence after API restart | **SUCCESS** | [CI run](https://github.com/emt0147t/caroAI/actions/runs/40896236338). Disposable Compose environment only. |
+| Frontend syntax/regression | **SUCCESS** | [CI run](https://github.com/emt0147t/caroAI/actions/runs/40896236338). |
+| Docker image build | **SUCCESS — build only** | [CI run](https://github.com/emt0147t/caroAI/actions/runs/40896236338). No publish or deploy. |
+| Browser E2E | **13 passed** | [Run #40896239254](https://github.com/emt0147t/caroAI/actions/runs/40896239254); exact head SHA matches `006354cbdd76b38cc8c78e9d9d2806f2ee39b095`. Playwright artifact uploaded. PR/CI environment only. |
+| Approved production publish / Render verification | **SKIPPED** | No public deployment, immutable live image identity, public health/readiness, public game-flow smoke or post-redeploy production persistence evidence. |
+
+### C2 decision at the latest PR head
+
+**C2 — DATABASE GUARD: PASS / COMPLETE for the tested PR candidate**, including the latest PR head `006354cbdd76b38cc8c78e9d9d2806f2ee39b095`. The latest-head CI has a successful dedicated PostgreSQL job with 15 passed / 0 skipped and an explicit zero-skip guard; the shared fail-closed target validator and negative-path guard tests are included in the passing general suite. Compose persistence and Browser E2E also pass on the latest PR head.
+
+This decision is scoped to C2's database guard and PR/CI acceptance criteria. It does **not** mean that every Phase 4 release gate is complete or that production is approved.
+
+### C3 status and acceptance decision
+
+**C3 — EVIDENCE UPDATE & ACCEPTANCE DECISION: IN PROGRESS.** This checkpoint reconciles the latest head SHA, exact workflow URLs, pass/skip counts, test layers and evidence limitations. The scoped decision is:
+- C1 scoped regression/PR validation: PASS.
+- C2 database guard: PASS / COMPLETE on the latest PR head.
+- Overall release acceptance: **BLOCKED / NO-GO**.
+
+C3 remains in progress until the remaining owner-dependent gates have their own evidence and are reconciled against the approved release candidate: T-12 AI tactical benchmark and Linux/Docker artifacts; T-13 approved release SHA and immutable published/live image identity; T-14 public HTTPS health/readiness; T-15 public PvP/PvAI/History smoke; T-16 production persistence after redeploy; T-17 rollback evidence; PR #35 persisted-History contract decision; independent review. Do not infer production success from the successful CI jobs above.
+
+Evidence:
+- [Latest-head CI push run](https://github.com/emt0147t/caroAI/actions/runs/40896236338)
+- [Latest-head CI PR run](https://github.com/emt0147t/caroAI/actions/runs/40896239232)
+- [Latest-head Browser E2E](https://github.com/emt0147t/caroAI/actions/runs/40896239254)
+- [PR #39](https://github.com/emt0147t/caroAI/pull/39)
