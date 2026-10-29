@@ -25,6 +25,13 @@ The evidence below belongs only to the recorded workflow snapshots. Re-run affec
 
 Baseline for CI #299: `138164803f3537d15ca90d9bc358f3f86528c4f3`. See the [full matrix](phase4-m5-qa-matrix.md) for the test-layer breakdown and T-01–T-17 statuses.
 
+### Current C1 validation snapshot (2026-10-29)
+
+- [CI #307](https://github.com/emt0147t/caroAI/actions/runs/40874711154) completed successfully: Python tests/lint **218 passed, 11 skipped, 1 warning**; PostgreSQL acceptance **15 passed, 0 skipped** with the zero-skip guard; Compose persistence, frontend regression and Docker build succeeded. Production publish/deploy was skipped.
+- [Browser E2E #50](https://github.com/emt0147t/caroAI/actions/runs/40874711121) completed successfully: **13/13 Playwright tests passed**, including History retry/reload, PvP, PvAI, duplicate-submit prevention, HTTP error handling, network recovery, AI retry, terminal lock, draw and responsive viewports.
+- **SHA provenance remains open:** both workflow job logs report checkout commit `21505ad2541d5be6135ed84fc33697146cf75b8e`, which the repository commit endpoint did not resolve during C1. Do not claim these exact results are proven against PR head `44c37bb52f9e4e131f85e532482d39bc311c9f9c` until the mapping is reconciled.
+- This documentation update advanced PR #39 head to `e3d60a12d9f7aeee0882bbad1dce08553f5457e5`. Replacement [CI run #308](https://github.com/emt0147t/caroAI/actions/runs/40892270234) and [Browser E2E run #51](https://github.com/emt0147t/caroAI/actions/runs/40892270127) were queued/in progress at the time of this update. Record their final result and exact tested SHA before closing C1.
+
 ## 3. Required handover actions
 
 | Priority | Owner | Action | Evidence required before sign-off |
