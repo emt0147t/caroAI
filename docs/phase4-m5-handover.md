@@ -100,3 +100,13 @@ Remain **BLOCKED / NO-GO** until all required P0 evidence is present for the sam
 - PR #35 must receive an explicit contract decision before merge; its described in-memory history implementation must not be represented as persisted History.
 
 M5 records and audits evidence. M5 does not certify unexecuted deployment work on behalf of M1, M2, M3, or M4.
+
+## 7. C2 database guard handover — 2026-10-29
+
+**Current decision: PARTIAL.** The positive path is evidenced by [CI #321](https://github.com/emt0147t/caroAI/actions/runs/40892411531): the dedicated PostgreSQL job ran on merge-validation SHA `34cf32d8c97377d37c2b468785e2a01c03f469bf`, reported **15 passed / 0 skipped**, and completed the explicit zero-skip guard. The job uses a disposable PostgreSQL 15 service, the `TEST_DATABASE_URL` test target, and `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`.
+
+Code inspection of [`tests/test_database_postgres.py`](https://github.com/emt0147t/caroAI/blob/develop/tests/test_database_postgres.py), [`tests/postgres_suite.py`](https://github.com/emt0147t/caroAI/blob/develop/tests/postgres_suite.py), and [`.github/workflows/ci-cd.yml`](https://github.com/emt0147t/caroAI/blob/develop/.github/workflows/ci-cd.yml) shows checks for PostgreSQL backend, a test-identifying database name, rejection of production/live-like names, explicit disposable confirmation, isolated schema names, cleanup, and failure when the dedicated suite reports skips.
+
+**Remaining C2 gap:** no recorded negative-path regression test was identified for missing database URL, missing/wrong confirmation marker, non-PostgreSQL URL, or production/live-like database name. Do not close C2 based on code inspection alone. Add/run a test harness using monkeypatch/mocked engine creation (or a disposable subprocess) to prove these unsafe inputs cannot reach schema DDL, then rerun the PostgreSQL job on the exact candidate SHA. Never test against production or disclose credentials.
+
+The general Python suite's 11 skips are expected without PostgreSQL environment variables and are not PostgreSQL acceptance. Keep **BLOCKED / NO-GO** until C2 and all independent release gates are satisfied.
