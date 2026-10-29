@@ -131,22 +131,19 @@ Evidence links:
 
 ## 8. C2 database guard audit — 2026-10-29
 
-This is a guard review, not release approval. The reviewed workflow file is [`.github/workflows/ci-cd.yml`](https://github.com/emt0147t/caroAI/blob/feature/m5-sprint4-qa/.github/workflows/ci-cd.yml) (blob `e86e253372ad13e195433e8a34321437953566fb` on both `develop` and `feature/m5-sprint4-qa` at audit time).
+The guard is now covered by a shared validation helper and explicit negative-path regression tests.
 
 | Guard control | Evidence | Assessment |
 |---|---|---|
-| Dedicated PostgreSQL service | CI #321 job [PostgreSQL service/API/migration acceptance](https://github.com/emt0147t/caroAI/actions/runs/40892411531) starts a disposable `postgres:15-alpine` service with a health check and job-scoped test credentials | **PASS for CI disposable environment** |
-| Explicit disposable DB marker | Job sets `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`; both PostgreSQL test paths check the marker before schema DDL | **PASS by code inspection + positive-path CI** |
-| Database target validation | Test setup requires PostgreSQL backend, a database name visibly marked as test, and rejects names containing production/live markers | **PASS by code inspection; negative-path execution not evidenced** |
-| Isolated schema and cleanup | PostgreSQL fixtures create UUID-suffixed schemas and drop them in cleanup paths; the API suite uses a separate acceptance schema | **PASS by code inspection + successful positive-path run; forced cleanup failure not separately evidenced** |
-| Skip guard | CI runs `tests/test_database_postgres.py` and `tests/postgres_suite.py`, writes JUnit XML, and fails if any `<skipped>` node exists | **PASS** |
-| Exact-SHA positive-path run | [CI #321](https://github.com/emt0147t/caroAI/actions/runs/40892411531), PostgreSQL job [logs](https://github.com/emt0147t/caroAI/actions/runs/40892411531/job/123512452255): `15 passed, 0 skipped`; explicit message: `PostgreSQL acceptance suite completed with zero skipped tests.` The log checks out merge-validation SHA `34cf32d8c97377d37c2b468785e2a01c03f469bf` (PR head `bf0f8e0` + base `1381648`) | **PASS for that merge-validation SHA** |
-| Negative-path guard tests | No dedicated automated test run was found that deliberately removes the DB URL/confirmation marker or supplies a non-PostgreSQL / production-like DB name and asserts a hard failure before DDL | **GAP — do not claim C2 fully closed yet** |
+| Dedicated PostgreSQL service | CI #335 uses a disposable `postgres:15-alpine` service with a health check and job-scoped test credentials. [Workflow](https://github.com/emt0147t/caroAI/actions/runs/40893711876) | **PASS for CI disposable environment** |
+| Shared pre-DDL target validation | [`app/db/testing.py`](https://github.com/emt0147t/caroAI/blob/feature/m5-sprint4-qa/app/db/testing.py) validates the URL, explicit disposable marker, PostgreSQL backend, test-identifying DB name, and rejects production/live-like names before engine/schema creation. Both PostgreSQL test paths call this helper. | **PASS by code review + tests** |
+| Negative-path regression coverage | [`tests/test_database_guard.py`](https://github.com/emt0147t/caroAI/blob/feature/m5-sprint4-qa/tests/test_database_guard.py) tests missing URL, missing/wrong marker, SQLite URL, non-test DB name, production/live-like DB names, and a valid disposable target. | **PASS** |
+| Dedicated PostgreSQL acceptance and skip guard | CI #335 PostgreSQL job [logs](https://github.com/emt0147t/caroAI/actions/runs/40893711876) report **15 passed, 0 skipped** and print `PostgreSQL acceptance suite completed with zero skipped tests.` | **PASS** |
+| General suite including guard regression tests | CI #335 Python/lint job [logs](https://github.com/emt0147t/caroAI/actions/runs/40893711876) reports **226 passed, 11 skipped, 1 warning**. The 11 skips are the expected PostgreSQL fixture skips in the general suite, not PostgreSQL acceptance. | **PASS for general suite; skips remain skips** |
+| Exact tested source | CI #335 job logs show merge-validation SHA `4aa5a21baccdaa319aa4cd482b1a929badc7be01`, merging PR head `26d946a7381466e8c11b726c4b66da0596428cc8` into base `138164803f3537d15ca90d9bc358f3f86528c4f3`. | **PASS for the recorded merge-validation SHA** |
 
 ### C2 decision
 
-**C2 status: PARTIAL — positive-path guard evidence passes; negative-path behavior still needs an explicit regression test or equivalent recorded test evidence.** Existing code inspection shows the intended fail-closed checks, but inspection alone is not a substitute for exercising the unsafe-input paths. The general Python suite's 11 skips are expected because it runs without PostgreSQL environment variables; they are not PostgreSQL passes and do not override the dedicated job's zero-skip result.
+**C2 database-guard gate: PASS for the tested merge-validation SHA `4aa5a21baccdaa319aa4cd482b1a929badc7be01`.** Positive-path PostgreSQL acceptance completed with zero skips, and negative-path guard tests passed as part of the general Python suite. The full CI workflow and Browser E2E were still running at the time this section was updated; do not treat their final PR-wide result as complete until those runs finish.
 
-Next action: add/run a safe negative-path test harness that verifies missing `TEST_DATABASE_URL`, missing/wrong disposable marker, non-PostgreSQL URL, and production/live-like database names cannot proceed to schema DDL. Tests must use monkeypatching/mocked engine creation or a disposable test process; do not point tests at production and do not print credentials. Re-run the dedicated PostgreSQL acceptance job and confirm zero skips on the resulting exact merge-validation SHA before marking C2 complete.
-
-**Release remains BLOCKED / NO-GO.** C2 guard acceptance does not close benchmark, published image/deployment identity, public smoke, production post-redeploy persistence, rollback, or independent review gates.
+**Release remains BLOCKED / NO-GO.** C2 does not close benchmark, approved production deployment/image identity, public smoke, production post-redeploy persistence, rollback, PR #35 contract triage, or independent review gates.
