@@ -155,3 +155,18 @@ The latest PR head is `006354cbdd76b38cc8c78e9d9d2806f2ee39b095`. The earlier ha
 **C3 evidence update and acceptance decision: IN PROGRESS.** Latest SHA and test-layer evidence have been reconciled and recorded. Overall release remains **BLOCKED / NO-GO** until the remaining T-12–T-17 production/benchmark gates, PR #35 History-contract decision, and independent review are complete. The successful Docker build did not publish/deploy an image; public HTTPS smoke and production persistence after redeploy remain unverified.
 
 The evidence matrix is [docs/phase4-m5-qa-matrix.md](phase4-m5-qa-matrix.md). PR #39 remains open and unmerged.
+
+
+## 10. C3 latest-head workflow verification — 2026-10-29
+
+The latest PR #39 head `1d41eafac084910e6d30e3ed2e35c858f4337115` has now passed all three current-head workflow runs:
+
+- [CaroAI CI push #40896984579](https://github.com/emt0147t/caroAI/actions/runs/40896984579) — **SUCCESS**.
+- [CaroAI CI pull request #40896992335](https://github.com/emt0147t/caroAI/actions/runs/40896992335) — **SUCCESS**.
+- [Frontend Browser E2E #40896992363](https://github.com/emt0147t/caroAI/actions/runs/40896992363) — **SUCCESS**.
+
+Each run reports the same exact head SHA, `1d41eafac084910e6d30e3ed2e35c858f4337115`. The detailed counts (general suite 226 passed / 11 skipped / 1 warning; dedicated PostgreSQL 15 passed / 0 skipped; E2E 13 passed) are explicitly tied to the earlier verified C2 candidate `006354cbdd76b38cc8c78e9d9d2806f2ee39b095`; do not assume those counts belong to the newer documentation SHA unless its job logs confirm them.
+
+**C3 evidence-update checkpoint: COMPLETE. Release decision: BLOCKED / NO-GO.** The current PR/CI evidence is reconciled. Remaining release blockers are T-12 AI tactical regression and Linux/Docker benchmark artifacts; T-13 approved immutable published/live image identity; T-14 public HTTPS health/readiness; T-15 public PvP/PvAI/History smoke; T-16 production persistence after redeploy; T-17 rollback evidence; the explicit PR #35 persisted-History contract decision; and independent release review. These require the named owners' evidence and cannot be closed by passing CI or PR E2E alone.
+
+PR #39 remains open and unmerged. This C3 checkpoint does not authorize a merge or production release.
