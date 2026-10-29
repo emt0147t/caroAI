@@ -147,3 +147,28 @@ The guard is now covered by a shared validation helper and explicit negative-pat
 **C2 database-guard gate: PASS, with PR-wide CI/E2E confirmation on current head.** [CI #339](https://github.com/emt0147t/caroAI/actions/runs/40894014703) and [Browser E2E #63](https://github.com/emt0147t/caroAI/actions/runs/40894014957) both completed successfully on PR head `27f232348151cf17fe447760dd8944e6b18d5ff9`; CI includes PostgreSQL acceptance with zero skips, general suite including the negative-path guard tests, Compose persistence, frontend checks, and Docker image build. Production publish/deploy was skipped.
 
 **Release remains BLOCKED / NO-GO.** C2 does not close benchmark, approved production deployment/image identity, public smoke, production post-redeploy persistence, rollback, PR #35 contract triage, or independent review gates.
+
+
+## 9. Release-gate owner assignment and execution queue — 2026-10-29
+
+This is the operational owner map for the remaining release gates. Assignments follow the existing Sprint 3 ownership records; **owner acknowledgement and execution evidence are still required**. This document does not imply that an owner has accepted a new deadline or that a gate has passed.
+
+| Order | Gate / deliverable | Accountable execution owner | Required support / independent check | Tracking | Required evidence to close |
+|---|---|---|---|---|---|
+| 1 | PR #35 History-contract triage | **M1 Thành (@emt0147t)** | M5 records the risk; M3 confirms UI/API expectation | [PR #35](https://github.com/emt0147t/caroAI/pull/35), [Issue #23](https://github.com/emt0147t/caroAI/issues/23) | Written decision against actual PR diff and persisted History contract; explicit fix/close/update decision. Do not merge in-memory History as DB-backed. |
+| 2 | AI tactical regression + reproducible benchmark, including Linux/Docker | **M2 Kiên (@KenKen106)** | M4 provides/validates Docker CPU environment; M5 audits artifacts | [Issue #28](https://github.com/emt0147t/caroAI/issues/28), [T-12](#acceptance-matrix-t-01-to-t-17) | Exact full source SHA, command, fixtures/trial protocol, all supported difficulties, tactical outcomes, environment/CPU/container, raw CSV/JSON, median/p95, report, and team decision on p95 ≤ 2,000 ms as target or SLO. |
+| 3 | Release preflight, immutable image publication, deployment and live image identity | **M4 Vinh (@macvinh2007-sketch)** | **M1 Thành (@emt0147t)** performs independent approval/review; M5 records | [Issue #30](https://github.com/emt0147t/caroAI/issues/30), [T-13](#acceptance-matrix-t-01-to-t-17) | Approved source branch/SHA, Environment protection evidence, successful promotion workflow, registry image tagged by full SHA/digest, deployment ID/status and live service identity. Do not dispatch from stale `main`. |
+| 4 | Public HTTPS health/readiness and public PvP/PvAI/History smoke | **M3 Hiền (@NgocHein) for browser flows; M4 Vinh (@macvinh2007-sketch) for deployment/health access** | M1 signs off API/state correctness; M5 records results | [Issue #29](https://github.com/emt0147t/caroAI/issues/29), [Issue #30](https://github.com/emt0147t/caroAI/issues/30), [T-14](#acceptance-matrix-t-01-to-t-17), [T-15](#acceptance-matrix-t-01-to-t-17) | Public URL/environment, deployed source and image SHA, timestamp, browser/version, `/health` and `/ready` results, PvP/PvAI/History+reload outcomes, game IDs and redacted artifacts. |
+| 5 | Production persistence after approved redeploy | **M4 Vinh (@macvinh2007-sketch)** | M1 validates application/API semantics; M5 independently verifies evidence | [Issue #30](https://github.com/emt0147t/caroAI/issues/30), [T-16](#acceptance-matrix-t-01-to-t-17) | Approved non-destructive test game; capture game ID and moves/history before and after redeploy; record deployed image SHA and successful read-back. Compose restart alone does not close this gate. |
+| 6 | Rollback/redeploy runbook and exercise | **M4 Vinh (@macvinh2007-sketch)** | M1 independent reviewer; M5 checks evidence completeness | [Issue #30](https://github.com/emt0147t/caroAI/issues/30), [T-17](#acceptance-matrix-t-01-to-t-17) | Runbook includes immutable image/SHA, trigger, steps, migration/data risks, verification and owner; attach exercise result or clearly mark exercise not run if not approved. |
+| 7 | Evidence reconciliation, QA matrix, final GO/NO-GO package | **M5 Hiếu (@dyhieu-vu)** | Each gate owner supplies evidence; independent reviewer must not be the author of the release change | [Issue #31](https://github.com/emt0147t/caroAI/issues/31), PR #39 | Evidence URLs and exact SHA for every gate; status labels distinguish PASS/PARTIAL/NOT RUN; independent reviewer records explicit decision. M5 cannot self-certify another owner's execution. |
+
+### Execution order and control
+
+1. **M1 decides PR #35 History contract** and the team agrees on the target release candidate; record the decision before considering PR #35 for merge.
+2. **M2 + M4 complete T-12 benchmark evidence** on the named candidate and agree the latency target/SLO.
+3. **M4 + independent M1 reviewer complete release preflight and T-13**. No public smoke should be claimed before a deployment is identified.
+4. **M3 + M4 execute T-14/T-15**, then M4 executes T-16 after an approved redeploy; M5 captures and checks the evidence.
+5. **M4 completes T-17 rollback evidence**, then M5 assembles the final packet for independent review.
+
+No target dates are invented here because the repository evidence does not contain owner-approved dates. The owner map is documented, but acknowledgement, implementation and acceptance remain outstanding until the corresponding evidence is linked. Release remains **BLOCKED / NO-GO**.
