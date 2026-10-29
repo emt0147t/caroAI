@@ -113,3 +113,28 @@ Evidence:
 The general suite's 11 skips are expected when PostgreSQL environment variables are absent; they are not PostgreSQL passes. The dedicated PostgreSQL job has its own zero-skip guard. [CI #339](https://github.com/emt0147t/caroAI/actions/runs/40894014703) and [Browser E2E #63](https://github.com/emt0147t/caroAI/actions/runs/40894014957) are now both complete with success on the current PR head. CI also passed Compose persistence, frontend checks, and Docker build; approved production publish/deploy was skipped.
 
 Keep **BLOCKED / NO-GO** until benchmark acceptance, approved production image/deployment identity, public health/readiness and game-flow smoke, production persistence after redeploy, rollback evidence, PR #35 contract triage, and independent review are complete.
+
+
+## 8. Explicit owner handoff for remaining release gates — 2026-10-29
+
+The assignments below align with the existing Sprint 3 issue owners. They are recorded as a handoff request, not proof that the owners have acknowledged or completed the work.
+
+| Gate | Directly responsible | Support / independent reviewer | Tracking and completion evidence |
+|---|---|---|---|
+| PR #35 persisted-History contract decision | **M1 Thành (@emt0147t)** | M5 documents QA impact; M3 confirms frontend contract | [PR #35](https://github.com/emt0147t/caroAI/pull/35), [Issue #23](https://github.com/emt0147t/caroAI/issues/23). Written decision based on actual diff and persistence contract. |
+| AI tactical regression + Windows/Linux-Docker benchmark | **M2 Kiên (@KenKen106)** | M4 supplies Docker/CPU environment; M5 audits reproducibility | [Issue #28](https://github.com/emt0147t/caroAI/issues/28). Exact SHA, command, fixtures/trials, tactical outcomes, environment, raw CSV/JSON, median/p95 and agreed target/SLO. |
+| Approved promotion, full-SHA image, live image identity | **M4 Vinh (@macvinh2007-sketch)** | **M1 Thành (@emt0147t)** as independent reviewer; M5 records | [Issue #30](https://github.com/emt0147t/caroAI/issues/30). Environment protections, approved source SHA, workflow, immutable image digest, deployment ID/status. |
+| Public HTTPS health/readiness + PvP/PvAI/History smoke | **M3 Hiền (@NgocHein)** for browser tests; **M4 Vinh (@macvinh2007-sketch)** for deployment/health | M1 checks API/state correctness; M5 records | [Issues #29](https://github.com/emt0147t/caroAI/issues/29) and [#30](https://github.com/emt0147t/caroAI/issues/30). Public URL, source/image SHA, browser/version, health/readiness responses, test game IDs and artifacts. |
+| Persistence after production redeploy | **M4 Vinh (@macvinh2007-sketch)** | M1 validates semantics; M5 independently checks evidence | [Issue #30](https://github.com/emt0147t/caroAI/issues/30). Designated non-destructive test game readable before/after redeploy, tied to live image SHA. |
+| Rollback/redeploy runbook and exercise | **M4 Vinh (@macvinh2007-sketch)** | M1 independent reviewer; M5 evidence audit | [Issue #30](https://github.com/emt0147t/caroAI/issues/30). Steps, image/SHA, rollback trigger, migration/data risk, verification and exercise outcome. |
+| Matrix, evidence reconciliation and final decision packet | **M5 Hiếu (@dyhieu-vu)** | Each owner provides own evidence; independent reviewer signs off | [Issue #31](https://github.com/emt0147t/caroAI/issues/31), [PR #39](https://github.com/emt0147t/caroAI/pull/39). No owner work is marked complete without evidence on the same approved candidate. |
+
+### Handoff sequence
+
+1. M1 records the PR #35 History contract decision.
+2. M2 and M4 deliver benchmark/tactical evidence and the agreed latency target or SLO.
+3. M4 prepares and promotes the approved candidate only after release preflight and independent M1 review.
+4. M3/M4 run public health and game-flow smoke; M4 verifies persistence after redeploy and records rollback evidence.
+5. M5 reconciles exact SHAs and evidence links; an independent reviewer makes the final GO/NO-GO decision.
+
+No deadline is assigned without confirmation from the relevant owner. **Current status remains BLOCKED / NO-GO.** A passing CI run, PR E2E, or Compose restart does not replace any production gate.
