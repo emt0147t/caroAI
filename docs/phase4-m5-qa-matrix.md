@@ -213,3 +213,22 @@ Evidence:
 - [Latest-head CI PR run](https://github.com/emt0147t/caroAI/actions/runs/40896239232)
 - [Latest-head Browser E2E](https://github.com/emt0147t/caroAI/actions/runs/40896239254)
 - [PR #39](https://github.com/emt0147t/caroAI/pull/39)
+
+
+## 11. C3 checkpoint update — latest documentation head validated (2026-10-29)
+
+This addendum supersedes the earlier note that workflows for the latest documentation head were still pending. All three required workflows have now completed successfully against exact PR head `1d41eafac084910e6d30e3ed2e35c858f4337115`:
+
+| Gate | Run | Result |
+|---|---|---|
+| CaroAI CI — push | [Run #40896984579](https://github.com/emt0147t/caroAI/actions/runs/40896984579) | **SUCCESS**; run head SHA matches `1d41eafac084910e6d30e3ed2e35c858f4337115` |
+| CaroAI CI — pull request | [Run #40896992335](https://github.com/emt0147t/caroAI/actions/runs/40896992335) | **SUCCESS**; run head SHA matches the same SHA |
+| Frontend Browser E2E | [Run #40896992363](https://github.com/emt0147t/caroAI/actions/runs/40896992363) | **SUCCESS**; run head SHA matches the same SHA |
+
+The workflows validate the latest documentation/QA candidate. Detailed test counts and the dedicated PostgreSQL zero-skip result remain documented under the earlier verified C2 checkpoint on `006354cbdd76b38cc8c78e9d9d2806f2ee39b095`; do not attribute those exact counts to the newer SHA unless confirmed in its job logs. The current-head workflow conclusions are successful, but production publish/deploy remains unverified.
+
+### C3 acceptance checkpoint
+
+**C3 evidence reconciliation and acceptance decision: COMPLETE for the current PR/CI evidence checkpoint.** The exact latest head and its push CI, PR CI, and Browser E2E outcomes are recorded above. The explicit acceptance decision remains **BLOCKED / NO-GO for release** because the owner-dependent gates below have not been evidenced: T-12 benchmark/tactical regression; T-13 approved release SHA and immutable live image identity; T-14 public HTTPS health/readiness; T-15 public PvP/PvAI/History smoke; T-16 production persistence after redeploy; T-17 rollback evidence; PR #35 persisted-History contract decision; and independent release review.
+
+This closes the M5 C3 evidence-update checkpoint only; it does not close the production release gates or authorize merging/deployment.
