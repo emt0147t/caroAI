@@ -5,18 +5,17 @@ unless the operator explicitly confirms the database is test-only.
 """
 
 import os
-import re
 import sys
 import warnings
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine, func, select, text
-from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models import Base, Game, GameAnalysis, Move
+from app.db.testing import validate_disposable_postgres_target
 
 
 @pytest.fixture
@@ -30,14 +29,9 @@ def postgres_engine():
             "disposable-test-database after verifying the target is disposable"
         )
 
-    url = make_url(database_url)
-    if url.get_backend_name() != "postgresql":
-        pytest.fail("TEST_DATABASE_URL must use PostgreSQL")
-    database_name = url.database or ""
-    if not re.search(r"(^|[_-])test([_-]|$)", database_name, re.IGNORECASE):
-        pytest.fail("TEST_DATABASE_URL database name must visibly identify a test database")
-    if re.search(r"prod(uction)?|live", database_name, re.IGNORECASE):
-        pytest.fail("Refusing schema DDL against a database name marked production/live")
+    url = validate_disposable_postgres_target(
+        database_url, os.getenv("CAROAI_TEST_DATABASE_CONFIRMED")
+    )
 
     schema = f"caroai_test_{uuid4().hex}"
     admin_engine = create_engine(url, pool_pre_ping=True)
