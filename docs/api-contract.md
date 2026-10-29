@@ -48,7 +48,7 @@ Rebuilds and returns the game state from persisted, move-number-ordered history 
 
 The detail embeds the requested ID, as produced by `GameNotFoundError` in the current implementation.
 
-The non-locking read loads game metadata and ordered moves in one SQL statement so a concurrent move commit cannot make a GET combine game status from one statement snapshot with move history from another. Write paths acquire a row lock before reconstructing state.
+The endpoint rebuilds the board and current game state from the ordered persisted moves. A missing public ID returns HTTP `404`.
 
 ### `POST /api/games/{game_id}/moves`
 
