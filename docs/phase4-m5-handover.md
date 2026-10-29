@@ -27,10 +27,12 @@ Baseline for CI #299: `138164803f3537d15ca90d9bc358f3f86528c4f3`. See the [full 
 
 ### Current C1 validation snapshot (2026-10-29)
 
-- [CI #307](https://github.com/emt0147t/caroAI/actions/runs/40874711154) completed successfully: Python tests/lint **218 passed, 11 skipped, 1 warning**; PostgreSQL acceptance **15 passed, 0 skipped** with the zero-skip guard; Compose persistence, frontend regression and Docker build succeeded. Production publish/deploy was skipped.
-- [Browser E2E #50](https://github.com/emt0147t/caroAI/actions/runs/40874711121) completed successfully: **13/13 Playwright tests passed**, including History retry/reload, PvP, PvAI, duplicate-submit prevention, HTTP error handling, network recovery, AI retry, terminal lock, draw and responsive viewports.
-- **SHA provenance remains open:** both workflow job logs report checkout commit `21505ad2541d5be6135ed84fc33697146cf75b8e`, which the repository commit endpoint did not resolve during C1. Do not claim these exact results are proven against PR head `44c37bb52f9e4e131f85e532482d39bc311c9f9c` until the mapping is reconciled.
-- This documentation update advanced PR #39 head to `e3d60a12d9f7aeee0882bbad1dce08553f5457e5`. Replacement [CI run #308](https://github.com/emt0147t/caroAI/actions/runs/40892270234) and [Browser E2E run #51](https://github.com/emt0147t/caroAI/actions/runs/40892270127) were queued/in progress at the time of this update. Record their final result and exact tested SHA before closing C1.
+- [CaroAI CI #321](https://github.com/emt0147t/caroAI/actions/runs/40892411531) completed successfully. Logs explicitly show checkout of PR #39 merge-validation SHA `34cf32d8c97377d37c2b468785e2a01c03f469bf`, formed by merging PR head `bf0f8e06c668eb30c9e939ad87ac12ed049c2626` into `develop` base `138164803f3537d15ca90d9bc358f3f86528c4f3`. Python tests/lint: **218 passed, 11 skipped, 1 warning**; dedicated PostgreSQL acceptance: **15 passed, 0 skipped**, zero-skip guard passed; Compose persistence, frontend regression and Docker build succeeded. Production publish/deploy was skipped.
+- [Browser E2E #55](https://github.com/emt0147t/caroAI/actions/runs/40892411540) completed successfully: **13/13 Playwright tests passed** on the same merge-validation SHA `34cf32d8c97377d37c2b468785e2a01c03f469bf`, including History retry/reload, PvP, PvAI, duplicate-submit prevention, HTTP error handling, network recovery, AI retry, terminal lock, draw and responsive viewports.
+- The earlier [CI #307](https://github.com/emt0147t/caroAI/actions/runs/40874711154) and [E2E #50](https://github.com/emt0147t/caroAI/actions/runs/40874711121) logs reported checkout commit `21505ad2541d5be6135ed84fc33697146cf75b8e`; do not use those runs as exact-SHA proof. The fresh #321/#55 logs resolve the PR validation provenance.
+- **C1 is closed for PR #39 documentation/QA-matrix validation only.** It does not prove a new application-code regression, close C2 database guard, satisfy benchmark acceptance, or authorize production release. Release remains **BLOCKED / NO-GO**.
+- PR #35 remains a separate draft targeting `main`; its in-memory `GET /api/history` implementation is not evidence of persisted History. The API owner/M1 must record the contract decision before any merge decision.
+
 
 ## 3. Required handover actions
 
