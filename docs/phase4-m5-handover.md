@@ -138,3 +138,20 @@ The assignments below align with the existing Sprint 3 issue owners. They are re
 5. M5 reconciles exact SHAs and evidence links; an independent reviewer makes the final GO/NO-GO decision.
 
 No deadline is assigned without confirmation from the relevant owner. **Current status remains BLOCKED / NO-GO.** A passing CI run, PR E2E, or Compose restart does not replace any production gate.
+
+
+## 9. C3 evidence reconciliation — latest PR head (2026-10-29)
+
+The latest PR head is `006354cbdd76b38cc8c78e9d9d2806f2ee39b095`. The earlier handover note saying no workflow runs were returned for this docs-only head is superseded by these verified runs:
+
+- [CaroAI CI push #40896236338](https://github.com/emt0147t/caroAI/actions/runs/40896236338): **SUCCESS** on the exact latest head. Python/lint **226 passed, 11 skipped, 1 warning**; dedicated PostgreSQL acceptance **15 passed, 0 skipped**, with the zero-skip guard; Compose persistence, frontend regression and Docker image build succeeded. Production publish/deploy was skipped.
+- [CaroAI CI pull-request run #40896239232](https://github.com/emt0147t/caroAI/actions/runs/40896239232): **SUCCESS** on the same head.
+- [Browser E2E #40896239254](https://github.com/emt0147t/caroAI/actions/runs/40896239254): **13 Playwright tests passed** on the same head.
+
+### Scoped acceptance decision
+
+**C2 database guard: PASS / COMPLETE on latest PR head.** The dedicated PostgreSQL acceptance job has 15 passed and zero skipped, and the explicit zero-skip guard passed. General-suite skips remain skips, not passes. Compose and browser evidence are CI/PR evidence only.
+
+**C3 evidence update and acceptance decision: IN PROGRESS.** Latest SHA and test-layer evidence have been reconciled and recorded. Overall release remains **BLOCKED / NO-GO** until the remaining T-12–T-17 production/benchmark gates, PR #35 History-contract decision, and independent review are complete. The successful Docker build did not publish/deploy an image; public HTTPS smoke and production persistence after redeploy remain unverified.
+
+The evidence matrix is [docs/phase4-m5-qa-matrix.md](phase4-m5-qa-matrix.md). PR #39 remains open and unmerged.
