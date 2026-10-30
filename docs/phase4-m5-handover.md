@@ -170,3 +170,38 @@ Each run reports the same exact head SHA, `1d41eafac084910e6d30e3ed2e35c858f4337
 **C3 evidence-update checkpoint: COMPLETE. Release decision: BLOCKED / NO-GO.** The current PR/CI evidence is reconciled. Remaining release blockers are T-12 AI tactical regression and Linux/Docker benchmark artifacts; T-13 approved immutable published/live image identity; T-14 public HTTPS health/readiness; T-15 public PvP/PvAI/History smoke; T-16 production persistence after redeploy; T-17 rollback evidence; the explicit PR #35 persisted-History contract decision; and independent release review. These require the named owners' evidence and cannot be closed by passing CI or PR E2E alone.
 
 PR #39 remains open and unmerged. This C3 checkpoint does not authorize a merge or production release.
+
+## 11. Phase E deliverables and handoff snapshot — 2026-10-30
+
+The Phase E documentation package is now present on feature/m5-sprint4-qa:
+
+| Deliverable | Document | Status |
+|---|---|---|
+| 1. Phase 4 QA matrix | [phase4-m5-qa-matrix.md](phase4-m5-qa-matrix.md) | Maintained; Section 12 refreshes the exact current PR/CI head. |
+| 2. QA baseline and workflow links | [phase4-m5-qa-matrix.md](phase4-m5-qa-matrix.md), Section 12 | Current PR-head push/PR CI and Browser E2E URLs recorded with exact SHA and scope. |
+| 3. Regression/database acceptance report | [phase4-m5-qa-matrix.md](phase4-m5-qa-matrix.md), T-01–T-17 and Section 12 | CI, PostgreSQL zero-skip guard, Compose restart and Browser E2E distinguished by layer. |
+| 4. Public smoke and post-redeploy persistence | [phase4-m5-d-evidence.md](phase4-m5-d-evidence.md), Sections 4 and 8–9 | NOT RUN / BLOCKED; no public URL, deployed image digest, deployment ID or same-game production read-back. |
+| 5. Seven-minute demo runbook | [phase4-m5-e-demo-runbook.md](phase4-m5-e-demo-runbook.md) | Prepared from inspected API, Compose, migration and workflow code; unverified production steps are marked. |
+| 6. Release sign-off | [phase4-m5-e-release-signoff.md](phase4-m5-e-release-signoff.md) | M5 recommendation BLOCKED / NO-GO; authorized approver fields intentionally remain blank. |
+| 7. Issue closure recommendations | [phase4-m5-e-issue-triage.md](phase4-m5-e-issue-triage.md) | #23, #28, #29, #30 and #31 reviewed; no issue closed or modified. |
+| 8. Failure triage | [phase4-m5-e-failure-triage.md](phase4-m5-e-failure-triage.md) | No confirmed failing job in latest workflow pair; warnings, skips and unrun release gates are classified separately. |
+
+### Current exact-head workflow references
+
+The current PR #39 head at this evidence checkpoint was 5ca2766f35a2ec54dba393e417074246683bdb60:
+
+- [CaroAI CI push #40993815986](https://github.com/emt0147t/caroAI/actions/runs/40993815986) — SUCCESS.
+- [CaroAI CI pull request #40993819096](https://github.com/emt0147t/caroAI/actions/runs/40993819096) — SUCCESS.
+- [Frontend Browser E2E #40993819081](https://github.com/emt0147t/caroAI/actions/runs/40993819081) — SUCCESS; [artifact #12950163434](https://github.com/emt0147t/caroAI/actions/runs/40993819081/artifacts/12950163434).
+- The production publish/Render verification job in CI was skipped. No deployment is claimed.
+
+### Remaining owner handoff
+
+- **M2:** attach Sprint 3 tactical/benchmark evidence and raw CSV/JSON to Issue #28, or explicitly mark unrun items and reasons.
+- **M1/team:** record the accepted/replaced latency target/SLO and the formal PR #35 History disposition.
+- **M4 + M1:** supply approved release identity and deployment evidence only under release/change approval; do not deploy merely to satisfy the QA checklist.
+- **M3:** execute public browser smoke only after M4 provides the approved URL and immutable image/source identity.
+- **M4 + M1:** verify production same-game persistence after redeploy and rollback under approved change control.
+- **M5:** reconcile new evidence when supplied; do not change NOT RUN/BLOCKED to PASS without the named evidence.
+
+**Phase E documentation package: prepared. Overall Phase 4 release: BLOCKED / NO-GO.** This handover does not close Sprint 3 issues, Phase D gates, PR #35, or PR #39 and does not authorize production deployment.
