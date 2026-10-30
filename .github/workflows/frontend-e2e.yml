@@ -28,6 +28,11 @@ jobs:
         run: npm ci
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+      - name: Record browser and Playwright versions
+        run: |
+          npx playwright --version
+          CHROMIUM_PATH="$(node -e "process.stdout.write(require('@playwright/test').chromium.executablePath())")"
+          "$CHROMIUM_PATH" --version
       - name: Start real API and frontend
         run: docker compose up -d --build
       - name: Wait for proxied API
