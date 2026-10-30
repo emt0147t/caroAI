@@ -232,3 +232,37 @@ The workflows validate the latest documentation/QA candidate. Detailed test coun
 **C3 evidence reconciliation and acceptance decision: COMPLETE for the current PR/CI evidence checkpoint.** The exact latest head and its push CI, PR CI, and Browser E2E outcomes are recorded above. The explicit acceptance decision remains **BLOCKED / NO-GO for release** because the owner-dependent gates below have not been evidenced: T-12 benchmark/tactical regression; T-13 approved release SHA and immutable live image identity; T-14 public HTTPS health/readiness; T-15 public PvP/PvAI/History smoke; T-16 production persistence after redeploy; T-17 rollback evidence; PR #35 persisted-History contract decision; and independent release review.
 
 This closes the M5 C3 evidence-update checkpoint only; it does not close the production release gates or authorize merging/deployment.
+
+## 12. Phase E baseline refresh — current PR #39 evidence (2026-10-30)
+
+> This addendum supersedes stale current-head pointers above for the exact SHA recorded here. Historical runs and counts remain historical and must not be reassigned to this SHA.
+
+| Gate | Exact source SHA | Workflow / result | Scope and limitation |
+|---|---|---|---|
+| PR #39 head | 5ca2766f35a2ec54dba393e417074246683bdb60 | [PR #39](https://github.com/emt0147t/caroAI/pull/39), base develop | OPEN / UNMERGED at the time of this check. |
+| CaroAI CI — push | 5ca2766f35a2ec54dba393e417074246683bdb60 | [Run #40993815986](https://github.com/emt0147t/caroAI/actions/runs/40993815986) — SUCCESS | CI on exact PR head. |
+| CaroAI CI — pull request | 5ca2766f35a2ec54dba393e417074246683bdb60 | [Run #40993819096](https://github.com/emt0147t/caroAI/actions/runs/40993819096) — SUCCESS | Frontend regression, Python tests/lint, dedicated PostgreSQL acceptance/zero-skip guard, Compose persistence and Docker build jobs succeeded. Production publish/Render verification was SKIPPED. |
+| Browser E2E — pull request | 5ca2766f35a2ec54dba393e417074246683bdb60 | [Run #40993819081](https://github.com/emt0147t/caroAI/actions/runs/40993819081) — SUCCESS | Browser setup, version capture, real API/frontend startup, test execution, artifact upload and teardown succeeded. |
+| Browser artifact | Same SHA as above | [Artifact #12950163434](https://github.com/emt0147t/caroAI/actions/runs/40993819081/artifacts/12950163434) | PR/CI artifact only; not a public deployment trace. |
+| PostgreSQL acceptance | Same SHA as above | PostgreSQL service/API/migration acceptance job succeeded; explicit zero-skip guard succeeded | Disposable PostgreSQL service only. Do not infer production DB state. |
+| Compose persistence after API restart | Same SHA as above | Compose API/database persistence after restart job succeeded | Disposable Compose DB; creates game/move, restarts API, reads the same game and History back. Not production redeploy. |
+| Docker image build | Same SHA as above | Docker image build job succeeded | Build only. No registry publication or Render deployment. |
+| Public smoke / production persistence / rollback | N/A | NOT RUN / BLOCKED | No approved public URL, published image digest, deployment ID, same-game production before/after read-back, or rollback evidence. |
+
+### Baseline and test-count interpretation
+
+- Current PR-head workflows above have verified SUCCESS conclusions and exact SHA linkage. Job metadata confirms the PostgreSQL zero-skip guard, Compose persistence and Browser E2E steps succeeded.
+- Do not transfer the detailed 226 passed / 11 skipped / 1 warning general-suite count, 15 passed / 0 skipped PostgreSQL count, or 14 passed / 0 failed Browser E2E count from earlier exact SHAs to this SHA unless the corresponding current-run logs are explicitly inspected. Current run-level evidence is SUCCESS; this matrix does not invent new counts.
+- The 11 general Python-suite skips from the earlier detailed run are separate from the dedicated PostgreSQL suite, whose explicit zero-skip guard passed.
+- The CI production publish/Render job was skipped by its approval/ref condition. This is not a failed deployment; it confirms production deployment was not performed in this run.
+- Current code inspection confirms versioned migration files and runner exist, and /health is liveness while /ready executes a DB query. See [database operations](../database/README.md).
+
+### Phase E document set
+
+- [Seven-minute demo runbook](phase4-m5-e-demo-runbook.md)
+- [Issue triage and closure recommendations](phase4-m5-e-issue-triage.md)
+- [Release sign-off record](phase4-m5-e-release-signoff.md)
+- [Failure triage register](phase4-m5-e-failure-triage.md)
+- [M5 handover](phase4-m5-handover.md)
+
+**Current release disposition remains BLOCKED / NO-GO.** These documents complete M5's current documentation and recommendation package; they do not close M2/M3/M4-owned gates, PR #35, or authorize release.
