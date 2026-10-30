@@ -118,3 +118,50 @@ Coordination request posted once on [Issue #31](https://github.com/emt0147t/caro
 - Overall release: **BLOCKED / NO-GO**.
 
 This Phase D register is an evidence-coordination artifact, not production acceptance or deployment authorization.
+
+
+## 7. Latest verification addendum — PR #39 head e349bb9
+
+> This addendum supersedes older Browser E2E / CI counts and assertion-level gaps above for the exact head SHA recorded here. Earlier runs remain historical evidence only.
+
+| Field | Latest verified value |
+|---|---|
+| PR | [#39](https://github.com/emt0147t/caroAI/pull/39), still open and unmerged |
+| Exact PR head SHA | `e349bb9a4cc8981371bba4efeaba57b4d7cb6043` |
+| CaroAI CI | [Run #40992816484](https://github.com/emt0147t/caroAI/actions/runs/40992816484) — **SUCCESS** |
+| Frontend Browser E2E | [Run #40992816602](https://github.com/emt0147t/caroAI/actions/runs/40992816602) — **SUCCESS** |
+| Browser E2E job | All workflow steps completed successfully, including browser setup, version capture, real API/frontend startup, E2E run, artifact upload and stack teardown |
+| Playwright | **1.56.1** |
+| Chromium | **141.0.7390.37** (Playwright build v1194) |
+| Browser suite | **14 passed, 0 failed**, 2 workers, 10.6 seconds |
+| Artifact | [Playwright evidence #12949728249](https://github.com/emt0147t/caroAI/actions/runs/40992816602/artifacts/12949728249), SHA-256 `7ae20c9434d6f31aa760f59e1338d6e2c9849ba132e86b28804ed15450579b2a` |
+| Browser base URL | Disposable CI Compose stack, `http://127.0.0.1:8080`; not public production |
+
+### Newly closed Browser E2E gaps
+
+- **Difficulty payload — PASS:** PvAI hard-mode test captures the actual POST `/api/games/{id}/ai-move` request and asserts the submitted `difficulty` is `hard`.
+- **O-win / losing-X lock — PASS:** test drives a real PvP game through O's five-in-a-row, asserts UI message `O thắng!`, verifies all board cells are disabled, and reads backend state asserting `status=O_WON`, `winner=O`, `move_count=10`.
+- **History — PASS in CI:** real API history, fresh-page/reload behavior and error/retry test all passed in the 14-test suite.
+- **Full suite — PASS:** all 14 named browser tests passed, including PvP, PvAI, difficulty payload, duplicate-submit prevention, HTTP 400/422/404 handling, recovery/retry, terminal lock, O win, draw and responsive viewport.
+
+### Latest CaroAI CI job results
+
+| Job | Result |
+|---|---|
+| Frontend syntax and regression checks | **SUCCESS** |
+| PostgreSQL service/API/migration acceptance | **SUCCESS**; explicit zero-skipped-test guard passed |
+| Python tests and lint | **SUCCESS**; pytest output: **226 passed, 11 skipped, 1 warning** |
+| Compose API/database persistence after restart | **SUCCESS**; created a game and move, restarted the API container, then read back the same game's move count, board, current player and History record |
+| Docker image build (no publish/deploy) | **SUCCESS**; build only |
+| Approved production publish and Render verification | **SKIPPED** |
+
+The PostgreSQL acceptance job reported: “PostgreSQL acceptance suite completed with zero skipped tests.” The separate general Python suite's 11 skips are not PostgreSQL acceptance skips and must not be conflated with that explicit DB guard.
+
+### Updated Phase D assessment for this SHA
+
+- Browser E2E, including difficulty payload, O-win terminal behavior, History, refresh and responsive viewport: **PASS — PR/CI scope**.
+- Compose API restart and PostgreSQL persistence/read-back: **PASS — disposable CI scope**.
+- General Python/lint and frontend regression: **PASS — CI scope**.
+- Docker image build: **PASS — build only; no publish**.
+- Public HTTPS smoke, live deployment identity, production redeploy persistence and rollback: **NOT RUN / BLOCKED**; production publish/deploy workflow was skipped.
+- PR #39 remains open/unmerged. These results do not approve deployment or establish production acceptance. Overall release remains **BLOCKED / NO-GO** until the independent release gates and PR #35 History contract disposition are closed.
