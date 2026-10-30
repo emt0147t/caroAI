@@ -192,3 +192,38 @@ M5 checked the live GitHub issue/PR records for T-12, T-14–T-17 and the Histor
 7. **M5:** update this register only when linked evidence is available; retain NOT RUN/BLOCKED for absent production evidence.
 
 **Current release decision remains BLOCKED / NO-GO.** Browser E2E, PostgreSQL acceptance, Compose restart, and image build passed at CI scope on the recorded PR SHA. They do not close T-12–T-17 or grant deployment approval.
+
+## 9. Current PR #39 workflow refresh — 2026-10-30
+
+This snapshot refreshes the evidence links for the PR #39 head recorded below. It does not replace the independent public/production gates in Sections 4 and 8.
+
+| Field | Verified value |
+|---|---|
+| PR #39 exact head SHA | 5ca2766f35a2ec54dba393e417074246683bdb60 |
+| Base branch | develop |
+| PR status at check | OPEN / UNMERGED |
+| CaroAI CI push | [Run #40993815986](https://github.com/emt0147t/caroAI/actions/runs/40993815986) — SUCCESS |
+| CaroAI CI pull request | [Run #40993819096](https://github.com/emt0147t/caroAI/actions/runs/40993819096) — SUCCESS |
+| Frontend Browser E2E | [Run #40993819081](https://github.com/emt0147t/caroAI/actions/runs/40993819081) — SUCCESS |
+| Playwright artifact | [Artifact #12950163434](https://github.com/emt0147t/caroAI/actions/runs/40993819081/artifacts/12950163434) |
+| PostgreSQL acceptance | Job succeeded; explicit zero-skipped-test guard succeeded |
+| Compose API/database persistence | Job succeeded; created game/move, restarted API container, read same game and History back |
+| Docker image | Build succeeded; no publish/deploy |
+| Production publish/Render verification | SKIPPED by release approval/ref condition |
+
+The Browser E2E job completed browser installation, Playwright/Chromium version capture, real API/frontend startup, browser suite, artifact upload and teardown. This section records the current workflow conclusion; detailed test counts/browser versions are only quoted where the corresponding exact-SHA log was inspected. Do not copy counts from the earlier e349bb9 run onto this later docs-only head without log confirmation.
+
+### Updated D-stage disposition
+
+- PostgreSQL integration and zero-skip guard: **PASS — disposable CI scope**.
+- Compose API restart/read-back: **PASS — disposable CI scope**.
+- Browser E2E: **PASS — PR/CI scope**.
+- Docker image build: **PASS — build only**.
+- Public HTTPS smoke: **NOT RUN / BLOCKED**.
+- Production same-game persistence after redeploy: **NOT RUN / BLOCKED**.
+- Rollback/redeploy: **NOT RUN / BLOCKED**.
+- AI Linux/Docker benchmark and accepted latency target/SLO: **BLOCKED / EVIDENCE NOT SUPPLIED**.
+- PR #35 persisted-History contract disposition: **PENDING M1/maintainer**.
+- Overall release: **BLOCKED / NO-GO**.
+
+The Phase E documents are linked from [M5 handover](phase4-m5-handover.md#11-phase-e-deliverables-and-handoff-snapshot--2026-10-30). No deployment or issue closure was performed.
