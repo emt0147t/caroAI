@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="/tokens.css">
 <style>.history-link{color:inherit;text-decoration:none;font-weight:700;padding:10px 12px;border:1px solid #e2d9d0;border-radius:10px;white-space:nowrap}</style>
 </head>
 <body>
@@ -35,11 +36,22 @@
   <div id="loadingBox" class="loading-indicator hidden"><span class="pulse-dot"></span><span>Đang xử lý...</span></div>
   <div id="gameStatus" class="game-alert" role="status"></div>
 </section>
+<section id="resultPanel" class="result-panel hidden" role="status" aria-live="polite">
+  <div>
+    <p class="result-kicker">VÁN ĐẤU KẾT THÚC</p>
+    <h2 id="resultTitle"></h2>
+    <p id="resultDetail" class="result-detail">Kết quả được đồng bộ từ Backend.</p>
+  </div>
+  <div class="result-actions">
+    <button id="resultNewGame" class="btn-primary" type="button">Chơi ván mới</button>
+    <a href="../history.html" class="history-link">Xem lịch sử</a>
+  </div>
+</section>
 <section id="errorBox" class="error-box hidden" role="alert">
   <strong>Không thể thực hiện thao tác.</strong><span id="errorMessage"></span>
   <button id="retryBtn" type="button" class="btn-secondary">Thử lại</button>
 </section>
-<section class="board-container" aria-label="Bàn cờ Caro 15 x 15"><div id="board" class="caro-board"></div></section>
+<section class="board-container" aria-label="Bàn cờ Caro 15 x 15"><div id="board" class="caro-board" aria-busy="false"></div></section>
 <p class="footer-note">Bàn cờ 15 × 15 · Backend quyết định lượt đi và kết quả ván đấu.</p>
 </main>
 <script src="script.js"></script>

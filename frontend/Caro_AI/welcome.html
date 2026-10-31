@@ -8,10 +8,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root{--bg:#f4efeb;--card:#fff;--border:#e2d9d0;--ink:#2c2523;--sub:#786e65;--accent:#2b8a6e;--pale:#e8f3f0;--error:#b42318}
-    *{box-sizing:border-box;margin:0;padding:0;font-family:"Plus Jakarta Sans",system-ui,sans-serif}
+    :root{--bg:var(--ui-color-canvas);--card:var(--ui-color-surface);--border:var(--ui-color-border);--ink:var(--ui-color-text);--sub:var(--ui-color-muted);--accent:var(--ui-color-accent);--pale:var(--ui-color-accent-soft);--error:var(--ui-color-error)}
+    *{box-sizing:border-box;margin:0;padding:0;font-family:var(--ui-font)}
     body{min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg);color:var(--ink)}
-    .card{width:min(100%,480px);background:var(--card);border:1px solid var(--border);border-radius:26px;padding:36px;box-shadow:0 20px 40px #3c28140f}
+    .card{width:min(100%,480px);background:var(--card);border:1px solid var(--border);border-radius:var(--ui-radius-feature);padding:36px;box-shadow:var(--ui-shadow-card)}
     .logo{width:68px;height:68px;display:grid;place-items:center;margin:0 auto 16px;border-radius:20px;background:var(--ink);color:white;font-size:2rem;font-weight:800}
     h1{text-align:center;font-size:2rem;font-weight:800;letter-spacing:-.5px}
     .subtitle{text-align:center;color:var(--sub);font-size:.92rem;line-height:1.6;margin:10px 0 30px}
@@ -22,10 +22,11 @@
     select{width:100%;padding:13px;border:1px solid var(--border);border-radius:12px;background:#faf7f4;color:var(--ink);font-weight:600}
     .start{width:100%;margin-top:12px;padding:15px;border:0;border-radius:14px;background:var(--ink);color:white;font-size:1rem;font-weight:800;cursor:pointer}
     button:disabled,select:disabled{opacity:.6;cursor:wait}
-    .message{margin-top:14px;padding:12px;border-radius:10px;background:#fef3f2;color:var(--error);font-size:.9rem;line-height:1.5}
+    .message{margin-top:14px;padding:12px;border-radius:10px;background:var(--ui-color-error-soft);color:var(--error);font-size:.9rem;line-height:1.5}
     .hidden{display:none!important}.foot{text-align:center;color:var(--sub);font-size:.78rem;margin-top:20px}
     @media(max-width:480px){.card{padding:26px 20px}h1{font-size:1.7rem}}
   </style>
+  <link rel="stylesheet" href="/tokens.css">
 </head>
 <body>
   <main class="card">
@@ -52,7 +53,7 @@
     <p class="foot">Bàn cờ 15 × 15 · X đi trước · <a href="history.html">Xem lịch sử ván đấu</a></p>
   </main>
   <script>
-    // Configure a separate backend origin by setting window.CAROAI_API_BASE_URL before this script.
+    // Cross-origin deployments must allow this frontend origin through a specific CORS allowlist.
     const API = String(window.CAROAI_API_BASE_URL || "").replace(/\/$/, "");
     let selectedMode = "HUMAN_VS_HUMAN";
     const choices = [...document.querySelectorAll("[data-mode]")];

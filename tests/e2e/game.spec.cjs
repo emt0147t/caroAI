@@ -165,11 +165,12 @@ test('a full no-five board reaches backend DRAW and locks the UI', async ({ page
 
 test('board remains visible on mobile and desktop viewports', async ({ page }) => {
   await startGame(page);
-  for (const width of [390, 1280]) {
+  for (const width of [360, 390, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await expect(page.locator('#board')).toBeVisible();
     const box = await page.locator('#board').boundingBox();
     expect(box).not.toBeNull();
     expect(box.width).toBeLessThanOrEqual(width + 1);
+    expect(await page.locator('body').evaluate(el => el.scrollWidth)).toBeLessThanOrEqual(width + 1);
   }
 });
