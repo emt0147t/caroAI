@@ -25,7 +25,6 @@ test('PvP creates a real backend game and renders alternating authoritative move
   await expect(page.locator('#board .cell').filter({ hasText: /^X$/ })).toHaveCount(1);
   await page.getByRole('button', { name: 'Đánh hàng 8, cột 9' }).click();
   await expect(page.locator('#currentPlayer')).toHaveText('X');
-  expect(submittedDifficulty).toBe('hard');
   const game = await getGame(request, id);
   expect(game.move_count).toBe(2);
   expect(game.board[7][7]).toBe('X');
@@ -44,6 +43,7 @@ test('PvAI difficulty reaches the real API; AI move is rendered from backend sta
   await expect(page.locator('#loadingBox')).toBeVisible();
   await expect(page.locator('#board .cell').filter({ hasText: /^O$/ })).toHaveCount(1, { timeout: 30000 });
   await expect(page.locator('#currentPlayer')).toHaveText('X');
+  expect(submittedDifficulty).toBe('hard');
   const game = await getGame(request, id);
   expect(game.move_count).toBe(2);
   expect(game.board[7][7]).toBe('X');
