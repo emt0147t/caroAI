@@ -130,7 +130,7 @@ def test_get_game_state_reads_empty_game_in_one_query(database):
         event.remove(engine, "before_cursor_execute", capture_game_or_move_select)
 
     assert state.move_count == 0
-    assert state.board[0][0] is None
+    assert state.board[0][0] == "EMPTY"
     assert state.current_player == Player.X
     assert state.status == GameStatus.IN_PROGRESS
     assert len(statements) == 1, statements
