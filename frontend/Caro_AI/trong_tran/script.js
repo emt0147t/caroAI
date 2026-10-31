@@ -8,12 +8,16 @@ const $ = id => document.getElementById(id);
 const board = $("board"), current = $("currentPlayer"), status = $("gameStatus"),
   loading = $("loadingBox"), turn = $("turnBox"), mode = $("gameMode"),
   newBtn = $("newGameBtn"), errorBox = $("errorBox"), errorMsg = $("errorMessage"),
-  retryBtn = $("retryBtn"), difficulty = $("aiDifficulty"), difficultyGroup = $("difficultyGroup");
+  retryBtn = $("retryBtn"), difficulty = $("aiDifficulty"), difficultyGroup = $("difficultyGroup"),
+  resultPanel = $("resultPanel"), resultTitle = $("resultTitle"), resultDetail = $("resultDetail"),
+  resultNewGame = $("resultNewGame");
 
 function setBusy(value, message = "Đang xử lý...") {
   s.busy = value; loading.classList.toggle("hidden", !value);
   loading.lastChild.textContent = " " + message;
-  board.classList.toggle("is-loading", value); newBtn.disabled = value; mode.disabled = value;
+  board.classList.toggle("is-loading", value);
+  board.setAttribute("aria-busy", String(value));
+  newBtn.disabled = value; resultNewGame.disabled = value; mode.disabled = value;
   if (difficulty) difficulty.disabled = value;
   render();
 }
@@ -43,12 +47,26 @@ function updateUrl() {
   history.replaceState({}, "", location.pathname + "?" + p.toString());
 }
 function render() {
-  const g = s.game; turn.classList.toggle("hidden", !g);
-  if (!g) { board.innerHTML = ""; return; }
+  const g = s.game;
+  turn.classList.toggle("hidden", !g);
+  if (!g) {
+    board.innerHTML = "";
+    resultPanel.classList.add("hidden");
+    return;
+  }
   current.textContent = g.current_player || "-";
   current.className = "tag tag-" + String(g.current_player || "x").toLowerCase();
-  status.textContent = ({ IN_PROGRESS: "", X_WON: "X thắng!", O_WON: "O thắng!", DRAW: "Hòa!" })[g.status] ?? "Trạng thái không xác định";
+  const resultLabels = { IN_PROGRESS: "", X_WON: "X thắng!", O_WON: "O thắng!", DRAW: "Hòa!" };
+  status.textContent = resultLabels[g.status] ?? "Trạng thái không xác định";
   status.className = "game-alert " + String(g.status).toLowerCase();
+
+  const finished = ["X_WON", "O_WON", "DRAW"].includes(g.status);
+  resultPanel.classList.toggle("hidden", !finished);
+  if (finished) {
+    resultTitle.textContent = resultLabels[g.status];
+    resultDetail.textContent = "Kết quả ván đấu đã được xác nhận và lưu bởi Backend.";
+  }
+
   difficultyGroup?.classList.toggle("hidden", g.mode !== "HUMAN_VS_AI");
   if (difficulty) difficulty.value = s.difficulty;
   board.innerHTML = "";
@@ -115,6 +133,7 @@ async function aiMove() {
 mode.addEventListener("change", () => difficultyGroup?.classList.toggle("hidden", mode.value !== "HUMAN_VS_AI"));
 difficulty?.addEventListener("change", () => { if (["easy","medium","hard"].includes(difficulty.value)) s.difficulty = difficulty.value; updateUrl(); });
 newBtn.addEventListener("click", () => createGame(mode.value));
+resultNewGame.addEventListener("click", () => createGame(mode.value));
 retryBtn.addEventListener("click", async () => {
   if (s.busy) return; const action = s.retry; setError();
   if (action === "ai") {

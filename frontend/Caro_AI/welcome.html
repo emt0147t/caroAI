@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root{--bg:var(--ui-color-canvas);--card:var(--ui-color-surface);--border:var(--ui-color-border);--ink:var(--ui-color-text);--sub:var(--ui-color-muted);--accent:var(--ui-color-accent);--pale:var(--ui-color-accent-soft);--error:var(--ui-color-error)}
-    *{box-sizing:border-box;margin:0;padding:0;font-family:"Plus Jakarta Sans",system-ui,sans-serif}
+    *{box-sizing:border-box;margin:0;padding:0;font-family:var(--ui-font)}
     body{min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg);color:var(--ink)}
     .card{width:min(100%,480px);background:var(--card);border:1px solid var(--border);border-radius:var(--ui-radius-feature);padding:36px;box-shadow:var(--ui-shadow-card)}
     .logo{width:68px;height:68px;display:grid;place-items:center;margin:0 auto 16px;border-radius:20px;background:var(--ink);color:white;font-size:2rem;font-weight:800}
@@ -53,7 +53,7 @@
     <p class="foot">Bàn cờ 15 × 15 · X đi trước · <a href="history.html">Xem lịch sử ván đấu</a></p>
   </main>
   <script>
-    // Configure a separate backend origin by setting window.CAROAI_API_BASE_URL before this script.
+    // Cross-origin deployments must allow this frontend origin through a specific CORS allowlist.
     const API = String(window.CAROAI_API_BASE_URL || "").replace(/\/$/, "");
     let selectedMode = "HUMAN_VS_HUMAN";
     const choices = [...document.querySelectorAll("[data-mode]")];
