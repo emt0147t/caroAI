@@ -74,6 +74,7 @@ jobs:
     env:
       TEST_DATABASE_URL: postgresql+psycopg2://caroai_test:caroai_test_password@localhost:5432/caroai_test
       CAROAI_TEST_DATABASE_CONFIRMED: disposable-test-database
+      CAROAI_TEST_POSTGRES_ALLOWLIST: localhost:5432/caroai_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
