@@ -60,3 +60,30 @@ This record does not authorize merging PR #39, closing PR #35 or any issue, publ
 - Decision: GO / NO-GO:
 - Approval timestamp:
 - Evidence links:
+
+
+## 3. Latest PR #39 post-review validation checkpoint — 2026-10-31
+
+| Item | Verified result |
+|---|---|
+| PR head | `50641a5f5a761474b80f5245fe29ece8f94fa8fd` |
+| PR state | OPEN / UNMERGED; GitHub mergeable = true; branch is no longer behind `develop` |
+| CaroAI CI — PR | [Run #41220665617](https://github.com/emt0147t/caroAI/actions/runs/41220665617) — **SUCCESS** |
+| CaroAI CI — push | [Run #41220661758](https://github.com/emt0147t/caroAI/actions/runs/41220661758) — **SUCCESS** |
+| Browser E2E | [Run #41220665448](https://github.com/emt0147t/caroAI/actions/runs/41220665448) — **24/24 passed** |
+| PostgreSQL acceptance | **15 passed / 0 skipped**; zero-skip guard passed |
+| General Python suite | **228 passed / 11 skipped / 1 warning** |
+| Compose persistence | **PASS** across API container restart; same game and History read back |
+| Docker image build | **PASS — no publish/deploy** |
+| Browser versions | Playwright 1.56.1; Chromium 141.0.7390.37 |
+| Evidence artifact | [Playwright and visual evidence #13049848098](https://github.com/emt0147t/caroAI/actions/runs/41220665448/artifacts/13049848098) |
+| Production publish / Render | **SKIPPED** by workflow condition; no deployment was performed |
+
+The initial post-sync Browser E2E attempt on the prior merge SHA found a misplaced assertion; it was corrected before the exact-head run above. The corrected head passed all 24 tests.
+
+### Release decision
+
+- PR #39 is technically mergeable and the required PR CI and Browser E2E checks pass on its current head.
+- T-12–T-17 remain **BLOCKED / NOT VERIFIED** pending evidence from their assigned owners. Persisted-History contract / PR #35 remains pending M1/maintainers.
+- **Overall release remains BLOCKED / NO-GO.** CI acceptance is not production release approval.
+- This record does not approve or merge PR #39 and does not authorize production deployment.

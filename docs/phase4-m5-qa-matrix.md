@@ -266,3 +266,34 @@ This closes the M5 C3 evidence-update checkpoint only; it does not close the pro
 - [M5 handover](phase4-m5-handover.md)
 
 **Current release disposition remains BLOCKED / NO-GO.** These documents complete M5's current documentation and recommendation package; they do not close M2/M3/M4-owned gates, PR #35, or authorize release.
+
+## 13. Post-review develop sync and final validation checkpoint — 2026-10-31
+
+### Branch synchronization and conflict resolution
+
+- PR #39 branch `feature/m5-sprint4-qa` was 13 commits behind `develop`; the branch is now synchronized with the reviewed develop baseline. The merge commit `3e0b6d314737fd415239083045cef7a61468aa1b` has `develop` commit `914ba088a8753473c406f8870f6546ad44c38074` and prior PR head `79560a5131523493dbbfb4956ec7c1b78299f46c` as parents.
+- `.github/workflows/frontend-e2e.yml`: retained baseline/candidate Compose screenshot capture and visual-evidence artifact upload; added Playwright/Chromium version recording to `evidence/browser-versions.txt`.
+- `tests/e2e/game.spec.cjs`: retained 360/390/1280px responsive checks and body `scrollWidth`; retained the difficulty payload assertion and O-win terminal-state test.
+- The first E2E attempt on merge SHA `3e0b6d3` exposed a misplaced difficulty assertion (23/24 passed). It was moved into the PvAI test in commit `50641a5f5a761474b80f5245fe29ece8f94fa8fd`; the final E2E run below passed 24/24.
+
+### Exact-SHA validation results
+
+| Evidence | Exact source SHA | Result |
+|---|---|---|
+| PR #39 head | `50641a5f5a761474b80f5245fe29ece8f94fa8fd` | OPEN / UNMERGED; GitHub reports mergeable; `develop` behind count = 0 |
+| CaroAI CI — pull request | [Run #41220665617](https://github.com/emt0147t/caroAI/actions/runs/41220665617) | **SUCCESS** — Python/lint, frontend regression, PostgreSQL acceptance, Compose persistence and Docker image build passed; production publish/Render job SKIPPED |
+| CaroAI CI — push | [Run #41220661758](https://github.com/emt0147t/caroAI/actions/runs/41220661758) | **SUCCESS** on the same SHA |
+| Frontend Browser E2E | [Run #41220665448](https://github.com/emt0147t/caroAI/actions/runs/41220665448) | **24/24 passed** on the same SHA; baseline/candidate Compose startup, screenshot capture, artifact upload and teardown succeeded |
+| General Python suite | Same SHA; PR CI #41220665617 | **228 passed, 11 skipped, 1 warning**. General-suite skips are separate from the dedicated PostgreSQL zero-skip acceptance gate. |
+| PostgreSQL acceptance | Same SHA; PR CI job | **15 passed, 0 skipped**; explicit zero-skipped guard passed |
+| Compose persistence | Same SHA; PR CI job | **PASS** — create game/move, restart API container, read the same game and History back |
+| Docker image build | Same SHA; PR CI job | **PASS — build only**, no registry publication or deployment |
+| Browser/runtime | Same SHA; Browser E2E job | Playwright **1.56.1**; Chromium **141.0.7390.37** |
+| Playwright/visual artifact | Same SHA | [Artifact #13049848098](https://github.com/emt0147t/caroAI/actions/runs/41220665448/artifacts/13049848098) |
+
+### Remaining release disposition
+
+- The approved production publish / Render verification job was **SKIPPED** by its event/ref/approval condition. This is not a failed deployment and is not deployment evidence.
+- T-12 through T-17 remain **BLOCKED / NOT VERIFIED** until their respective owners provide independent evidence. The persisted-History contract / PR #35 decision remains **PENDING M1/maintainers**.
+- **PR #39 is OPEN / UNMERGED.** This validation does not approve or merge the PR.
+- **Overall release remains BLOCKED / NO-GO.** CI, disposable PostgreSQL, Compose restart, Docker build and Browser E2E do not replace public HTTPS smoke, production post-redeploy persistence, immutable live image identity or rollback evidence.

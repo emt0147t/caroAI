@@ -227,3 +227,26 @@ The Browser E2E job completed browser installation, Playwright/Chromium version 
 - Overall release: **BLOCKED / NO-GO**.
 
 The Phase E documents are linked from [M5 handover](phase4-m5-handover.md#11-phase-e-deliverables-and-handoff-snapshot--2026-10-30). No deployment or issue closure was performed.
+
+## 10. Post-review develop sync and exact-SHA evidence — 2026-10-31
+
+The PR #39 QA branch was synchronized with `develop` after the review found it 13 commits behind. The two conflicting files were resolved without dropping either side's required checks: the Browser E2E workflow retains baseline/candidate screenshot and visual artifact capture and now records Playwright/Chromium versions; the game tests retain the 360/390/1280px responsive checks and body `scrollWidth`, plus the PvAI difficulty payload assertion and O-win terminal-state test.
+
+The first run on merge SHA `3e0b6d314737fd415239083045cef7a61468aa1b` found a misplaced assertion (23/24 E2E passed). Commit `50641a5f5a761474b80f5245fe29ece8f94fa8fd` moved it into the PvAI test. The final exact-SHA evidence is:
+
+| Field | Verified value |
+|---|---|
+| PR #39 exact head SHA | `50641a5f5a761474b80f5245fe29ece8f94fa8fd` |
+| PR status / mergeability | OPEN / UNMERGED; mergeable = true; behind `develop` = 0 |
+| CaroAI CI — pull request | [Run #41220665617](https://github.com/emt0147t/caroAI/actions/runs/41220665617) — **SUCCESS** |
+| CaroAI CI — push | [Run #41220661758](https://github.com/emt0147t/caroAI/actions/runs/41220661758) — **SUCCESS** |
+| Frontend Browser E2E | [Run #41220665448](https://github.com/emt0147t/caroAI/actions/runs/41220665448) — **24/24 passed** |
+| Browser/runtime | Playwright 1.56.1; Chromium 141.0.7390.37 |
+| Visual/Playwright artifact | [Artifact #13049848098](https://github.com/emt0147t/caroAI/actions/runs/41220665448/artifacts/13049848098) |
+| General Python suite | 228 passed, 11 skipped, 1 warning |
+| PostgreSQL acceptance | 15 passed, 0 skipped; explicit zero-skip guard passed |
+| Compose API restart persistence | **PASS** — same game and History read back after API restart |
+| Docker image build | **PASS — build only**; no publish/deploy |
+| Production publish / Render verification | **SKIPPED** by workflow condition; no deployment evidence |
+
+T-12–T-17 remain **BLOCKED / NOT VERIFIED** pending owner evidence; persisted-History contract / PR #35 remains pending M1/maintainers. Overall release remains **BLOCKED / NO-GO**. This evidence refresh does not approve or merge PR #39 and does not authorize deployment.
