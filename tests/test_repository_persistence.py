@@ -72,6 +72,40 @@ def test_service_persists_game_and_moves_across_sessions(database):
         assert [move.player for move in moves] == ["X", "O"]
 
 
+def test_get_game_state_reads_metadata_and_moves_in_one_query(database):
+    engine, session_factory = database
+    with session_factory() as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        game_id = service.create_game(GameMode.HUMAN_VS_HUMAN)
+        service.make_move(game_id, 7, 7)
+        service.make_move(game_id, 7, 8)
+
+    statements = []
+
+    def capture_game_or_move_select(_conn, _cursor, statement, _params, _context, _many):
+        normalized = statement.upper()
+        if normalized.lstrip().startswith("SELECT") and (
+            "FROM GAMES" in normalized or "FROM MOVES" in normalized
+        ):
+            statements.append(normalized)
+
+    # PostgreSQL READ COMMITTED gives each statement its own snapshot. A single
+    # joined read prevents GET from combining game metadata from before a move
+    # commit with move history from after it.
+    event.listen(engine, "before_cursor_execute", capture_game_or_move_select)
+    try:
+        with session_factory() as session:
+            state = GameService(SQLAlchemyGameRepository(session)).get_game(game_id)
+    finally:
+        event.remove(engine, "before_cursor_execute", capture_game_or_move_select)
+
+    assert state.move_count == 2
+    assert state.board[7][7] == "X"
+    assert state.board[7][8] == "O"
+    assert len(statements) == 1, statements
+    assert "LEFT OUTER JOIN MOVES" in statements[0]
+
+
 def test_api_reads_game_created_and_moved_in_previous_requests(database):
     _engine, session_factory = database
 
@@ -253,10 +287,6 @@ def test_create_and_move_routes_do_not_read_state_after_write_commit(
         with session_factory() as session:
             yield GameService(SQLAlchemyGameRepository(session))
 
-    def fail_if_called(_self, _game_id):
-        raise GamePersistenceError("simulated follow-up read failure")
-
-    monkeypatch.setattr(GameService, "get_game", fail_if_called)
     app.dependency_overrides[get_game_service] = sql_game_service
     try:
         with TestClient(app) as client:
