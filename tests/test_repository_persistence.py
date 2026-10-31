@@ -106,6 +106,37 @@ def test_get_game_state_reads_metadata_and_moves_in_one_query(database):
     assert "LEFT OUTER JOIN MOVES" in statements[0]
 
 
+
+def test_get_game_state_reads_empty_game_in_one_query(database):
+    engine, session_factory = database
+    with session_factory() as session:
+        game_id = GameService(SQLAlchemyGameRepository(session)).create_game(
+            GameMode.HUMAN_VS_HUMAN
+        )
+
+    statements = []
+
+    def capture_game_or_move_select(_conn, _cursor, statement, _params, _context, _many):
+        normalized = statement.upper()
+        if normalized.lstrip().startswith("SELECT") and (
+            "FROM GAMES" in normalized or "FROM MOVES" in normalized
+        ):
+            statements.append(normalized)
+
+    event.listen(engine, "before_cursor_execute", capture_game_or_move_select)
+    try:
+        with session_factory() as session:
+            state = GameService(SQLAlchemyGameRepository(session)).get_game(game_id)
+    finally:
+        event.remove(engine, "before_cursor_execute", capture_game_or_move_select)
+
+    assert state.move_count == 0
+    assert state.board[0][0] is None
+    assert state.current_player == Player.X
+    assert state.status == GameStatus.IN_PROGRESS
+    assert len(statements) == 1, statements
+    assert "LEFT OUTER JOIN MOVES" in statements[0]
+
 def test_api_reads_game_created_and_moved_in_previous_requests(database):
     _engine, session_factory = database
 
