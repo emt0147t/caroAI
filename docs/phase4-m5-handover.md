@@ -205,3 +205,28 @@ The current PR #39 head at this evidence checkpoint was 5ca2766f35a2ec54dba393e4
 - **M5:** reconcile new evidence when supplied; do not change NOT RUN/BLOCKED to PASS without the named evidence.
 
 **Phase E documentation package: prepared. Overall Phase 4 release: BLOCKED / NO-GO.** This handover does not close Sprint 3 issues, Phase D gates, PR #35, or PR #39 and does not authorize production deployment.
+
+## 12. Post-review change-request handover — 2026-10-31
+
+### M5 remediation completed
+
+- PostgreSQL disposable target guard now requires exact `CAROAI_TEST_POSTGRES_ALLOWLIST` entries in `host:port/database` form. CI explicitly allows only `localhost:5432/caroai_test`; local configuration is documented in README.
+- Guard tests cover missing allowlist, arbitrary remote host, wrong port, unapproved local alias, incorrect confirmation and explicitly approved local endpoints.
+- Both PostgreSQL test paths validate the endpoint before engine creation and schema DDL.
+- QA branch synchronized with develop `225e60a77a51011a683645dbc400ff3e4ccf775c`; behind count 0. The latest develop repository, API-contract and persistence-test changes were retained.
+- Current code-validation head `c661509e5c12b4b976abf58a140b6fa7bec74b44` passed [CaroAI CI #41222916758](https://github.com/emt0147t/caroAI/actions/runs/41222916758) and [Browser E2E #41222916827](https://github.com/emt0147t/caroAI/actions/runs/41222916827) (24/24). GitHub merge-validation SHA at that checkpoint: `61450669fa36486504b843dd0817fbbff6aafbaf`.
+- Counts: general suite 229 passed / 11 skipped / 1 warning; dedicated PostgreSQL suite 15 passed / 0 skipped; Compose persistence PASS; Docker image build PASS only; Playwright 1.56.1 / Chromium 141.0.7390.37; artifact [#13050628176](https://github.com/emt0147t/caroAI/actions/runs/41222916827/artifacts/13050628176).
+- Production publish/deploy was SKIPPED. No production deployment was attempted.
+
+### Handover and remaining ownership
+
+| Owner | Remaining action |
+|---|---|
+| M2 | Supply T-12 AI tactical regression and reproducible Linux/Docker benchmark evidence, including raw results and agreed test protocol. |
+| M1 / team | Record latency target/SLO decision and formal PR #35 persisted-History contract disposition. |
+| M4 + M1 | Supply approved T-13 release identity and, only under approved change control, deployment/public readiness, persistence and rollback evidence for T-14/T-16/T-17. |
+| M3 | Execute T-15 public PvP/PvAI/History smoke only after approved public URL and immutable release identity are supplied. |
+| M5 | Reconcile new evidence and maintain QA matrix/sign-off; do not self-certify other owners' work. |
+
+T-12–T-17 remain **BLOCKED / NOT VERIFIED** pending owner evidence. PR #35 remains **PENDING M1/maintainers**. **Overall release remains BLOCKED / NO-GO.** PR #39 is still OPEN / UNMERGED pending independent review; this handover does not authorize merge or production deployment.
+

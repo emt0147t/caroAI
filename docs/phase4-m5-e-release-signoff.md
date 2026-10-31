@@ -87,3 +87,37 @@ The initial post-sync Browser E2E attempt on the prior merge SHA found a misplac
 - T-12–T-17 remain **BLOCKED / NOT VERIFIED** pending evidence from their assigned owners. Persisted-History contract / PR #35 remains pending M1/maintainers.
 - **Overall release remains BLOCKED / NO-GO.** CI acceptance is not production release approval.
 - This record does not approve or merge PR #39 and does not authorize production deployment.
+
+
+## 6. Final post-review validation and sign-off checkpoint — 2026-10-31
+
+### Exact validation snapshot
+
+| Item | Verified value |
+|---|---|
+| Develop base SHA | `225e60a77a51011a683645dbc400ff3e4ccf775c` |
+| Exact code-validation PR head | `c661509e5c12b4b976abf58a140b6fa7bec74b44` |
+| GitHub merge-validation SHA | `61450669fa36486504b843dd0817fbbff6aafbaf` |
+| Behind develop | **0** |
+| CaroAI CI | [#41222916758](https://github.com/emt0147t/caroAI/actions/runs/41222916758) — **SUCCESS** |
+| Browser E2E | [#41222916827](https://github.com/emt0147t/caroAI/actions/runs/41222916827) — **24/24 passed** |
+| Playwright artifact | [#13050628176](https://github.com/emt0147t/caroAI/actions/runs/41222916827/artifacts/13050628176) |
+| General Python suite | **229 passed / 11 skipped / 1 warning** |
+| PostgreSQL acceptance | **15 passed / 0 skipped**, zero-skip guard passed |
+| Compose persistence | **PASS** across API container restart |
+| Docker image build | **PASS — no publish/deploy** |
+| Browser versions | Playwright 1.56.1; Chromium 141.0.7390.37 |
+| Production publish / Render | **SKIPPED**; no deployment was performed |
+
+### Change-request disposition
+
+- **P1 endpoint guard: IMPLEMENTED AND CI-VERIFIED.** Exact `host:port/database` allowlist required; missing allowlist, remote host, wrong port and unlisted alias rejected. Local/CI setup documented; credentials excluded from repository.
+- **P1 develop sync: COMPLETE.** Latest develop SHA is a parent of the QA branch; branch is 0 commits behind.
+- **P2 evidence refresh: RECORDED IN THIS CHECKPOINT.** CI, PostgreSQL zero-skip acceptance, Compose, Docker build, Browser E2E and skipped production deployment are distinguished by evidence layer.
+
+### Independent release gates
+
+T-12–T-17 remain **BLOCKED / NOT VERIFIED** until the assigned owners provide evidence. Persisted-History contract / PR #35 remains **PENDING M1/maintainers**. Those are separate production/release gates and must not be represented as completed by this PR's CI.
+
+**M5 QA recommendation: the three PR review change requests are addressed within the evidence above; request re-review for PR acceptance. Overall Phase 4 release remains BLOCKED / NO-GO.** This is not production approval and does not authorize a deployment or merge.
+

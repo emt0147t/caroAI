@@ -297,3 +297,44 @@ This closes the M5 C3 evidence-update checkpoint only; it does not close the pro
 - T-12 through T-17 remain **BLOCKED / NOT VERIFIED** until their respective owners provide independent evidence. The persisted-History contract / PR #35 decision remains **PENDING M1/maintainers**.
 - **PR #39 is OPEN / UNMERGED.** This validation does not approve or merge the PR.
 - **Overall release remains BLOCKED / NO-GO.** CI, disposable PostgreSQL, Compose restart, Docker build and Browser E2E do not replace public HTTPS smoke, production post-redeploy persistence, immutable live image identity or rollback evidence.
+
+
+## 14. Final change-request remediation checkpoint — 2026-10-31
+
+This checkpoint supersedes the earlier 50641a5 / 73639e5 snapshots for the PostgreSQL guard and develop synchronization.
+
+| Field | Verified value |
+|---|---|
+| PR #39 branch | `feature/m5-sprint4-qa` |
+| Base branch / exact develop SHA | `develop` / `225e60a77a51011a683645dbc400ff3e4ccf775c` |
+| Exact code-validation PR head | `c661509e5c12b4b976abf58a140b6fa7bec74b44` |
+| GitHub PR merge-validation SHA at this checkpoint | `61450669fa36486504b843dd0817fbbff6aafbaf` |
+| Branch synchronization | **0 commits behind develop**; GitHub reports mergeable = true |
+| CaroAI CI — PR | [Run #41222916758](https://github.com/emt0147t/caroAI/actions/runs/41222916758) — **SUCCESS** |
+| Browser E2E — PR | [Run #41222916827](https://github.com/emt0147t/caroAI/actions/runs/41222916827) — **SUCCESS; 24/24 passed** |
+| Browser evidence | [Artifact #13050628176](https://github.com/emt0147t/caroAI/actions/runs/41222916827/artifacts/13050628176) |
+| General Python suite | **229 passed, 11 skipped, 1 warning** |
+| Dedicated PostgreSQL suite | **15 passed, 0 skipped**; explicit zero-skipped guard passed |
+| Compose persistence | **PASS** — create game/move, restart API container, read the same game and History back |
+| Docker image | **PASS — build only**; no registry publication or deployment |
+| Browser runtime | Playwright **1.56.1**; Chromium **141.0.7390.37** |
+| Production publish / Render verification | **SKIPPED** by workflow condition; no deployment was performed |
+
+### P1 — exact PostgreSQL endpoint allowlist
+
+`app/db/testing.py` now requires `CAROAI_TEST_POSTGRES_ALLOWLIST` and matches the normalized exact `host:port/database` endpoint. An absent/empty allowlist, arbitrary remote host, unapproved port, or local alias not explicitly listed is rejected. The database-name test token and production/live rejection remain additional checks, not substitutes for endpoint allowlisting.
+
+The CI PostgreSQL job explicitly declares only `localhost:5432/caroai_test`. Local setup is documented in README; credentials remain in the developer's environment and are not committed. `tests/test_database_guard.py` covers missing allowlist, remote host, wrong port, unapproved loopback alias, incorrect confirmation, and explicitly approved local targets.
+
+Both DDL paths still validate before engine creation/schema DDL:
+- `tests/test_database_postgres.py` validates in the `postgres_engine` fixture before `create_engine`.
+- `tests/postgres_suite.py` validates in `_new_schema()` before `create_engine` and `CREATE SCHEMA`.
+
+### P1 — develop synchronization
+
+The merge commit `c0c227c29226306bedc7b4b419ffde1eb06ac54d` has the previous PR head and latest develop head as parents. The three files changed on develop since the common ancestor were taken from the current develop tree: `app/db/repository.py`, `docs/api-contract.md`, and `tests/test_repository_persistence.py`. The resulting branch compares as zero commits behind develop. Current-head CI and Browser E2E were rerun after the guard changes.
+
+### Scope boundary
+
+General-suite skips (11) are not PostgreSQL skips. The dedicated PostgreSQL acceptance job completed 15/15 with zero skipped tests. The Docker result is build-only. Production publish/deploy was skipped, not attempted. T-12–T-17 remain BLOCKED / NOT VERIFIED pending their owners; PR #35 History-contract disposition remains PENDING M1/maintainers. Overall release remains **BLOCKED / NO-GO**.
+

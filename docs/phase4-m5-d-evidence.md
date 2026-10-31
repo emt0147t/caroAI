@@ -250,3 +250,37 @@ The first run on merge SHA `3e0b6d314737fd415239083045cef7a61468aa1b` found a mi
 | Production publish / Render verification | **SKIPPED** by workflow condition; no deployment evidence |
 
 T-12–T-17 remain **BLOCKED / NOT VERIFIED** pending owner evidence; persisted-History contract / PR #35 remains pending M1/maintainers. Overall release remains **BLOCKED / NO-GO**. This evidence refresh does not approve or merge PR #39 and does not authorize deployment.
+
+
+## 11. Final change-request evidence checkpoint — 2026-10-31
+
+| Evidence field | Verified result |
+|---|---|
+| Develop base SHA | `225e60a77a51011a683645dbc400ff3e4ccf775c` |
+| Exact code-validation PR head | `c661509e5c12b4b976abf58a140b6fa7bec74b44` |
+| GitHub merge-validation SHA | `61450669fa36486504b843dd0817fbbff6aafbaf` |
+| Branch behind develop | **0** |
+| CaroAI CI | [PR run #41222916758](https://github.com/emt0147t/caroAI/actions/runs/41222916758) — **SUCCESS** |
+| Browser E2E | [PR run #41222916827](https://github.com/emt0147t/caroAI/actions/runs/41222916827) — **24/24 passed** |
+| Playwright artifact | [#13050628176](https://github.com/emt0147t/caroAI/actions/runs/41222916827/artifacts/13050628176) |
+| General Python suite | **229 passed, 11 skipped, 1 warning** |
+| PostgreSQL acceptance | **15 passed, 0 skipped**; zero-skip guard passed |
+| Compose API restart/read-back | **PASS** |
+| Docker image build | **PASS — build only** |
+| Browser runtime | Playwright 1.56.1; Chromium 141.0.7390.37 |
+| Production publish/deploy | **SKIPPED**; no deployment occurred |
+
+### Guard implementation and evidence
+
+The disposable PostgreSQL guard now fails closed unless `CAROAI_TEST_POSTGRES_ALLOWLIST` explicitly lists the exact `host:port/database` endpoint. The CI service allowlist is `localhost:5432/caroai_test`. Local instructions and the alternate `127.0.0.1` exact-match example are in README. No credentials or production URLs are stored in source.
+
+Negative/positive guard tests cover absent allowlist, arbitrary remote host, wrong port, unapproved loopback host alias, wrong confirmation, and explicitly approved local endpoints. Both PostgreSQL DDL paths invoke the guard before engine creation and schema DDL. The dedicated PostgreSQL job passed all 15 tests with zero skips.
+
+### Develop sync
+
+The QA branch includes latest develop `225e60a77a51011a683645dbc400ff3e4ccf775c` as a merge parent and now has behind count 0. The latest develop changes in repository transaction locking/snapshot behavior, API contract and repository persistence regression tests were retained. No conflict resolution discarded either side's intended test behavior.
+
+### Release boundary
+
+The general Python suite's 11 skips are separate from the PostgreSQL suite's zero skips. Compose persistence is an API-container restart test against a disposable database; it is not production redeploy evidence. Docker was built but not published. Production publish/Render verification was skipped. Public HTTPS smoke, production persistence after redeploy and rollback remain NOT RUN / BLOCKED. T-12–T-17 remain with their named owners; PR #35 remains pending M1/maintainers. Overall release: **BLOCKED / NO-GO**.
+
