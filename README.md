@@ -100,7 +100,22 @@ npm run test:e2e
 
 The Playwright suite expects the real API/frontend stack, normally the Compose stack at `http://127.0.0.1:8080`. Set `CAROAI_BASE_URL` only when intentionally targeting another authorized test environment.
 
-PostgreSQL tests require a **disposable PostgreSQL test database** with permission to create/drop schemas. Set `TEST_DATABASE_URL` and, only after verifying the target is disposable, `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`. The fixture also requires a database name containing a test token and rejects names marked prod/live. Never point it at production or shared data. The dedicated CI PostgreSQL job has an explicit zero-skipped-test guard; general-suite skips are a separate test classification.
+PostgreSQL tests require a **disposable PostgreSQL test database** with permission to create/drop schemas. The guard validates the target before creating an engine or schema and requires all three settings:
+
+- `TEST_DATABASE_URL`: connection URL for the disposable database.
+- `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`: explicit operator confirmation.
+- `CAROAI_TEST_POSTGRES_ALLOWLIST`: comma-separated exact endpoint entries in `host:port/database` form. No wildcard or hostname substring is accepted.
+
+For a local database reached through `localhost` on port 5432, configure:
+
+```powershell
+$env:TEST_DATABASE_URL = "postgresql+psycopg2://<user>:<password>@localhost:5432/caroai_test"
+$env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
+$env:CAROAI_TEST_POSTGRES_ALLOWLIST = "localhost:5432/caroai_test"
+python -m pytest tests/test_database_postgres.py tests/postgres_suite.py -q
+```
+
+If the URL uses `127.0.0.1`, allowlist that exact endpoint instead: `127.0.0.1:5432/caroai_test`. If multiple local disposable targets are genuinely needed, list each exact endpoint separated by commas. Never add a remote production/shared endpoint or commit credentials to the repository. CI explicitly sets `CAROAI_TEST_POSTGRES_ALLOWLIST=localhost:5432/caroai_test` for its disposable PostgreSQL service. The dedicated CI PostgreSQL job has an explicit zero-skipped-test guard; general-suite skips are a separate test classification.
 
 ## Current QA and release evidence
 
