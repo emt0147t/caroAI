@@ -34,6 +34,12 @@ jobs:
         run: npm ci
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+      - name: Record browser and Playwright versions
+        run: |
+          mkdir -p evidence
+          npx playwright --version | tee evidence/browser-versions.txt
+          CHROMIUM_PATH="$(node -e "process.stdout.write(require('@playwright/test').chromium.executablePath())")"
+          "$CHROMIUM_PATH" --version | tee -a evidence/browser-versions.txt
 
       - name: Start baseline Compose stack
         run: docker compose -p caroai-baseline -f baseline-source/docker-compose.yml --project-directory baseline-source up -d --build

@@ -34,10 +34,16 @@ test('PvP creates a real backend game and renders alternating authoritative move
 test('PvAI difficulty reaches the real API; AI move is rendered from backend state', async ({ page, request }) => {
   const id = await startGame(page, 'HUMAN_VS_AI', 'hard');
   await expect(page.locator('#aiDifficulty')).toHaveValue('hard');
+  let submittedDifficulty = null;
+  await page.route('**/api/games/*/ai-move', async route => {
+    submittedDifficulty = route.request().postDataJSON()?.difficulty ?? null;
+    await route.continue();
+  });
   await page.getByRole('button', { name: 'Đánh hàng 8, cột 8' }).click();
   await expect(page.locator('#loadingBox')).toBeVisible();
   await expect(page.locator('#board .cell').filter({ hasText: /^O$/ })).toHaveCount(1, { timeout: 30000 });
   await expect(page.locator('#currentPlayer')).toHaveText('X');
+  expect(submittedDifficulty).toBe('hard');
   const game = await getGame(request, id);
   expect(game.move_count).toBe(2);
   expect(game.board[7][7]).toBe('X');
@@ -134,6 +140,24 @@ test('end-game state is loaded from API and prevents further moves', async ({ pa
   const disabled = await page.locator('#board .cell').evaluateAll(cells => cells.every(cell => cell.disabled));
   expect(disabled).toBeTruthy();
   expect((await getGame(request, id)).move_count).toBe(9);
+});
+
+test('O win is loaded from API and locks the board for the losing X player', async ({ page, request }) => {
+  const create = await request.post('/api/games', { data: { mode: 'HUMAN_VS_HUMAN' } });
+  expect(create.status()).toBe(201);
+  const id = (await create.json()).id;
+  for (const [row, col] of [[0,0],[7,0],[0,1],[7,1],[0,2],[7,2],[0,3],[7,3],[1,0],[7,4]]) {
+    const response = await request.post('/api/games/' + id + '/moves', { data: { row, col } });
+    expect(response.ok()).toBeTruthy();
+  }
+  await page.goto('/trong_tran/index.html?game_id=' + encodeURIComponent(id));
+  await expect(page.locator('#gameStatus')).toContainText('O thắng!');
+  const disabled = await page.locator('#board .cell').evaluateAll(cells => cells.every(cell => cell.disabled));
+  expect(disabled).toBeTruthy();
+  const persisted = await getGame(request, id);
+  expect(persisted.status).toBe('O_WON');
+  expect(persisted.winner).toBe('O');
+  expect(persisted.move_count).toBe(10);
 });
 
 test('a full no-five board reaches backend DRAW and locks the UI', async ({ page, request }) => {
