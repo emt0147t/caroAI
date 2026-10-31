@@ -9,6 +9,12 @@ on:
     branches:
       - develop
   workflow_dispatch:
+    inputs:
+      release_approved:
+        description: "Request production release; production Environment review is independently required"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -26,7 +32,7 @@ jobs:
       - run: node --test tests/frontend-regression.test.cjs
 
   test:
-    name: Run tests and lint
+    name: Python tests and lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -121,7 +127,6 @@ jobs:
           import json
           import subprocess
           import time
-          import urllib.error
           import urllib.request
 
           BASE = "http://127.0.0.1:8000"
@@ -135,12 +140,12 @@ jobs:
               with urllib.request.urlopen(req, timeout=5) as response:
                   return response.status, json.loads(response.read().decode())
 
-          def retry_get(path, expected_status=200):
+          def retry_get(path):
               last_error = None
               for _ in range(30):
                   try:
                       status, body = request("GET", path)
-                      if status == expected_status:
+                      if status == 200:
                           return body
                       last_error = RuntimeError(f"{path}: HTTP {status}")
                   except Exception as exc:
@@ -189,14 +194,122 @@ jobs:
         run: docker compose down --volumes --remove-orphans
 
   build:
-    name: Build Docker image
+    name: Docker image build (no publish/deploy)
     needs: [frontend, test, postgres-integration, compose-smoke]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v5
+      - name: Build SHA-tagged candidate image without publishing
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: false
+          tags: caroai-ci:${{ github.sha }}
+
+  release:
+    name: Approved production publish and Render verification
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_approved == true }}
+    needs: [frontend, test, postgres-integration, compose-smoke, build]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    permissions:
+      contents: read
+    env:
+      IMAGE_NAME: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/caroai
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Validate environment-scoped release configuration
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
+        run: |
+          test -n "$DOCKERHUB_USERNAME" || { echo "Missing production Environment secret DOCKERHUB_USERNAME"; exit 1; }
+          test -n "$DOCKERHUB_TOKEN" || { echo "Missing production Environment secret DOCKERHUB_TOKEN"; exit 1; }
+          test -n "$RENDER_DEPLOY_HOOK" || { echo "Missing production Environment secret RENDER_DEPLOY_HOOK"; exit 1; }
+          test -n "$RENDER_API_KEY" || { echo "Missing production Environment secret RENDER_API_KEY"; exit 1; }
+          test -n "$RENDER_SERVICE_ID" || { echo "Missing production Environment secret RENDER_SERVICE_ID"; exit 1; }
+          test -n "$PUBLIC_URL" || { echo "Missing production Environment variable CAROAI_PUBLIC_URL"; exit 1; }
+          case "$PUBLIC_URL" in https://*) ;; *) echo "CAROAI_PUBLIC_URL must use HTTPS"; exit 1 ;; esac
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Derive full and short SHA tags
+        id: tags
+        shell: bash
+        run: |
+          echo "short_sha=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
+          echo "full_sha=$GITHUB_SHA"
+      - name: Build and publish immutable full/short SHA tags
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.short_sha }}
+      - name: Trigger Render deployment for exact full-SHA image
+        id: render-deploy
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          response=$(curl --fail --silent --show-error --get \
+            --data-urlencode "imgURL=$IMAGE_NAME:$GITHUB_SHA" \
+            "$RENDER_DEPLOY_HOOK")
+          echo "$response"
+          deploy_id=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("deploy", {}).get("id", ""))')
+          test -n "$deploy_id" || { echo "Render did not return a deployment ID"; exit 1; }
+          echo "deploy_id=$deploy_id" >> "$GITHUB_OUTPUT"
+      - name: Wait for Render to confirm exact image is live
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          DEPLOY_ID: ${{ steps.render-deploy.outputs.deploy_id }}
+        run: |
+          for attempt in $(seq 1 60); do
+            response=$(curl --fail --silent --show-error \
+              --header "Authorization: Bearer $RENDER_API_KEY" \
+              --header "Accept: application/json" \
+              "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys/$DEPLOY_ID")
+            status=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("status", ""))')
+            image_ref=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("image", {}).get("ref", ""))')
+            echo "Render deploy status=$status image=$image_ref"
+            if [ "$status" = "live" ]; then
+              case "$image_ref" in
+                *":$GITHUB_SHA") echo "Render confirms the requested SHA image is live."; break ;;
+                *) echo "Render image ref does not match full SHA $GITHUB_SHA"; exit 1 ;;
+              esac
+            fi
+            case "$status" in
+              build_failed|update_failed|pre_deploy_failed|canceled|deactivated)
+                echo "Render deployment failed with status: $status"; exit 1 ;;
+            esac
+            if [ "$attempt" -eq 60 ]; then
+              echo "Timed out waiting for Render deployment to become live"; exit 1
+            fi
+            sleep 10
+          done
+      - name: Verify public HTTPS liveness and database readiness
+        env:
+          PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
+        run: |
+          for attempt in $(seq 1 36); do
+            if curl --fail --silent --show-error "$PUBLIC_URL/health" >/dev/null && curl --fail --silent --show-error "$PUBLIC_URL/ready" >/dev/null; then
+              echo "Public HTTPS /health and /ready passed."
+              exit 0
+            fi
+            sleep 10
+          done
+          curl --fail --show-error "$PUBLIC_URL/health"
+          curl --fail --show-error "$PUBLIC_URL/ready"
+          exit 1

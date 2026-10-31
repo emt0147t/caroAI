@@ -15,7 +15,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-caroai_user} -d $${POSTGRES_DB:-caroai_db}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 5s
 
   app:
     build:
@@ -32,10 +33,11 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/ready"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
+      start_period: 20s
 
   frontend:
     image: nginx:1.27-alpine

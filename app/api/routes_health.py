@@ -1,13 +1,26 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from sqlalchemy import text
 
-router = APIRouter(
-    prefix="/health",
-    tags=["Health"],
-)
+from app.db.database import get_engine
+
+router = APIRouter(tags=["Health"])
 
 
-@router.get("")
+@router.get("/health")
 def health_check():
-    return {
-        "status": "ok"
-    }
+    """Application liveness; deliberately independent of database availability."""
+    return {"status": "ok"}
+
+
+@router.get("/ready")
+def readiness_check():
+    """Report ready only when the configured database accepts a query."""
+    try:
+        with get_engine().connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Database is not ready",
+        ) from exc
+    return {"status": "ready", "database": "ok"}
