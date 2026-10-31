@@ -106,7 +106,6 @@ def test_get_game_state_reads_metadata_and_moves_in_one_query(database):
     assert "LEFT OUTER JOIN MOVES" in statements[0]
 
 
-
 def test_get_game_state_reads_empty_game_in_one_query(database):
     engine, session_factory = database
     with session_factory() as session:
@@ -136,6 +135,7 @@ def test_get_game_state_reads_empty_game_in_one_query(database):
     assert state.status == GameStatus.IN_PROGRESS
     assert len(statements) == 1, statements
     assert "LEFT OUTER JOIN MOVES" in statements[0]
+
 
 def test_api_reads_game_created_and_moved_in_previous_requests(database):
     _engine, session_factory = database
