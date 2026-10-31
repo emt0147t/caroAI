@@ -142,3 +142,45 @@ def test_engine_output_contract_and_board_snapshot(difficulty):
     _assert_legal_output(result, before)
     assert board == before
     assert len(get_candidate_moves(board, radius=2)) > 0
+@pytest.mark.parametrize(
+    ("move", "expected_result"),
+    [
+        ((7, 7), True),
+        ((7, 8), False),
+    ],
+)
+def test_run_trial_checks_expected_move_coordinates_as_tuples(
+    monkeypatch, move, expected_result
+):
+    board = [[EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
+    fixture = {
+        "name": "expected_move_regression",
+        "category": "test",
+        "ai_player": 1,
+        "board": board,
+        "occupied_stones": 0,
+        "expected_moves": [(7, 7)],
+    }
+
+    monkeypatch.setattr(
+        benchmark,
+        "get_ai_move",
+        lambda board, ai_player, difficulty: {
+            "row": move[0],
+            "col": move[1],
+            "score": 0,
+            "elapsed_ms": 0.1,
+        },
+    )
+
+    result = benchmark.run_trial(
+        fixture=fixture,
+        difficulty="EASY",
+        trial=1,
+        is_warmup=False,
+        source_sha="a" * 40,
+        environment_id="test",
+    )
+
+    assert result["legal_move"] is True
+    assert result["expected_move_ok"] is expected_result
