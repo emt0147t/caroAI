@@ -142,6 +142,8 @@ def test_engine_output_contract_and_board_snapshot(difficulty):
     _assert_legal_output(result, before)
     assert board == before
     assert len(get_candidate_moves(board, radius=2)) > 0
+
+
 @pytest.mark.parametrize(
     ("move", "expected_result"),
     [
