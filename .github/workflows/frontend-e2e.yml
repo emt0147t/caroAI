@@ -10,10 +10,16 @@ permissions:
 jobs:
   browser-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        name: Checkout
+        name: Checkout candidate
+      - uses: actions/checkout@v4
+        name: Checkout baseline for visual comparison
+        with:
+          ref: ${{ github.event.pull_request.base.sha || 'develop' }}
+          path: baseline-source
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -28,9 +34,30 @@ jobs:
         run: npm ci
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Start real API and frontend
+
+      - name: Start baseline Compose stack
+        run: docker compose -p caroai-baseline -f baseline-source/docker-compose.yml --project-directory baseline-source up -d --build
+      - name: Wait for baseline proxy
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/health >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          docker compose -p caroai-baseline -f baseline-source/docker-compose.yml --project-directory baseline-source ps
+          docker compose -p caroai-baseline -f baseline-source/docker-compose.yml --project-directory baseline-source logs app frontend
+          exit 1
+      - name: Capture baseline screenshots
+        env:
+          CAROAI_BASE_URL: http://127.0.0.1:8080
+          EVIDENCE_LABEL: before
+        run: node tests/e2e/capture-ui-evidence.cjs
+      - name: Stop baseline Compose stack
+        if: always()
+        run: docker compose -p caroai-baseline -f baseline-source/docker-compose.yml --project-directory baseline-source down -v
+
+      - name: Start candidate Compose stack
         run: docker compose up -d --build
-      - name: Wait for proxied API
+      - name: Wait for candidate proxy
         run: |
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:8080/health >/dev/null; then exit 0; fi
@@ -39,12 +66,17 @@ jobs:
           docker compose ps
           docker compose logs app frontend
           exit 1
+      - name: Capture candidate screenshots
+        env:
+          CAROAI_BASE_URL: http://127.0.0.1:8080
+          EVIDENCE_LABEL: after
+        run: node tests/e2e/capture-ui-evidence.cjs
       - name: Run browser E2E
         run: npm run test:e2e
         env:
           CI: "true"
           CAROAI_BASE_URL: http://127.0.0.1:8080
-      - name: Upload Playwright evidence
+      - name: Upload Playwright and visual evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -52,8 +84,9 @@ jobs:
           path: |
             playwright-report/
             test-results/
-          if-no-files-found: ignore
+            evidence/
+          if-no-files-found: warn
           retention-days: 14
-      - name: Stop stack
+      - name: Stop candidate stack
         if: always()
         run: docker compose down -v

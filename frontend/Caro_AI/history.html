@@ -4,23 +4,23 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Lịch sử ván đấu · CaroAI</title>
 <style>
-:root{color-scheme:light;--bg:#f4efeb;--card:#fff;--ink:#2c2523;--sub:#786e65;--line:#e2d9d0;--accent:#2b8a6e;--error:#b42318}
-*{box-sizing:border-box}body{margin:0;padding:24px;background:var(--bg);color:var(--ink);font:16px system-ui,sans-serif}
+:root{color-scheme:light;--bg:var(--ui-color-canvas);--card:var(--ui-color-surface);--ink:var(--ui-color-text);--sub:var(--ui-color-muted);--line:var(--ui-color-border);--accent:var(--ui-color-accent);--error:var(--ui-color-error)}
+*{box-sizing:border-box}body{margin:0;padding:var(--ui-space-6);background:var(--bg);color:var(--ink);font:16px system-ui,sans-serif}
 main{max-width:900px;margin:0 auto}.top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:20px}
 h1{margin:0;font-size:clamp(1.5rem,4vw,2.1rem)}a,button{font:inherit}a{color:var(--accent);font-weight:700;text-decoration:none}
-button{border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:white;color:var(--ink);font-weight:700;cursor:pointer}
-button:disabled{opacity:.6;cursor:wait}.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 12px 32px #3c28140a}
+button{border:1px solid var(--line);border-radius:var(--ui-radius-control);padding:10px 14px;background:white;color:var(--ink);font-weight:700;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--ui-radius-panel);padding:20px;box-shadow:var(--ui-shadow-card)}
 #state{color:var(--sub);line-height:1.6}#state.error{color:var(--error)}.list{display:grid;gap:10px;margin-top:14px}
-.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:14px}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:var(--ui-radius-control);padding:14px}
 .name{font-weight:800}.meta{color:var(--sub);font-size:.9rem;margin-top:5px;line-height:1.5}.empty{padding:24px;text-align:center;color:var(--sub)}
 @media(max-width:520px){body{padding:14px}.panel{padding:14px}.item{grid-template-columns:1fr}.item a{justify-self:start}}
 </style>
-  <link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/tokens.css">
 </head>
 <body>
 <main>
   <header class="top"><h1>Lịch sử ván đấu</h1><nav><a href="/">← Về trang chủ</a></nav></header>
-  <section class="panel" aria-live="polite">
+  <section class="panel" aria-live="polite" aria-busy="true" id="historyPanel">
     <div class="top"><p id="state">Đang tải lịch sử từ Backend…</p><button id="refresh" type="button">Tải lại</button></div>
     <div id="list" class="list"></div>
   </section>
@@ -29,6 +29,7 @@ button:disabled{opacity:.6;cursor:wait}.panel{background:var(--card);border:1px 
 const state = document.getElementById('state');
 const list = document.getElementById('list');
 const refresh = document.getElementById('refresh');
+const panel = document.getElementById('historyPanel');
 const API = String(window.CAROAI_API_BASE_URL || '').replace(/\/$/, '');
 function dateText(value) {
   if (!value) return 'Chưa có thời gian';
@@ -44,13 +45,13 @@ function labelResult(game) {
 }
 function render(items) {
   list.replaceChildren();
-  if (!items.length) {
+  const validItems = items.filter(game => game && typeof game.id === 'string' && game.id.trim());
+  if (!validItems.length) {
     const empty = document.createElement('p'); empty.className = 'empty';
     empty.textContent = 'Chưa có ván đấu nào được lưu.';
-    list.append(empty); return;
+    list.append(empty); return 0;
   }
-  for (const game of items) {
-    if (!game || !game.id) continue;
+  for (const game of validItems) {
     const item = document.createElement('article'); item.className = 'item';
     const info = document.createElement('div');
     const name = document.createElement('div'); name.className = 'name';
@@ -64,9 +65,11 @@ function render(items) {
     open.textContent = 'Mở bàn cờ →';
     item.append(info, open); list.append(item);
   }
+  return validItems.length;
 }
 async function loadHistory() {
-  refresh.disabled = true; list.replaceChildren(); state.className = ''; state.textContent = 'Đang tải lịch sử từ Backend…';
+  refresh.disabled = true; panel.setAttribute('aria-busy', 'true');
+  list.replaceChildren(); state.className = ''; state.textContent = 'Đang tải lịch sử từ Backend…';
   try {
     const response = await fetch(API + '/api/history?limit=20&offset=0', { headers: { Accept: 'application/json' } });
     let data = null; try { data = await response.json(); } catch (_) {}
@@ -76,14 +79,17 @@ async function loadHistory() {
     }
     const items = Array.isArray(data) ? data : (data?.items || data?.games);
     if (!Array.isArray(items)) throw new Error('Phản hồi History API chưa đúng định dạng danh sách.');
-    state.textContent = items.length ? 'Lịch sử lấy trực tiếp từ Backend.' : 'Chưa có ván đấu được lưu.';
-    render(items);
+    const count = render(items);
+    state.textContent = count ? 'Lịch sử lấy trực tiếp từ Backend.' : 'Chưa có ván đấu được lưu.';
   } catch (error) {
     state.className = 'error';
     state.textContent = (error instanceof TypeError ? 'Không kết nối được Backend. ' : '') + (error.message || 'Không tải được lịch sử.');
     const retry = document.createElement('button'); retry.type = 'button'; retry.textContent = 'Thử lại';
     retry.addEventListener('click', loadHistory); list.append(retry);
-  } finally { refresh.disabled = false; }
+  } finally {
+    panel.setAttribute('aria-busy', 'false');
+    refresh.disabled = false;
+  }
 }
 refresh.addEventListener('click', loadHistory);
 loadHistory();

@@ -1,33 +1,31 @@
 # M3 frontend candidate — audit and validation record
 
-## Deployment / routing audit (M3-01)
+## Validation target
 
-Reviewed on `develop` at candidate base `138164803f3537d15ca90d9bc358f3f86528c4f3`.
-
-- Docker Compose defines a `frontend` Nginx service, maps `FRONTEND_PORT` (default 8080) to port 80, mounts `./frontend/Caro_AI` read-only at `/usr/share/nginx/html`, and mounts `deploy/nginx-frontend.conf`.
-- Nginx uses `/usr/share/nginx/html` as its root and `welcome.html` as the index.
-- Nginx proxies `/api/` to `http://app:8000/api/` and `/health` to the backend health route.
-- The browser pages use same-origin relative API URLs by default. They also read `window.CAROAI_API_BASE_URL` to support a separately configured API origin.
-- Static config review completed. A live local Compose smoke test and a separately configured API-origin browser run still need CI/local execution; do not treat this document as evidence that those runtime checks passed.
+- Candidate branch: `feature/m3-frontend-ux-polish`
+- Pull request: #42
+- Test stack: Docker Compose (PostgreSQL + FastAPI + Nginx), with Playwright/Chromium against the Nginx origin.
+- Visual evidence: same 390 × 844 viewport for baseline (`develop` base SHA) and candidate (`after`); see the `playwright-evidence` Actions artifact.
 
 ## M3 status
 
 | Item | Status | Evidence / remaining work |
 |---|---|---|
-| M3-01 Compose, root, proxy, configurable API origin | Config audit complete | Runtime local and external-origin smoke checks pending |
-| M3-02 Real History API, loading/empty/error/retry/persistence | Implemented on `develop` | `tests/e2e/history.spec.cjs` checks API presence, persisted record, fresh page and reload |
-| M3-03 Backend-authoritative state, busy lock, lost-response recovery | Implemented on `develop` | `tests/e2e/game.spec.cjs`; run CI on this candidate |
-| M3-04 Win/draw and post-game lock | Implemented on `develop` | API-driven end-game and draw E2E coverage; dedicated result pages are not present in the current frontend |
-| M3-05 Playwright PvP/PvAI/error/recovery/end-state/history | Tests present | CI run is required; do not mark green before run completion |
-| M3-06 Shared design tokens | In progress | This PR adds shared accessibility/focus and reduced-motion tokens; colors/spacing remain page-specific |
-| M3-07 Start screen mode/difficulty/loading/error | Implemented on `develop` | `welcome.html` uses backend create-game API |
-| M3-08 Board contrast/turn/busy/responsive | Improved | Mobile board cell sizing adjusted for 360px; validate in browser CI |
-| M3-09 History fields/empty state | Implemented on `develop` | Replay of individual moves is out of scope until backend provides a stable move-detail/replay API |
-| M3-10 Keyboard focus/reduced motion/responsive | Improved | Shared visible focus ring, reduced-motion support and 360px viewport assertion added |
-| M3-11 Before/after evidence | Pending | Capture screenshots on the same viewport and record the final CI candidate SHA after review |
+| M3-01 Compose, Nginx root/proxy, API origin | Runtime path verified in CI | Baseline and candidate Compose stacks are started; Nginx proxy health is checked. Separate third-party API-origin/CORS deployment is not verified. |
+| M3-02 Real History API, loading/empty/error/retry/persistence | Implemented and browser-tested | API error/retry, empty/malformed response, persisted entry, fresh page and reload are covered. |
+| M3-03 Backend-authoritative state, busy lock, lost-response recovery | Implemented and browser-tested | PvP/PvAI API-driven moves, duplicate-submit lock, injected HTTP errors and lost-response GET recovery are covered. |
+| M3-04 Win/draw and post-game lock | Implemented and browser-tested | Backend-authoritative X win and full-board draw states are rendered; all cells are disabled after completion. No separate results page is currently provided. |
+| M3-05 Playwright flows and regression suite | Automated suite expanded | CI runs the browser suite against the Compose stack. Confirm the latest candidate run before marking this row green. |
+| M3-06 Shared design tokens | Implemented across all screens | Shared semantic colors, typography, spacing, radii, shadows, focus and motion tokens are consumed by start, game and History screens. |
+| M3-07 Start screen mode/difficulty/loading/error | Implemented | Real create-game POST, disabled/loading state, inline error and accessible mode/difficulty controls. |
+| M3-08 Board contrast/turn/busy/responsive | Implemented and browser-tested | Contrast/status colors and busy lock are present; no horizontal overflow is tested at 320, 360, 390, 768 and 1280 px. |
+| M3-09 History fields, empty state and reopen | Implemented and browser-tested | Date, mode, result and move count; empty/error/retry; opening a saved game restores backend state. Individual move-by-move replay is not available. |
+| M3-10 Keyboard focus/reduced motion/responsive | Automated checks added | Visible focus ring and reduced-motion behavior are tested; manual screen-reader/assistive-technology testing remains recommended. |
+| M3-11 Before/after evidence | Automated capture configured | CI captures start, game and History screenshots for base and candidate at the same 390 × 844 viewport and uploads them in `playwright-evidence`. |
 
-## Known limits
+## Remaining known limits
 
-- Individual move replay is not offered.
-- Public HTTPS smoke test is not included; deployment URL and release SHA must be supplied by the deployment owner.
-- The UX stylesheet does not replace browser/assistive-technology manual testing.
+- Individual move replay is not exposed because the backend currently does not provide a stable move-detail/replay contract; the UI must not fabricate this history.
+- A public HTTPS production smoke test requires the actual deployment URL and the release SHA from the deployment owner.
+- The configurable `window.CAROAI_API_BASE_URL` hook exists, but a separately hosted cross-origin API is not part of the Compose same-origin acceptance test.
+- Automated keyboard/focus checks do not replace a manual screen-reader and real-device review.
