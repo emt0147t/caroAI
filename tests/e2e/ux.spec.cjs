@@ -65,7 +65,7 @@ test('start screen reports API errors and restores the retryable start control',
     });
   });
   await page.goto('/');
-  const start = page.getByRole('button', { name: /Bắt đầu ván đấu/ });
+  const start = page.locator('#startBtn');
   await start.click();
   await expect(start).toBeDisabled();
   await expect(page.getByRole('alert')).toContainText('Game service temporarily unavailable.');
