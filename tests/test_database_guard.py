@@ -85,6 +85,15 @@ def test_libpq_query_parameters_cannot_override_approved_endpoint(
         validate_disposable_postgres_target(database_url, CONFIRMATION)
 
 
+def test_url_fragment_is_rejected_even_for_allowlisted_authority(monkeypatch):
+    monkeypatch.setenv(ALLOWLIST_ENV, "localhost:5432/caroai_test")
+
+    with pytest.raises(ValueError, match="fragments are not permitted"):
+        validate_disposable_postgres_target(
+            f"{LOCAL_URL}#host=remote-production-host", CONFIRMATION
+        )
+
+
 @pytest.mark.parametrize(
     ("database_url", "allowlist_entry"),
     [
@@ -95,15 +104,6 @@ def test_libpq_query_parameters_cannot_override_approved_endpoint(
         ),
     ],
 )
-def test_url_fragment_is_rejected_even_for_allowlisted_authority(monkeypatch):
-    monkeypatch.setenv(ALLOWLIST_ENV, "localhost:5432/caroai_test")
-
-    with pytest.raises(ValueError, match="fragments are not permitted"):
-        validate_disposable_postgres_target(
-            f"{LOCAL_URL}#host=remote-production-host", CONFIRMATION
-        )
-
-
 def test_explicitly_allowlisted_local_disposable_target_is_accepted(
     monkeypatch, database_url, allowlist_entry
 ):
