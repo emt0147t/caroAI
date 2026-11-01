@@ -5,17 +5,16 @@ this module. CI explicitly runs this file and fails if acceptance tests skip.
 """
 
 import os
-import re
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, func, select, text
-from sqlalchemy.engine import make_url
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
 from app.api.dependencies import get_game_service
 from app.db.models import Base, Game, Move
+from app.db.testing import validate_disposable_postgres_target
 from app.db.repository import SQLAlchemyGameRepository, SQLAlchemyGameUnitOfWork
 from app.domain.game_state import GameStatus
 from app.main import app
@@ -26,20 +25,10 @@ from scripts.migrate_database import run_migrations
 
 def _new_schema():
     """Create a unique schema only in a confirmed disposable test database."""
-    database_url = os.getenv("TEST_DATABASE_URL")
-    if not database_url:
-        raise RuntimeError("TEST_DATABASE_URL is required for PostgreSQL acceptance")
-    if os.getenv("CAROAI_TEST_DATABASE_CONFIRMED") != "disposable-test-database":
-        raise RuntimeError("Disposable PostgreSQL confirmation is required")
-
-    url = make_url(database_url)
-    if url.get_backend_name() != "postgresql":
-        raise RuntimeError("TEST_DATABASE_URL must use PostgreSQL")
-    name = url.database or ""
-    if not re.search(r"(^|[_-])test([_-]|$)", name, re.IGNORECASE):
-        raise RuntimeError("Database name must visibly identify a test database")
-    if re.search(r"prod(uction)?|live", name, re.IGNORECASE):
-        raise RuntimeError("Refusing schema DDL against production/live database")
+    url = validate_disposable_postgres_target(
+        os.getenv("TEST_DATABASE_URL"),
+        os.getenv("CAROAI_TEST_DATABASE_CONFIRMED"),
+    )
 
     schema = f"caroai_acceptance_{uuid4().hex}"
     admin_engine = create_engine(url, pool_pre_ping=True)
