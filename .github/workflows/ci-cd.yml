@@ -323,10 +323,10 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          import os
           import urllib.request
-          import uuid
 
-          base = "${{ vars.CAROAI_PUBLIC_URL }}".rstrip("/")
+          base = os.environ["PUBLIC_URL"].rstrip("/")
 
           def request(method, path, payload=None):
               body = None if payload is None else json.dumps(payload).encode()
@@ -338,7 +338,6 @@ jobs:
                   raw = response.read().decode()
                   return response.status, json.loads(raw) if raw else {}
 
-          marker = "m4-smoke-" + str(uuid.uuid4())
           status, pvp = request(
               "POST", "/api/games", {"mode": "HUMAN_VS_HUMAN"}
           )
