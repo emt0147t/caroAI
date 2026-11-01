@@ -267,6 +267,7 @@ jobs:
 
   release:
     name: Approved production publish and Render verification
+    timeout-minutes: 20
     if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_approved == true }}
     needs: [frontend, test, postgres-integration, compose-smoke, secret-scan, build]
     runs-on: ubuntu-latest
@@ -295,13 +296,25 @@ jobs:
           test -n "$RENDER_SERVICE_ID" || { echo "Missing production Environment secret RENDER_SERVICE_ID"; exit 1; }
           test -n "$PUBLIC_URL" || { echo "Missing production Environment variable CAROAI_PUBLIC_URL"; exit 1; }
           python - <<'PY'
+          import ipaddress
           import os
+          import re
           from urllib.parse import urlsplit
 
           value = os.environ["PUBLIC_URL"]
           parsed = urlsplit(value)
           if parsed.scheme != "https" or not parsed.hostname:
               raise SystemExit("CAROAI_PUBLIC_URL must be an HTTPS URL with a hostname")
+          hostname = parsed.hostname
+          try:
+              ipaddress.ip_address(hostname)
+          except ValueError:
+              labels = hostname.rstrip(".").split(".")
+              valid_label = re.compile(
+                  r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$"
+              )
+              if len(labels) < 2 or any(not valid_label.fullmatch(label) for label in labels):
+                  raise SystemExit("CAROAI_PUBLIC_URL must contain a valid public hostname or IP address")
           if parsed.username or parsed.password:
               raise SystemExit("CAROAI_PUBLIC_URL must not contain URL credentials")
           if parsed.query or parsed.fragment or parsed.path:
@@ -353,6 +366,7 @@ jobs:
           deploy_id=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("deploy", {}).get("id", ""))')
           test -n "$deploy_id" || { echo "Render did not return a deployment ID"; exit 1; }
           echo "deploy_id=$deploy_id" >> "$GITHUB_OUTPUT"
+          echo "Render deployment ID: $deploy_id"
       - name: Wait for Render to confirm exact image is live
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
