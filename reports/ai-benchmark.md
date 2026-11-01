@@ -43,6 +43,18 @@ The p95 uses the nearest-rank method. Each difficulty aggregates 55 measured cal
 
 The aggregate p95 describes this benchmark workload, not the production distribution of player positions. Each per-fixture p95 has only five samples and equals that fixture's maximum; it is not a high-confidence production percentile.
 
+### Difficulty configuration and observed midgame latency
+
+The committed engine configuration and raw records show distinct search budgets:
+
+| Difficulty | Depth | Candidate limit | Midgame demo median (ms) | Midgame demo p95 (ms) |
+|---|---:|---:|---:|---:|
+| EASY | 1 | 6 | 2.6847 | 4.7408 |
+| MEDIUM | 2 | 10 | 11.6002 | 14.6660 |
+| HARD | 3 | 14 | 99.5755 | 108.0097 |
+
+The midgame figures are five measured trials for `demo_midgame_search`, not the 55-call aggregate above. All 15 measured calls (five per difficulty) returned the same legal coordinate `(6, 5)`. This demonstrates different configured search budgets and latency on this fixture; it does not prove that the selected move changes or that HARD is strategically optimal.
+
 ### Environment
 
 - OS: Windows 11 (`Windows-11-10.0.26200-SP0`)
@@ -55,11 +67,14 @@ The captured CPU identifier is a platform string and does not establish a verifi
 
 ### Raw artifacts
 
-- [Windows CSV](benchmark-windows-phase4-2b4e3c1/ai-benchmark.csv)
-- [Windows JSON](benchmark-windows-phase4-2b4e3c1/ai-benchmark.json)
+- [Windows CSV — deliverable path](ai-benchmark.csv) — byte-for-byte copy of the environment-specific CSV.
+- [Windows JSON — deliverable path](ai-benchmark.json) — byte-for-byte copy of the environment-specific JSON.
+- [Windows environment CSV](benchmark-windows-phase4-2b4e3c1/ai-benchmark.csv)
+- [Windows environment JSON](benchmark-windows-phase4-2b4e3c1/ai-benchmark.json)
 - [Windows detailed report](benchmark-windows-phase4-2b4e3c1/ai-benchmark.md)
+- [Demo board manifest](ai-demo-boards.json)
 
-JSON validation confirmed the full source SHA, 11 fixtures, 198 records, 165 measured trials, 33 warm-ups and zero measured failures.
+The root-level CSV/JSON are copies of this Windows run for the named M2 deliverable paths; the original environment-specific copies remain in their folder. They contain the same single Windows environment and do not combine measurements from different runtimes. Raw validation confirmed 198 rows, one full source SHA, timestamps, all 11 fixtures, all three difficulties, per-call latency, depth/candidate limit, output validity, legal-move, board-immutability, expected-move and error fields. All 165 measured records were legal, output-shape-valid and board-unchanged; there were zero errors and zero failed expected-move assertions.
 
 ## 3. Tactical demo-board outcomes
 
@@ -71,7 +86,13 @@ The three fixed demo positions are defined in `reports/ai-demo-boards.json`.
 | `demo_forced_block` | EASY/MEDIUM/HARD | 15 | Expected blocking move `(0, 1)` passed |
 | `demo_midgame_search` | MEDIUM/HARD in regression tests; all difficulties in benchmark | 15 | Legal outputs; no fixed expected move |
 
-The win-now and forced-block outcomes were correct in all measured calls. The midgame fixture is a representative legal-move/search case, not an exact-move assertion.
+The tactical meaning of the first two fixtures is explicit:
+
+- **Win now:** X has four contiguous stones at row 7, columns 3–6; O occupies the left endpoint (7, 2). The only winning continuation is (7, 7), and the tests plus 15 measured calls confirm it.
+- **Forced block:** O has four contiguous stones at row 0, columns 2–5; X occupies the right endpoint (0, 6). AI must block the remaining endpoint at (0, 1), confirmed by tests plus 15 measured calls.
+- **Midgame:** the eight-stone central fixture has no existing five and no immediate win for either player. The benchmark emitted (6, 5) in all 15 measured calls, and all outputs were legal with the input board unchanged. There is no expected-move oracle for this fixture, so this is evidence of a legal search continuation, not proof that (6, 5) is the globally best strategic move.
+
+**Evaluator/search limitations:** the evaluator scores line patterns (five, open/blocked four, open/blocked three and two) and minimax compares the incremental pattern totals as `AI score - 1.2 × opponent score`. Search is bounded to depth 1/2/3 by difficulty; candidates are generated within Chebyshev radius 2 of existing stones, ranked, then capped at 6/10/14. Alpha-beta pruning reduces the explored tree. These design choices make the result a bounded heuristic search, not exhaustive game-tree analysis or a proof of optimal play.
 
 ## 4. Phase 4 local regression validation
 
@@ -96,6 +117,12 @@ Result: **238 passed, 11 skipped, 1 warning**.
 The 11 skipped tests are PostgreSQL integration tests requiring `TEST_DATABASE_URL` and the approved disposable-test database configuration. They are not counted as passed by this local run.
 
 The warning is a Starlette deprecation warning involving the FastAPI test client/httpx integration. It did not fail the test suite.
+
+The existing regression files cover:
+- Immediate AI wins and opponent blocks horizontally, vertically, and on both diagonals; the demo win/block positions are parameterized over EASY/MEDIUM/HARD.
+- Engine output contract and legal coordinates; malformed coordinates/scores and out-of-bounds or occupied moves from the search layer; controlled no-legal-move behavior on a full board.
+- Board immutability for `find_best_move` on empty, midgame, near-win and depth-3 positions, and for `get_ai_move` at all three difficulties.
+- Minimax horizon win/block detection, alpha-beta score parity on reference positions, incremental-evaluation equivalence, and false-positive terminal-state regressions.
 
 Lint:
 
@@ -144,10 +171,19 @@ Owner/dependency: M1 and team decision.
 | Item | Status | Owner/dependency |
 |---|---|---|
 | Tactical and benchmark regression tests | PASSED on Phase 4 develop SHA | M2 |
-| Windows benchmark and raw artifacts | PASSED | M2 |
+| Windows benchmark and raw artifacts (including root-level CSV/JSON deliverables) | PASSED | M2 |
+| Difficulty depth/candidate configuration and demo-midgame latency comparison | VERIFIED | M2 |
+| Demo-board tactical interpretation and evaluator/search limitations | DOCUMENTED | M2 |
 | Linux/Docker benchmark on matching source SHA | NOT RUN / pending evidence | M4 |
 | Formal p95 SLO decision | PENDING TEAM CONFIRMATION | M1/team |
 | QA evidence reconciliation | PENDING | M5 |
 | Issue #28 final acceptance/sign-off | OPEN | M2/M1/M4/M5 |
 
 Do not close Issue #28 until the Linux/Docker artifacts, SLO decision and M5 evidence reconciliation are available.
+
+
+## 8. M2 P1 — baseline-led optimization
+
+The three difficulty levels have visibly different configured search budgets (depth 1/2/3 and candidate limit 6/10/14) and different measured midgame latency on the fixed demo fixture (median 2.6847/11.6002/99.5755 ms for EASY/MEDIUM/HARD). This satisfies the configuration/latency comparison using the captured Windows baseline. The same move was selected on this one midgame fixture at all three levels, so no stronger claim about different strategic behavior is made.
+
+No optimization change set was created from this Windows baseline: there were zero measured trial failures, and the aggregate HARD p95 was 973.8549 ms against the still-unconfirmed 2,000 ms proposal. This is not formal SLO acceptance. Revisit optimization only if Linux/Docker measurements, the team's SLO decision, or further representative fixtures reveal a concrete performance or quality issue.
