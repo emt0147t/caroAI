@@ -9,6 +9,21 @@ from sqlalchemy.engine import make_url
 ALLOWLIST_ENV = "CAROAI_TEST_POSTGRES_ALLOWLIST"
 
 
+def _reject_connection_overrides(url):
+    """Reject libpq URL options that can override the approved connection target."""
+    # psycopg2/libpq query options such as host, hostaddr, port, service and
+    # servicefile can redirect the effective connection away from url.host.
+    # Reject all query options so future libpq parameters cannot weaken the guard.
+    if url.query:
+        parameter_names = ", ".join(sorted(str(key) for key in url.query))
+        raise ValueError(
+            "PostgreSQL URL query parameters are not permitted by the disposable "
+            f"endpoint guard (found: {parameter_names})"
+        )
+    if url.fragment:
+        raise ValueError("PostgreSQL URL fragments are not permitted")
+
+
 def validate_disposable_postgres_target(
     database_url: str | None, confirmation: str | None
 ):
@@ -22,20 +37,7 @@ def validate_disposable_postgres_target(
     if url.get_backend_name() != "postgresql":
         raise ValueError("TEST_DATABASE_URL must use PostgreSQL")
 
-    # libpq connection parameters can override the URL authority. In particular,
-    # psycopg2 accepts query-string host/hostaddr/port and service/servicefile
-    # settings that can redirect the effective connection away from url.host.
-    # Reject every query parameter (not just known routing keys) so newly added
-    # libpq options cannot silently weaken this endpoint allowlist. Connection
-    # options must be reviewed and modeled explicitly before being permitted.
-    if url.query:
-        parameter_names = ", ".join(sorted(str(key) for key in url.query))
-        raise ValueError(
-            "PostgreSQL URL query parameters are not permitted by the disposable "
-            f"endpoint guard (found: {parameter_names})"
-        )
-    if url.fragment:
-        raise ValueError("PostgreSQL URL fragments are not permitted")
+    _reject_connection_overrides(url)
 
     database_name = url.database or ""
     if not re.search(r"(^|[_-])test([_-]|$)", database_name, re.IGNORECASE):
