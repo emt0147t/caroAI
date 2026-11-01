@@ -1,154 +1,283 @@
-# M4 release runbook
+# M4 release operations runbook
 
 Owner: Vinh (@macvinh2007-sketch)  
 Repository: `emt0147t/caroAI`  
-Release workflow: `.github/workflows/ci-cd.yml`
+Release workflow: `.github/workflows/ci-cd.yml`  
+Last reviewed: 2026-11-02
 
-## 1. Promotion plan and source control
+## 1. Promotion source and baseline
 
-The promotion source is `develop`; do not release the old `main` baseline.
+The intended promotion source is `develop`. Do not release the old `main` baseline.
 
-Repository comparison captured on 2026-11-02:
+Repository state captured for this M4 handover:
 - `main` baseline: `d444119d5eb757e364f904bb9eacddd27e14e507`.
 - `develop` baseline: `e45b077fefee9e08136215c366178c2fee4fb81b`.
-- GitHub compare `main...develop`: **352 commits ahead**, 0 behind. The earlier planning note saying 253 commits is stale and must not be used as the current count.
-- `feature/devops` was 193 commits behind `develop` and had no unique commits. It was fast-forwarded (non-force) to the `develop` baseline before M4 edits. All M4 commits remain on `feature/devops`.
+- GitHub comparison `main...develop`: 352 commits ahead, 0 behind at the time checked.
+- `feature/devops` was fast-forwarded to the recorded `develop` baseline before the M4 commits. The M4 PR is based on `develop`, not directly on `main`.
 
-Promotion PR `develop → main` is intentionally a later gate. Coordinate with M1 and open it only after the M1 acceptance PR/evidence is finalized, all required checks are green, and the exact source SHA is agreed. Do not dispatch a release from the old `main` baseline or merge the promotion PR without review.
+**M1 confirmation is still required.** The SHA above is the observed `develop` baseline, not a claim that M1 has signed it off. Before opening a promotion PR, M1 must confirm the intended source SHA and complete backend acceptance. Recheck `develop` and PR #46 at that time; if either changes, update this record and re-run all required checks against the new head. Do not dispatch a release from a stale `main`.
 
-### PR #35 triage
+### PR disposition
 
-PR #35 is closed and unmerged as superseded. It targeted the stale `main` baseline and proposed process-local/in-memory History. Current `develop` already serves `GET /api/history` from the SQLAlchemy-backed repository. Do not reopen or merge #35. PR #46 is the focused M1 backend acceptance/rollback handover; it is not the promotion PR and is not release authorization.
+- PR #35 is **CLOSED / SUPERSEDED**, not merged. It targeted the stale `main` baseline and proposed process-local/in-memory History. The current `develop` implementation uses SQLAlchemy-backed persistence for `GET /api/history`; do not reopen or merge PR #35.
+- PR #46 is the M1 backend acceptance/rollback handover. It is **not** a production release authorization and does not replace the separately reviewed `develop → main` promotion PR.
+- PR #47 is the M4 CI/CD and release-workflow deliverable. It must merge to `develop`, not directly to `main`. M1 review/sign-off and M5 QA review are separate gates.
 
-## 2. CI, migration, and database gates
+## 2. CI and disposable database acceptance
 
-PostgreSQL acceptance uses a disposable `caroai_test` database, `pg_isready`, `TEST_DATABASE_URL`, and `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`. The JUnit gate fails if any PostgreSQL acceptance test is skipped. Compose smoke creates a game, writes a move, restarts the API container, then checks the game and history again.
+Normal push/PR validation is non-production. The workflow runs frontend syntax/regression checks, Python flake8/pytest, Docker Compose configuration validation, PostgreSQL acceptance, Compose functional/persistence smoke, secret scanning, Browser E2E, and a non-publishing Docker candidate build.
 
-Run from the repository root against a disposable local database only:
+### PostgreSQL acceptance
+
+The PostgreSQL job uses a disposable `caroai_test` database and configures:
+- `pg_isready` health checking.
+- `TEST_DATABASE_URL` pointing to the CI PostgreSQL service.
+- `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`.
+- A JUnit guard that fails if any PostgreSQL acceptance test is skipped.
+
+Never point CI or an automated smoke test at the production `DATABASE_URL`.
+
+### Compose functional and persistence smoke
+
+The `compose-smoke` job uses the repository's disposable Compose stack. It exercises:
+1. PvP game creation and one player move.
+2. PvAI game creation, human move, and AI move.
+3. Game detail responses, board state, and expected `move_count`.
+4. History lookup for both created games.
+5. Restart of the API container, then re-read of both games and History to verify persistence.
+6. Cleanup with `docker compose down --volumes --remove-orphans` even if an earlier step fails.
+
+This is evidence for persistence across an **API container restart in CI only**. It is not evidence of staging or production persistence.
+
+For controlled local reproduction, use disposable local containers and never source production environment values:
 
 ```bash
-docker compose up -d db
-docker compose run --rm --no-deps --entrypoint python app -m scripts.migrate_database
 docker compose up --build -d
 docker compose ps
 docker compose logs --no-color db app
 curl --fail http://localhost:8000/health
 curl --fail http://localhost:8000/ready
+docker compose down --volumes --remove-orphans
 ```
 
-`/health` is liveness only. `/ready` executes `SELECT 1` using `DATABASE_URL` and returns 503 if PostgreSQL cannot be queried. Neither endpoint proves game persistence. The Docker entrypoint runs versioned SQL migrations before Uvicorn; production migration does not use SQLAlchemy metadata `create_all`.
+The application entrypoint applies versioned SQL migrations before Uvicorn starts. `/health` is liveness; `/ready` checks database connectivity using the application's readiness logic. Neither endpoint proves that a particular game record persisted.
 
 ## 3. GitHub Environment: production
 
-Repository owner/admin must verify this in Settings → Environments → `production` (the current GitHub connector does not expose Environment protection-rule administration):
+<badge>OWNER VERIFICATION REQUIRED</badge>
 
-- At least one **Required reviewer** is configured.
-- **Prevent self-review** is enabled.
-- Deployment branch restriction allows only `main`.
-- The following are Environment-scoped secrets, not values committed to files:
-  - `DOCKERHUB_USERNAME`
-  - `DOCKERHUB_TOKEN`
-  - `RENDER_DEPLOY_HOOK`
-  - `RENDER_API_KEY`
-  - `RENDER_SERVICE_ID`
-- Environment variable `CAROAI_PUBLIC_URL` is the public HTTPS base URL, with no trailing slash.
+An authorized repository owner/admin must inspect Settings → Environments → `production` and confirm each item below. This workflow/code review alone does not prove the Environment has been configured.
 
-Never paste secret values into issues, pull requests, docs, shell transcripts, or workflow output. The workflow checks that required values are present without printing them. A dispatch input `release_approved=true` only requests a release; it does not replace the independent Environment reviewer approval.
+1. An Environment named exactly `production` exists.
+2. At least one authorized **Required reviewer** is configured.
+3. **Prevent self-review** is enabled.
+4. Deployment branch/tag restrictions allow only `main`.
+5. The required secrets are stored as Environment-scoped secrets:
+   - `DOCKERHUB_USERNAME`
+   - `DOCKERHUB_TOKEN`
+   - `RENDER_DEPLOY_HOOK`
+   - `RENDER_API_KEY`
+   - `RENDER_SERVICE_ID`
+6. The Environment variable `CAROAI_PUBLIC_URL` is set to the intended public HTTPS base URL, without a trailing slash.
+
+To verify configuration without exposing values, an owner can inspect the Environment's secret/variable names and update timestamps in GitHub Settings, then run a properly approved release preflight. The workflow checks only whether required values are non-empty and validates the public URL format; it does not print secret values. Do not paste values into PRs, issue comments, docs, CI logs, screenshots, or artifacts.
+
+The dispatch input `release_approved=true` is only a request to run the release job. It is not a substitute for GitHub Environment review. Until the owner confirms these protections, report **PENDING OWNER VERIFICATION** and do not claim the production gate is fully configured.
 
 ## 4. Render production configuration
 
-Verify in the Render dashboard before release:
+<badge>OWNER VERIFICATION REQUIRED</badge>
 
-- The production service is image-backed and points to `docker.io/<namespace>/caroai`, not a source/build deployment.
-- Render has registry credentials if the Docker Hub image is private.
-- Production `DATABASE_URL` is configured only in Render environment/secrets and points to the production PostgreSQL database.
-- Database connectivity is stable and the service's startup command applies versioned migrations before the app accepts traffic.
-- The Render service and `CAROAI_PUBLIC_URL` refer to the intended public service.
+An authorized Render owner must verify the production service before release:
 
-The workflow publishes immutable full-SHA and 12-character short-SHA tags, sends the **full-SHA image reference** to the Render deploy hook, and polls that deployment until Render reports `live` with the same full-SHA image reference. A Docker build, registry push, or deploy-hook HTTP response alone is not a successful release.
+- The service uses an image-backed deployment (not a source/build deployment).
+- The configured image repository is `docker.io/<namespace>/caroai`.
+- If the Docker Hub repository is private, Render has the appropriate registry credentials.
+- Render's `DATABASE_URL` is configured in the Render service's secret/environment settings and points to the intended production PostgreSQL database.
+- Startup migration behavior is understood and compatible with the image being released. Do not assume a successful build means migrations have run.
+- The Render service and GitHub Environment variable `CAROAI_PUBLIC_URL` refer to the same intended public service.
+- The public service uses HTTPS.
 
-## 5. Approved release sequence
+Do not record a real database URL, password, token, API key, or deploy hook in this document.
 
-1. Agree with M1 on the exact `develop` source SHA and finish M1 acceptance/evidence.
-2. Open and review the promotion PR `develop → main`; wait for required checks and approval; merge it.
-3. Confirm `main` now points to the approved promotion commit. Do not dispatch while `main` is still at `d444119d5eb757e364f904bb9eacddd27e14e507`.
-4. Open Actions → CaroAI CI → Run workflow, select `main`, set `release_approved=true`.
-5. Approve the pending `production` Environment deployment as an authorized reviewer.
-6. Confirm the release job completed and record the workflow URL, source full SHA, image full/short tags, Render deployment ID, Render status, image ref, and public URL.
-7. Continue with the browser smoke and persistence-after-redeploy procedures below. Do not mark M4 done until those are evidenced.
+### Image and deployment verification
 
-Normal push/PR runs execute frontend checks, Python lint/tests, PostgreSQL acceptance with zero skipped tests, Compose persistence smoke, and a non-publishing Docker build. They do not publish or deploy.
+The approved release publishes two SHA-tagged references: the full source SHA and a 12-character short SHA. It also records the image digest returned by the Docker build when available. The Render deploy hook receives the **full-SHA image reference**.
 
-## 6. Public smoke test
+A tag containing a SHA is not automatically immutable. Unless Docker Hub tag-protection/immutability policy has been independently verified, describe these as **SHA-tagged image references**, not immutable tags. Do not use `latest` as release evidence.
 
-The release workflow checks public HTTPS `/health` and `/ready`, then exercises public API create/move/history flows for both PvP and PvAI. It prints the created public game IDs for evidence. Complete the following browser checks manually against the public UI as well:
+The workflow must obtain the Render deployment ID from the deploy-hook response without printing the raw response, poll that deployment through the Render API, and fail unless Render reports status `live` and the exact requested full-SHA image reference. A deploy-hook HTTP success, Docker push, or build success alone is not release evidence.
 
-- Open the public HTTPS UI in a clean browser session; verify page, CSS, JavaScript, and assets load without mixed-content or 404 errors.
-- Open DevTools → Console and Network. Confirm no CORS, proxy, failed asset, or API-base-URL errors.
-- Create a PvP game, make moves for both players, refresh/reopen it, and confirm the game state loads.
-- Create a PvAI game, make a human move, wait for the AI response, and confirm the board/current player update.
-- Open History, confirm both smoke games appear, open each game, and confirm the saved board/move count.
-- Record the exact public URL, browser timestamp, PvP/PvAI public IDs, and sanitized results. Do not include cookies, authorization headers, tokens, or environment values in screenshots/logs.
+## 5. Approved release procedure
 
-## 7. Persistence after production redeploy
+Do not skip the order below:
 
-This is a separate production proof; `/health` and `/ready` are not persistence evidence.
+1. M1 confirms the baseline/source SHA and completes backend acceptance, including the handover evidence in PR #46.
+2. Re-check the latest `develop` SHA and confirm it is the agreed source. Re-run all required checks on the intended commit.
+3. Open a separate promotion PR from `develop` to `main`. Include the approved source SHA and evidence; obtain the required review and passing checks.
+4. Merge the promotion PR only after approval. Record its merge SHA.
+5. Verify `main` points to the approved promotion commit. Do not dispatch from the stale baseline `d444119d5eb757e364f904bb9eacddd27e14e507`.
+6. Confirm the owner has completed GitHub Environment and Render configuration verification. If not, stop with **PENDING OWNER VERIFICATION**.
+7. In GitHub Actions, select **CaroAI CI**, choose branch `main`, and dispatch with `release_approved=true`.
+8. Wait for an authorized Required reviewer to approve the `production` Environment deployment. A dispatch without Environment approval must not publish/deploy.
+9. Confirm all prerequisite jobs succeeded and the release job publishes the full- and short-SHA-tagged image references. Record the image digest when returned.
+10. Confirm the Render deployment ID, `live` status, and exact full-SHA image reference. A mismatch or timeout is a failed release.
+11. Confirm the public URL is valid HTTPS and that read-only GET `/health` and GET `/ready` both return successful responses within the configured retry/timeout policy.
+12. Perform only the non-writing production checks described in section 7. Save the workflow URL, run ID, source SHA, image references/digest, Render deployment ID, public URL, timestamps, and sanitized outcomes.
 
-1. Before redeploy, create a PvP or PvAI game on the public UI. Record its public ID and make at least three legal moves. For PvAI, include at least one AI move.
-2. Confirm the game appears in History and that opening its public ID shows the expected board and move count.
-3. Ask the authorized operator to trigger a Render redeploy/restart of the same approved full-SHA image using the normal runbook path. Do not change the image tag for this persistence check.
-4. Wait until Render reports that deployment/restart is live and the exact full-SHA image is still active.
-5. Reopen the recorded public game ID and History in a fresh browser session. Confirm the same moves, board, mode, status, and move count remain.
-6. Record before/after timestamps, public ID, full image SHA, Render deployment ID/status, and sanitized screenshots/API responses.
+Pull-request and normal push workflows must not publish an image or trigger Render. Production release must never be dispatched just to test the workflow.
 
-Do not delete the test game before the evidence is captured. If the game/history disappears, M4 persistence acceptance fails; investigate the Render `DATABASE_URL`, database identity, migration state, and persistent database storage before any sign-off.
+## 6. Functional smoke testing by environment
 
-## 8. Rollback readiness
+Keep the three environments and their evidence separate.
 
-Keep the previously deployed full-SHA image in Docker Hub. To request redeployment of a previous immutable image, load the deploy hook securely from the approved secret store and substitute the previous full SHA:
+### CI / disposable Compose
 
-```bash
-export RENDER_DEPLOY_HOOK='(load securely; never commit or print)'
-export PREVIOUS_SHA='full-previous-commit-sha'
-export IMAGE_NAME='docker.io/<namespace>/caroai'
-curl --fail --silent --show-error --get \
-  --data-urlencode "imgURL=$IMAGE_NAME:$PREVIOUS_SHA" \
-  "$RENDER_DEPLOY_HOOK"
-```
+Allowed automated write tests:
+- PvP create/move.
+- PvAI create/human move/AI move.
+- History lookup and game detail.
+- Board and `move_count` assertions.
+- Persistence after API container restart.
+- Cleanup of disposable Compose resources.
 
-Then obtain the resulting Render deployment ID, poll the Render API using the secret API key, confirm status `live` and the exact previous image ref, and re-run public `/health`, `/ready`, PvP/PvAI/history smoke. Never log the deploy hook or API key.
+This is the automated functional acceptance path used by the PR checks.
 
-**Database warning:** rolling back the application image does not reverse SQL migrations. Before a schema-changing release, document a separately reviewed backward-compatible migration/restore plan. Do not run an old image against a schema it cannot understand.
+### Staging
 
-## 9. Secret hygiene
+Staging must use a separate staging service and staging PostgreSQL database, never production credentials/data. Validate:
+- Public staging UI and API.
+- CSS, JavaScript, and static assets.
+- CORS and browser console/network behavior.
+- PvP, PvAI, History, and game detail.
+- Browser E2E.
+- Persistence after a controlled staging redeploy.
 
-- Keep local `.env` outside Git; only sanitized placeholders belong in `.env.example`.
-- Check tracked files before every release: `git ls-files` and inspect environment/config files; verify no real `.env`, key, token, password, or database URL is tracked.
-- CI includes a blocking `secret-scan` job. It runs the Gitleaks Action over the PR commit range and then runs the pinned Gitleaks v8.30.1 CLI against the fully fetched repository history with `gitleaks git --redact --verbose --no-banner /repo`. Both the candidate image build and production release depend on this job.
-- Distinguish the two outputs: the Action's range scan alone is not proof that the complete repository history was scanned. The full-history CLI step must explicitly finish successfully and report no leaks.
-- For a local full-history scan from a complete clone, run `docker run --rm --volume "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 git --redact --verbose --no-banner /repo`. Do not write an unredacted report into the repository.
-- Inspect workflow logs for accidental values. If a real credential is detected, stop promotion/release, rotate the credential at its provider, then assess Git-history cleanup with repository owners.
-- If a real credential was committed, posted, or reused, revoke/rotate it at its provider. Removing it from the latest file is not sufficient because Git history and logs may retain it.
-- Never place production values in documentation, CI artifacts, issue comments, or screenshots.
+Record the staging URL, source/image SHA, deployment ID, test record IDs, before/after timestamps, and sanitized results.
 
-## 10. Release evidence record
+### Production — read-only release verification
 
-Complete this record only with observed values; do not invent or infer deployment evidence.
+The automated production release job is intentionally restricted to:
+- Deployment status and exact image-reference verification.
+- HTTPS base URL format verification.
+- GET `/health`.
+- GET `/ready`.
 
-| Field | Evidence |
+It must not call POST `/api/games`, POST `/moves`, POST `/ai-move`, or any other endpoint that mutates production state. Do not add a public write-smoke to the release workflow.
+
+A manual, non-writing production UI/assets/CORS check may load the home page, CSS/JS/static assets, and use safe GET/OPTIONS requests. Do not create a game or change user data as part of routine release verification. Health/readiness and static asset checks do not prove PvP/PvAI functionality or game persistence on production.
+
+### Separate production write/persistence acceptance
+
+A production game write test is outside the release workflow and may happen only when both M1 and an authorized production owner have explicitly approved a controlled test plan. That plan must define the intended test record, visibility in user History, operator, timing, evidence, and data-retention handling. Do not automatically clean up or delete production records, and do not add a public deletion endpoint merely to hide a test.
+
+Record the public game ID, source/image SHA, timestamps before and after redeploy, Render deployment ID, observed History/detail state, and sanitized evidence. If there is no approved process, mark production persistence **NOT TESTED / PENDING APPROVAL**. Never use CI or staging evidence to claim production acceptance.
+
+## 7. Production read-only verification
+
+After Render confirms the exact requested image is live:
+
+1. Record the Render deployment ID, live status, and image reference.
+2. Confirm the public base URL is HTTPS, has a valid hostname, and contains no URL credentials, path, query, fragment, or trailing slash.
+3. GET `/health` with a connection timeout and request timeout.
+4. GET `/ready` with a connection timeout and request timeout.
+5. Retry each endpoint within the workflow's bounded retry window. A non-2xx result or exhausted retry window fails the release job.
+6. Save timestamped, sanitized HTTP status outcomes. Do not save response headers, cookies, tokens, deploy hooks, or secrets.
+
+Interpretation:
+- `/health` demonstrates that the application responds (liveness).
+- `/ready` demonstrates the database readiness check implemented by the application.
+- Neither proves that game creation, moves, History, or data persistence works.
+
+The release job must remain read-only with respect to production business data. The public write-smoke previously present in the workflow has been removed; PvP/PvAI/History writes are covered by disposable Compose instead.
+
+## 8. Persistence evidence and scope
+
+Use precise labels:
+
+| Evidence | What it proves | What it does not prove |
+|---|---|---|
+| PostgreSQL acceptance | API/model/migration acceptance against disposable CI PostgreSQL | Production database behavior |
+| Compose persistence after API restart | Test records survive an API container restart with the disposable Compose database | Persistence after staging or production redeploy |
+| Staging persistence after redeploy | The recorded staging game survived the staging redeploy tested | Production persistence |
+| Production persistence after redeploy | Only an explicitly owner-approved production test can establish this | It is not established by CI, staging, `/health`, or `/ready` |
+
+Do not report production persistence as PASS unless a controlled owner-approved production test was actually completed and its public game ID, timestamps, image SHA, Render deployment ID, and before/after state are recorded.
+
+## 9. Rollback readiness and procedure
+
+Before a release, identify a previously deployed full source SHA and verify that the corresponding full-SHA image reference is still available in Docker Hub. Record its digest when available. Do not assume a previous SHA-tagged reference is immutable unless registry policy has been checked.
+
+For an authorized rollback:
+
+1. Identify the previous known-good full source SHA and image reference.
+2. Retrieve the Render deploy hook and Render API key from the approved secret store. Do not paste them into a terminal transcript or print them.
+3. Trigger the Render deployment for `docker.io/<namespace>/caroai:<PREVIOUS_FULL_SHA>` using the securely retrieved deploy hook.
+4. Capture the returned deployment ID without exposing the raw hook response.
+5. Poll the Render API until the deployment is `live`; verify the exact previous full-SHA image reference.
+6. Re-run public HTTPS GET `/health` and GET `/ready`.
+7. Record the incident/reason, previous SHA, image digest, deployment ID, timestamps, sanitized health/readiness outcomes, and operator.
+
+**Database warning:** rolling back an application image does not automatically roll back database schema changes. For a schema-changing release, require a separately reviewed migration plan, a backup/restore plan, and an explicit backward-compatibility assessment. Never run an old image against a schema it cannot understand.
+
+## 10. Secret hygiene
+
+The workflow has two independent blocking scans:
+
+1. **PR-range scan:** Gitleaks Action, pinned by commit SHA, with comments disabled.
+2. **Full-history scan:** checkout with `fetch-depth: 0` and `persist-credentials: false`, then pinned Gitleaks CLI using:
+   ```bash
+   gitleaks git --redact --verbose --no-banner /repo
+   ```
+
+The PR-range scan is not a substitute for a full-history scan. The full-history job must report the actual number of commits scanned and finish with no leaks. Both scans are dependencies of candidate build and production release.
+
+Before promotion/release:
+- Review tracked files for accidental `.env`, private key, token, password, or database URL files. Only sanitized placeholders belong in `.env.example`.
+- Inspect CI logs/artifacts for accidental sensitive output; do not publish raw secret-bearing reports.
+- If a credential is detected, block promotion/release, notify M1 and the repository owner, revoke/rotate it with the provider, and assess history/log cleanup. Removing the credential from the latest file alone is not sufficient.
+- Never put production values in Git, PR comments, documentation, screenshots, artifacts, or logs.
+
+The most recent full-history evidence recorded before this revision was 348 commits scanned with no leaks on the previous PR head. **That result does not certify the revised head.** Record the latest full-history run URL, actual scanned commit count, and result after this revision's checks finish.
+
+## 11. Release evidence record
+
+Complete every field only with observed evidence. Use `PENDING`, `NOT RUN`, or `NOT APPLICABLE` where appropriate; do not invent values.
+
+| Evidence | Required record |
 |---|---|
-| Promotion PR | URL + merged commit SHA |
-| Required checks | URLs + final conclusion |
-| Release workflow | URL + run ID |
-| Source SHA | Full SHA |
-| Docker image tags | Full SHA tag + 12-char tag |
-| Render deployment | Deployment ID + `live` status + exact image ref |
+| M1 source sign-off | Reviewer/date + approved source SHA |
+| Promotion PR | URL + review/checks + merge SHA |
+| Required checks | Workflow URLs + conclusion on final SHA |
+| M4 PR | PR URL + final head SHA + review status |
+| Release workflow | URL + run ID + conclusion |
+| Source | Full source SHA |
+| Docker image | Repository + full/short SHA tags + digest if available |
+| Render deployment | Deployment ID + live status |
+| Render image | Exact deployed full-SHA image reference |
 | Public URL | HTTPS base URL |
-| Public health/readiness | Timestamp + sanitized HTTP result |
-| PvP/PvAI/history | Public game IDs + results |
-| Browser/CORS/assets | Timestamp + sanitized evidence |
-| Persistence after redeploy | Same public ID + before/after result |
-| Rollback | Previous full-SHA image confirmed available |
-| Secret hygiene | Scanner result + tracked-file review |
+| Health/readiness | Timestamp + sanitized GET status for each |
+| CI PvP/PvAI/History | Workflow URL + test result |
+| Browser E2E | Workflow URL + artifacts/result |
+| Staging UI/CORS | Timestamp + sanitized evidence |
+| Staging persistence | Record ID + before/after timestamp + deployment evidence |
+| Production persistence | Only an explicitly owner-approved test record; otherwise NOT TESTED |
+| Rollback | Previous full-SHA image availability + deployment verification |
+| Secret hygiene | PR scan + full-history scan URL, scanned commit count, result |
+| Owner verification | GitHub Environment and Render config review status |
 
-M4 is complete only when Render is live on the approved full-SHA image, public HTTPS checks pass, PvP/PvAI/history work, the same game remains available after production redeploy, and no credential is present in Git.
+## 12. M4 completion gates
+
+### Level 1 — PR #47 Ready for review
+
+Require: no production write-smoke; full PvP/PvAI/History/game-detail/persistence tests in disposable CI or staging; production release restricted to read-only checks; Environment gate fully described; exact `workflow_dispatch` + `main` + `release_approved=true` condition; blocking PR-range and full-history scans; full-SHA Render verification; bounded health/readiness retries; runbook complete; all required checks green on the final head; no secrets in tracked files/logs; accurate PR description/evidence; and PR no longer Draft.
+
+### Level 2 — PR #47 may merge to develop
+
+Additionally require M1 review of source/promotion boundary, M5 QA review as applicable, no unresolved review threads, required checks green on final SHA, base branch still `develop`, and merge only into `develop`. Record the merge SHA.
+
+### Level 3 — M4 production release completed
+
+Separate gate; merging PR #47 does not satisfy it. Require completed M1 backend acceptance, reviewed/merged `develop → main` promotion, `main` at the approved source, owner-verified GitHub Environment and Render/database configuration, approved release dispatch, published SHA-tagged image/digest, Render `live` on the exact image, successful public HTTPS health/readiness, UI/assets/CORS verification, functional acceptance in the appropriate environment, persistence evidence for the environment claimed, rollback image/procedure verification, clean credential hygiene, and a completed evidence record.
+
+If the production owner has not verified the Environment/Render configuration, report **PENDING PRODUCTION OWNER VERIFICATION**. If the production release was not authorized, report **PENDING RELEASE APPROVAL**. Do not mark production release complete based only on green CI.
