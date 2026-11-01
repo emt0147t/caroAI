@@ -70,7 +70,14 @@ This PR strengthens that test without changing production transaction code:
 4. Read through a new API request/session and assert the ninth square is empty, `move_count == 8`, status is still `IN_PROGRESS`, and winner is null.
 5. Read through a fresh database session and assert exactly eight moves remain, status is `IN_PROGRESS`, result is null, and `ended_at` is null.
 
-The stronger regression is part of this PR and must pass this PR's PostgreSQL CI before it is treated as newly validated. The exact-SHA baseline evidence above is independently recorded and must not be conflated with the new PR-head result.
+The stronger regression is part of this PR and **PASSED** on the exact PR head `d367cf8ed15f03ad2e73e9324ca17437c2ec7ae4`:
+
+- [PR PostgreSQL acceptance job — run #41326199276](https://github.com/emt0147t/caroAI/actions/runs/41326199276/job/124906540503): **15 passed, 0 skipped**, 1 warning.
+- The same exact-head push validation [run #41326112186](https://github.com/emt0147t/caroAI/actions/runs/41326112186/job/124906278509) also reports **15 passed, 0 skipped**, 1 warning.
+- Workflow run metadata records head SHA `d367cf8ed15f03ad2e73e9324ca17437c2ec7ae4`; the strengthened test implementation was committed as `99c30fba0cee97e83623821527d6c8685c99b2ee`.
+- The logs include successful execution of the dedicated PostgreSQL test command and the explicit zero-skipped guard.
+
+The exact-SHA baseline evidence above remains separate. The validation here is specifically for the strengthened test implementation on the replacement PR head; it is not evidence of production deployment.
 
 ## 6. PR #35 disposition
 
