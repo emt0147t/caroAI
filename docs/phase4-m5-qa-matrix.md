@@ -338,3 +338,46 @@ The merge commit `c0c227c29226306bedc7b4b419ffde1eb06ac54d` has the previous PR 
 
 General-suite skips (11) are not PostgreSQL skips. The dedicated PostgreSQL acceptance job completed 15/15 with zero skipped tests. The Docker result is build-only. Production publish/deploy was skipped, not attempted. T-12–T-17 remain BLOCKED / NOT VERIFIED pending their owners; PR #35 History-contract disposition remains PENDING M1/maintainers. Overall release remains **BLOCKED / NO-GO**.
 
+
+
+## Final post-review checkpoint — PostgreSQL libpq override fix — 2026-11-01
+
+This checkpoint supersedes the previous review checkpoint for the endpoint-guard acceptance result. It is a code-validation snapshot; any later documentation-only commit is a descendant and does not change the tested application code.
+
+| Field | Exact verified value |
+|---|---|
+| Code-validation PR head | `997ac2c7fc2ad25627b556c208740eb3e0f51de3` |
+| Develop/base SHA | `225e60a77a51011a683645dbc400ff3e4ccf775c` |
+| GitHub PR merge-validation SHA | `b040a8f654aa99df96b9cfb094b57c1ae6b93b3b` |
+| Branch comparison | **0 commits behind develop** |
+| CaroAI CI — PR | [Run #41263801155](https://github.com/emt0147t/caroAI/actions/runs/41263801155) — **SUCCESS** |
+| Browser E2E — PR | [Run #41263801162](https://github.com/emt0147t/caroAI/actions/runs/41263801162) — **SUCCESS; 24/24 passed** |
+| Push CI confirmation | [Run #41263797961](https://github.com/emt0147t/caroAI/actions/runs/41263797961) — **SUCCESS** |
+| Playwright evidence artifact | [#13066651506](https://github.com/emt0147t/caroAI/actions/runs/41263801162/artifacts/13066651506) |
+| General Python suite | **238 passed, 11 skipped, 1 warning** |
+| Dedicated PostgreSQL acceptance | **15 passed, 0 skipped**; explicit zero-skipped guard passed |
+| Compose API/database persistence | **PASS** — create game/move, restart API container, read same state back |
+| Docker image build | **PASS — build only**; no registry push |
+| Browser runtime | Playwright **1.56.1**; Chromium **141.0.7390.37** |
+| Production publish / Render verification | **SKIPPED**; no production deployment was attempted |
+
+### P1 — close the psycopg2/libpq endpoint-override bypass
+
+The previous guard checked SQLAlchemy URL authority fields but did not account for libpq/psycopg2 query options that can override the effective connection target. The final implementation now rejects **every URL query parameter** and any URL fragment before endpoint allowlist matching. This is intentionally stricter than a denylist: it blocks `host`, comma-separated/multi-host `host`, `hostaddr`, `port`, `service`, `servicefile`, `dbname`, `options`, and future query parameters without needing to anticipate every libpq routing option.
+
+The guard still requires an explicit exact `host:port/database` allowlist entry, the disposable confirmation marker and a test-only database name. CI's permitted endpoint remains exactly `localhost:5432/caroai_test`. README documents that no query parameters/fragments may be appended; credentials are not committed. If a future test environment requires TLS or another libpq option, it must be separately reviewed and represented by an explicit safe configuration rather than passed through an unrestricted URL query.
+
+Regression coverage now rejects:
+- allowlisted `localhost` authority with `?host=remote-production-host`;
+- comma-separated multi-host override;
+- `hostaddr`, query `port`, `service`, `servicefile`, `dbname`, and `options`;
+- URL fragments;
+- previously covered missing allowlist, remote authority host, wrong authority port, unapproved loopback alias and incorrect confirmation.
+
+Both PostgreSQL test paths retain validation before engine creation and DDL:
+- `tests/test_database_postgres.py` validates in the fixture before `create_engine()`.
+- `tests/postgres_suite.py` validates in `_new_schema()` before `create_engine()` and `CREATE SCHEMA`.
+
+### P2 — evidence boundary and release status
+
+The workflow runs above were triggered on the exact code-validation head in this checkpoint. The general-suite 11 skips are separate from the dedicated PostgreSQL suite's **zero** skips. Compose persistence is disposable CI API-container restart evidence; Docker is build-only. Production publish/Render was skipped, not executed. T-12–T-17 remain **BLOCKED / NOT VERIFIED** pending their owners; PR #35 persisted-History contract remains **PENDING M1/maintainers**. Overall Phase 4 release remains **BLOCKED / NO-GO**.
