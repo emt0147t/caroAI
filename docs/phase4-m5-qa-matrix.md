@@ -444,3 +444,39 @@ The general-suite skips are separate from the dedicated PostgreSQL acceptance su
 ## PR #44 — Linux/Docker AI benchmark M5 reconciliation (2026-11-01)
 
 The independent M5 reconciliation is recorded in [Phase 4 M5 Linux/Docker benchmark reconciliation](phase4-m5-linux-docker-benchmark-reconciliation.md). The pinned-source benchmark artifact #13087737816 was checked against CSV and JSON: 198 matching rows, 165 measured calls, 33 warm-ups, 11 fixtures, and 55 measured calls per difficulty. Recalculated nearest-rank p95: EASY 6.418816 ms, MEDIUM 30.346136 ms, HARD 255.984226 ms; all are below the 2,000 ms Phase 4 AI-engine benchmark ceiling. Benchmark integrity checks pass. Evidence remains **PARTIAL overall** for Issue #28 because base-image immutable ID/digest metadata is absent, and the Backend illegal-move rejection plus separately named tactical regression evidence still require explicit owner references. PR #44 remains Draft; production publish/deploy was skipped. No workflow or AI implementation code was changed by M5.
+
+
+## PR #44 — repeat Linux/Docker AI benchmark reconciliation — 2026-11-01
+
+This is the latest benchmark evidence refresh. The earlier artifact #13087737816 remains a separate historical run; the repeat artifact #13088582572 is not pooled with it.
+
+| Evidence item | Run 1 — historical | Run 2 — latest |
+|---|---|---|
+| Workflow | [#41317622028](https://github.com/emt0147t/caroAI/actions/runs/41317622028) | [#41320187247 — SUCCESS](https://github.com/emt0147t/caroAI/actions/runs/41320187247) |
+| Artifact | [#13087737816](https://github.com/emt0147t/caroAI/actions/runs/41317622028/artifacts/13087737816) | [#13088582572](https://github.com/emt0147t/caroAI/actions/runs/41320187247/artifacts/13088582572) |
+| Benchmark source SHA | `2b4e3c167d7ca0a2a5b530b7a251ced6dd37d526` | `2b4e3c167d7ca0a2a5b530b7a251ced6dd37d526` |
+| Records | 198 = 165 measured + 33 warm-ups | 198 = 165 measured + 33 warm-ups |
+| EASY nearest-rank p95 | 6.418816 ms | 11.994535 ms |
+| MEDIUM nearest-rank p95 | 30.346136 ms | 58.491428 ms |
+| HARD nearest-rank p95 | 255.984226 ms | 490.038169 ms |
+| Per-difficulty gate | **PASS** | **PASS** |
+
+M5 downloaded run 2 and independently checked CSV against JSON: 198/198 records, 22/22 fields per record, zero mismatches; 11 fixtures × 3 difficulties × (5 measured + 1 warm-up). All 165 measured rows have valid output shape, legal moves and unchanged input boards; zero trial errors; 30 applicable expected-move assertions true and zero false. The 135 blank expected-move fields are non-applicable, not failures.
+
+The M1-approved threshold is **p95 ≤ 2,000 ms per difficulty for the Phase 4 Linux/Docker AI-engine benchmark only**. It is not a production SLO or end-to-end API latency target. Keep Linux/Docker and Windows evidence separate.
+
+### Backend negative-test evidence
+
+Source-level test references supplied by M2 were opened at commit `83a8c5f87209d84c0cb12beea02a12e20dd23357`:
+
+- [AI service rejects an occupied/illegal AI move](https://github.com/emt0147t/caroAI/blob/83a8c5f87209d84c0cb12beea02a12e20dd23357/tests/test_ai_integration.py#L73-L88).
+- [AI service rejects malformed and out-of-bounds output](https://github.com/emt0147t/caroAI/blob/83a8c5f87209d84c0cb12beea02a12e20dd23357/tests/test_ai_integration.py#L184-L220).
+- [Games API rejects an illegal AI move with HTTP 400](https://github.com/emt0147t/caroAI/blob/83a8c5f87209d84c0cb12beea02a12e20dd23357/tests/test_games_api.py#L187-L220).
+
+**M5 source review: PASS. Runtime execution: PENDING M2** until actual pytest command, exact branch/SHA, test counts and exit status are attached. Therefore Backend rejection and named-SHA tactical regression execution remain **PARTIAL**, not fully accepted.
+
+### Provenance and release boundary
+
+Run 2 records benchmark image ID `sha256:4fcae654ac9ec2ef8ded06218cf4c21a7893a0536cc22932884a3e671c89fc32`, Docker 28.0.4, Linux/X64 AMD EPYC 7763 host, and limits `--cpus=2 --memory=4g`. Benchmark image RepoDigests are empty; base image is `python:3.11-slim` with empty base-image ID and RepoDigests. These are explicit provenance limitations; no digest is inferred. M1's PR #44 disposition accepts the documented limitation for this Phase 4 gate, but it does not establish immutable base-layer reproducibility.
+
+**Current Issue #28 status:** benchmark performance and raw-data integrity PASS; Backend/tactical pytest execution evidence remains pending M2; provenance limitation is documented and accepted for the benchmark gate; do not close Issue #28 until the remaining execution evidence and M1/Tech Lead closeout are complete. This evidence update does not change the separate Phase 4 production release decision (**BLOCKED / NO-GO**).
