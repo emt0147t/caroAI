@@ -64,7 +64,7 @@ The application entrypoint applies versioned SQL migrations before Uvicorn start
 
 ## 3. GitHub Environment: production
 
-<badge>OWNER VERIFICATION REQUIRED</badge>
+**OWNER VERIFICATION REQUIRED**
 
 An authorized repository owner/admin must inspect Settings → Environments → `production` and confirm each item below. This workflow/code review alone does not prove the Environment has been configured.
 
@@ -86,7 +86,7 @@ The dispatch input `release_approved=true` is only a request to run the release 
 
 ## 4. Render production configuration
 
-<badge>OWNER VERIFICATION REQUIRED</badge>
+**OWNER VERIFICATION REQUIRED**
 
 An authorized Render owner must verify the production service before release:
 
