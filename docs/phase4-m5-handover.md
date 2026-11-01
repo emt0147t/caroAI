@@ -301,7 +301,7 @@ This checkpoint records the exact evidence state for the PR snapshot before this
 
 | Evidence item | Verified value |
 |---|---|
-| Current PR head at this checkpoint | `50eefbfdfa715e307735b21498b03a22425037d1` |
+| Historical PR head recorded in the 50eefbf checkpoint | `50eefbfdfa715e307735b21498b03a22425037d1` |
 | Base SHA | `225e60a77a51011a683645dbc400ff3e4ccf775c` |
 | Merge-validation SHA | `c4ad2bb4e8a686f88e1d792fa01b96b87f8938de` |
 | CaroAI CI | [Run #41264259588](https://github.com/emt0147t/caroAI/actions/runs/41264259588) — SUCCESS |
