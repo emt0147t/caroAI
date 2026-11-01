@@ -110,7 +110,7 @@ Browser E2E #41317622030 completed successfully. The approved production publish
 
 The workflow/benchmark change does not modify AI algorithm code. M5 found no measured benchmark failure that would justify changing M2's AI implementation or M4's workflow. The only identified follow-up is provenance metadata completeness (base-image immutable identity/digest), which should be handled by M4/Tech Lead if required.
 
-## 7. M5 disposition and next actions
+## 7. Run 1 disposition and next actions (historical snapshot; superseded by §8)
 
 - **Linux/Docker performance gate:** PASS.
 - **Benchmark raw-data integrity and protocol:** PASS.
