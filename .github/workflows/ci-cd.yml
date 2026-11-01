@@ -195,7 +195,7 @@ jobs:
         run: docker compose down --volumes --remove-orphans
 
   secret-scan:
-    name: Secret scan (full Git history)
+    name: Secret scan (PR diff and full Git history)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -205,11 +205,17 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Scan repository and Git history with Gitleaks
+      - name: Scan PR commit range with Gitleaks Action
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_COMMENTS: "false"
+      - name: Scan every commit reachable from this branch
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/repo" \
+            ghcr.io/gitleaks/gitleaks:v8.30.1 \
+            git --redact --verbose --no-banner /repo
 
   build:
     name: Docker image build (no publish/deploy)
