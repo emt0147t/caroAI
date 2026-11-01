@@ -480,3 +480,19 @@ Source-level test references supplied by M2 were opened at commit `83a8c5f87209d
 Run 2 records benchmark image ID `sha256:4fcae654ac9ec2ef8ded06218cf4c21a7893a0536cc22932884a3e671c89fc32`, Docker 28.0.4, Linux/X64 AMD EPYC 7763 host, and limits `--cpus=2 --memory=4g`. Benchmark image RepoDigests are empty; base image is `python:3.11-slim` with empty base-image ID and RepoDigests. These are explicit provenance limitations; no digest is inferred. M1's PR #44 disposition accepts the documented limitation for this Phase 4 gate, but it does not establish immutable base-layer reproducibility.
 
 **Current Issue #28 status:** benchmark performance and raw-data integrity PASS; Backend/tactical pytest execution evidence remains pending M2; provenance limitation is documented and accepted for the benchmark gate; do not close Issue #28 until the remaining execution evidence and M1/Tech Lead closeout are complete. This evidence update does not change the separate Phase 4 production release decision (**BLOCKED / NO-GO**).
+
+
+## PR #45 closeout evidence synchronization — 2026-11-01
+
+The earlier PR #44 benchmark notes in this file are historical evidence snapshots. The current Issue #28 acceptance is recorded in the final issue body: **CLOSED / COMPLETE**, with M2's regression results accepted and M1/Tech Lead sign-off **ACCEPTED WITH DOCUMENTED PROVENANCE LIMITATION**.
+
+- M2 targeted AI regression suite: **59 passed** on source SHA `83a8c5f87209d84c0cb12beea02a12e20dd23357`.
+- M2 full general suite: **238 passed, 11 skipped, 1 warning**. The 11 skips require `TEST_DATABASE_URL`; they are not passes.
+- Backend illegal-output rejection: **VERIFIED** in Issue #28's final acceptance record; the service/API source references above remain the linked implementation-test evidence.
+- Linux/Docker benchmark and M5 raw-data reconciliation: **PASS**; run 1 and run 2 remain separate captures.
+- Provenance gap: **documented and accepted by M1 for Issue #28**, without inventing missing image digests.
+- Issue #28: [CLOSED / COMPLETE](https://github.com/emt0147t/caroAI/issues/28).
+
+This closeout supersedes the preceding “execution pending”, “PARTIAL” and “Issue #28 remains open” statements as the current status. They are retained only to preserve the chronology of earlier evidence checkpoints.
+
+**Release boundary remains unchanged:** the Phase 4 production release is still **BLOCKED / NO-GO**. Issue #28 completion is not production deployment approval.
