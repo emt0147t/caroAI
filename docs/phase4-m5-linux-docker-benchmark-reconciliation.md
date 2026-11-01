@@ -1,7 +1,7 @@
 # Phase 4 M5 — Linux/Docker AI Benchmark Reconciliation
 
 **Reconciliation date:** 2026-11-01  
-**Scope:** PR #44 / Issue #28 — independent M5 review of the Linux/Docker benchmark artifact.  
+**Scope:** PR #44 / Issue #28 — two separate Linux/Docker benchmark captures. Artifact #13087737816 is retained as historical run 1; artifact #13088582572 is the latest reconciled run 2.  
 **Disposition:** **PERFORMANCE GATE PASS; EVIDENCE RECONCILIATION PARTIAL** because image/base-image provenance fields are incomplete and some Issue #28 criteria are outside this benchmark artifact.
 
 ## 1. Evidence identity
@@ -125,4 +125,126 @@ The workflow/benchmark change does not modify AI algorithm code. M5 found no mea
 4. **M5:** keep unverified criteria explicitly NOT VERIFIED until evidence is attached; do not close Issue #28 by inference.
 
 ---
-*This document records M5's independent reconciliation of artifact #13087737816 from workflow run #41317622028. It does not alter the benchmark workflow, AI implementation, or production deployment configuration.*
+*Historical run 1 in this document records artifact #13087737816 from workflow run #41317622028. The latest run 2 reconciliation and updated acceptance disposition are appended below. This document does not alter the benchmark workflow, AI implementation, or production deployment configuration.*
+
+
+## 8. Evidence refresh — run 2 / artifact #13088582572 (2026-11-01)
+
+This section records the repeat benchmark from M2 and supersedes run 1 only as the latest evidence snapshot. **Run 1 and run 2 remain separate captures**; their samples and percentile values are not pooled.
+
+### 8.1 Evidence identity and workflow result
+
+| Item | Verified value |
+|---|---|
+| PR / workflow branch | [PR #44](https://github.com/emt0147t/caroAI/pull/44) / `feature/phase4-m4-m5-linux-benchmark` |
+| Workflow run | [#41320187247 — SUCCESS](https://github.com/emt0147t/caroAI/actions/runs/41320187247) |
+| Workflow job | `Linux Docker benchmark (pinned Phase 4 source)` — completed SUCCESS |
+| Artifact | [#13088582572](https://github.com/emt0147t/caroAI/actions/runs/41320187247/artifacts/13088582572) |
+| Artifact package digest | `sha256:46827ce44355beff9bd51b8485c26eadaa488a5b71347ab6bbce7c8073ff9d23` |
+| Benchmark source SHA | `2b4e3c167d7ca0a2a5b530b7a251ced6dd37d526` |
+| Workflow commit SHA in run metadata | `3141c8f21a4d787a913602caef7c87afa815fe05` |
+| Benchmark environment ID | `linux-2b4e3c167d7c` |
+| Run timestamp | 2026-11-01 15:15 UTC |
+
+The benchmark source SHA and workflow commit SHA are distinct identities. The benchmark rows consistently identify the pinned source SHA; the run metadata separately records the workflow commit SHA. Do not substitute one for the other.
+
+### 8.2 Independent raw-data reconciliation
+
+M5 downloaded and inspected the new artifact contents: `ai-benchmark.csv`, `ai-benchmark.json`, `ai-benchmark.md`, `phase4-gate-evaluation.json`, and `run-metadata.json`.
+
+| Check | Observed | M5 status |
+|---|---:|---|
+| CSV / JSON raw records | 198 / 198 | **PASS** |
+| Exported fields | 22 in each format; 0 row/field mismatches after normalizing JSON booleans/nulls | **PASS** |
+| Measured calls | 165 | **PASS** |
+| Warm-ups | 33 | **PASS** |
+| Fixtures / difficulties | 11 / 3 | **PASS** |
+| Per fixture × difficulty | 5 measured + 1 warm-up | **PASS** |
+| Source SHA consistency | All 198 records use `2b4e3c167d7ca0a2a5b530b7a251ced6dd37d526` | **PASS** |
+| Measured trial errors | 0 | **PASS** |
+| Output shape / legal move / unchanged board | 165/165 true for each check | **PASS** |
+| Applicable tactical expected-move assertions | 30 true; 0 false | **PASS** |
+
+The 135 blank `expected_move_ok` values are non-applicable generic-fixture rows, not failures. No measured row has an error or a false expected-move assertion.
+
+### 8.3 Run 2 performance results
+
+M5 recalculated nearest-rank p95 from the 55 measured CSV observations per difficulty and cross-checked the result against `phase4-gate-evaluation.json`.
+
+| Difficulty | n | Median (ms) | Nearest-rank p95 (ms) | Maximum (ms) | M1 ceiling | Result |
+|---|---:|---:|---:|---:|---:|---|
+| EASY | 55 | 3.175035 | 11.994535 | 12.156718 | ≤ 2,000 ms | **PASS** |
+| MEDIUM | 55 | 15.742058 | 58.491428 | 58.708514 | ≤ 2,000 ms | **PASS** |
+| HARD | 55 | 131.713247 | 490.038169 | 500.080324 | ≤ 2,000 ms | **PASS** |
+
+The 2,000 ms value is the M1-approved Phase 4 Linux/Docker **AI-engine benchmark ceiling per difficulty**. It is not a production SLO, HTTP/API latency target, or end-to-end service guarantee.
+
+### 8.4 Run 1 versus run 2 — separate snapshots
+
+| Run | Artifact | EASY p95 (ms) | MEDIUM p95 (ms) | HARD p95 (ms) | Gate |
+|---|---|---:|---:|---:|---|
+| Run 1 — #41317622028 | [#13087737816](https://github.com/emt0147t/caroAI/actions/runs/41317622028/artifacts/13087737816) | 6.418816 | 30.346136 | 255.984226 | **PASS** |
+| Run 2 — #41320187247 | [#13088582572](https://github.com/emt0147t/caroAI/actions/runs/41320187247/artifacts/13088582572) | 11.994535 | 58.491428 | 490.038169 | **PASS** |
+
+Both runs use the same pinned benchmark source SHA and fixed 11-fixture / 3-difficulty / 5-measured + 1-warm-up protocol. Their captured timings differ and remain separate; do not average or pool the observations. The repeat run's p95 is higher in all three difficulty groups but remains comfortably below the approved ceiling.
+
+### 8.5 Run 2 environment and provenance
+
+| Metadata | Captured value | M5 assessment |
+|---|---|---|
+| Runner | Linux / X64; AMD EPYC 7763 64-Core Processor; 4 host vCPUs online | **RECORDED** |
+| Docker server | 28.0.4 | **RECORDED** |
+| Container limits | `--cpus=2 --memory=4g` | **RECORDED** |
+| Benchmark image ID | `sha256:4fcae654ac9ec2ef8ded06218cf4c21a7893a0536cc22932884a3e671c89fc32` | **RECORDED** |
+| Benchmark image RepoDigests | Empty | **PROVENANCE GAP** — locally built image was not pushed to a registry |
+| Base image tag | `python:3.11-slim` | **RECORDED** |
+| Base image ID / RepoDigests | Empty / empty | **PROVENANCE GAP** — immutable base-image identity/digest not captured |
+| Python | 3.11.18 | **RECORDED** |
+| Source SHA method inside container | `provided-no-git-metadata` | **CONTEXT** — outer workflow checks out/verifies the pinned source revision |
+
+The base-image digest and benchmark-image RepoDigest must not be invented or inferred. The benchmark image ID and all other captured metadata remain recorded. PR #44's M1 disposition accepts this provenance limitation as documented for the Phase 4 benchmark gate; it does **not** establish fully immutable base-layer reproducibility. Future benchmark workflows should pin the base image by digest if stronger provenance is required.
+
+The artifact's `ai-benchmark.md` / `ai-benchmark.json` legacy summary field still says `PENDING_TEAM_CONFIRMATION`; the run's `phase4-gate-evaluation.json` explicitly records the M1 decision dated 2026-11-01 and independently reports the gate PASS. The gate-evaluation decision is the controlling acceptance evidence; the stale legacy summary field should be normalized by the workflow owner in a future metadata cleanup, not silently represented as a new M1 decision.
+
+### 8.6 Backend negative-test source evidence supplied by M2
+
+The following test definitions were independently opened at exact commit `83a8c5f87209d84c0cb12beea02a12e20dd23357`:
+
+- [`tests/test_ai_integration.py` lines 73–88](https://github.com/emt0147t/caroAI/blob/83a8c5f87209d84c0cb12beea02a12e20dd23357/tests/test_ai_integration.py#L73-L88): `test_ai_service_rejects_illegal_ai_move` monkeypatches an AI move onto an occupied cell, expects `InvalidAIMoveError`, and verifies the game state remains unchanged.
+- [`tests/test_ai_integration.py` lines 184–220](https://github.com/emt0147t/caroAI/blob/83a8c5f87209d84c0cb12beea02a12e20dd23357/tests/test_ai_integration.py#L184-L220): malformed and out-of-bounds AI output cases expect `InvalidAIMoveError`.
+- [`tests/test_games_api.py` lines 187–220](https://github.com/emt0147t/caroAI/blob/83a8c5f87209d84c0cb12beea02a12e20dd23357/tests/test_games_api.py#L187-L220): API-level illegal AI move returns HTTP 400 and an `already occupied` detail.
+
+**M5 source review: PASS — the Backend negative-test definitions exist at the referenced SHA. Execution evidence: PENDING M2** until M2 attaches the actual pytest command, branch/SHA, test counts and exit status from its rerun. A source link alone is not proof that the tests ran. The same pending execution evidence applies to the named-SHA tactical regression acceptance criterion.
+
+### 8.7 Updated Issue #28 acceptance disposition
+
+| Criterion | Updated M5 status | Evidence / remaining condition |
+|---|---|---|
+| AI tactical regression tests pass on named SHA | **PARTIAL — execution pending** | M2's actual pytest rerun and named SHA/result summary have not yet been supplied |
+| Reproducible benchmark command and per-difficulty median/p95 | **PASS** | Run 1 and run 2 artifacts; run 2 command and raw CSV/JSON reviewed |
+| Linux/Docker fixed protocol and pinned source SHA | **PASS** | Both runs use the same source SHA and 11 × 3 × (5 + 1) protocol; Linux remains separate from Windows |
+| Nearest-rank p95 ≤ 2,000 ms for every difficulty | **PASS** | Run 2: 11.994535 / 58.491428 / 490.038169 ms |
+| Zero measured errors; valid shape/legal moves/unchanged board; expected tactical assertions | **PASS** | Run 2: 165/165 structural checks, zero errors, 30 applicable expected assertions true |
+| Backend rejects illegal AI moves | **PARTIAL — source coverage verified; execution pending** | Three test references verified at commit `83a8c5f...`; await M2 pytest execution result |
+| At least three reproducible demo positions | **PASS** | `demo_ai_win_now`, `demo_forced_block`, `demo_midgame_search` |
+| PR reviewed and CI green | **PASS for PR #44 lifecycle/review** | PR #44 merged; independent review APPROVED by KenKen106. This does not validate production deployment |
+| Provenance completeness | **PARTIAL / accepted limitation** | Benchmark image ID recorded; benchmark RepoDigest and base-image immutable ID/digest absent; M1 disposition accepted the documented gap for this gate |
+| Overall Issue #28 | **OPEN — M2 execution evidence pending** | Do not close until actual pytest results are attached and M1/Tech Lead completes the remaining Issue #28 closeout |
+
+### 8.8 Current M5 disposition and owner actions
+
+- **Linux/Docker benchmark performance gate:** PASS on both separate runs.
+- **Run 2 raw-data integrity:** PASS; independently reconciled 198 CSV/JSON records and all 165 measured calls.
+- **Backend negative-test source coverage:** verified; actual M2 pytest execution result is still pending.
+- **Tactical regression test execution:** pending M2's named-SHA pytest evidence.
+- **Provenance:** documented limitation accepted for this Phase 4 gate; future digest pinning remains a quality improvement.
+- **Production release:** this benchmark does not change separate release blockers or establish production SLO/API latency.
+
+Owner follow-up:
+1. **M2 / Backend owner:** attach the actual pytest command, exact branch/SHA, test counts and exit status for the referenced Backend negative tests and tactical regression tests.
+2. **M4:** consider pinning `python:3.11-slim` by immutable digest and recording resolved base-image identity in a future benchmark workflow; no retroactive value should be fabricated.
+3. **M1 / Tech Lead:** complete Issue #28 closeout after reviewing M2's execution evidence; do not treat benchmark PASS alone as full Issue #28 acceptance.
+4. **M5:** keep execution-dependent criteria PARTIAL until M2's run evidence is attached.
+
+---
+*Run 2 is the latest M5 reconciliation snapshot for artifact #13088582572 / workflow #41320187247. Run 1 remains preserved above as historical evidence; the two result sets are not pooled. No workflow, AI implementation, or deployment configuration was modified by this update.*
