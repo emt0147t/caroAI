@@ -294,3 +294,20 @@ On the documentation-only PR head, the same acceptance results were rerun succes
 The code-validation head `997ac2c` includes the final libpq routing-override rejection. The subsequent `0f1de82` snapshot changed only the four evidence documents. This checkpoint commit is itself a documentation-only descendant; the PR description records the resulting live PR head and its current merge-validation SHA after this update.
 
 T-12–T-17 remain **BLOCKED / NOT VERIFIED** pending their accountable owners. PR #35 persisted-History contract remains **PENDING M1/maintainers**. Overall Phase 4 release remains **BLOCKED / NO-GO**; no production deployment was attempted.
+
+## Final evidence checkpoint — PR snapshot `50eefbf` (2026-11-01)
+
+This checkpoint records the exact evidence state for the PR snapshot before this documentation-only update. The append-only documentation commit(s) that add this section create a descendant commit and therefore a new PR head; the SHAs and workflow runs below must be read as evidence for the snapshot identified here, not as identifiers for that later descendant.
+
+| Evidence item | Verified value |
+|---|---|
+| Current PR head at this checkpoint | `50eefbfdfa715e307735b21498b03a22425037d1` |
+| Base SHA | `225e60a77a51011a683645dbc400ff3e4ccf775c` |
+| Merge-validation SHA | `c4ad2bb4e8a686f88e1d792fa01b96b87f8938de` |
+| CaroAI CI | [Run #41264259588](https://github.com/emt0147t/caroAI/actions/runs/41264259588) — SUCCESS |
+| Browser E2E | [Run #41264259498](https://github.com/emt0147t/caroAI/actions/runs/41264259498) — **24/24 passed** |
+| General test suite | **238 passed, 11 skipped, 1 warning** |
+| Dedicated PostgreSQL acceptance | **15 passed, 0 skipped** |
+| Production publish/deploy | **SKIPPED** — no production deployment was performed |
+
+The general-suite skips are separate from the dedicated PostgreSQL acceptance suite, which completed with zero skips. Production publish/deploy remains explicitly unverified and must not be inferred from successful CI, PostgreSQL acceptance, Compose, Docker build, or browser E2E results.
