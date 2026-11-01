@@ -106,6 +106,8 @@ PostgreSQL tests require a **disposable PostgreSQL test database** with permissi
 - `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`: explicit operator confirmation.
 - `CAROAI_TEST_POSTGRES_ALLOWLIST`: comma-separated exact endpoint entries in `host:port/database` form. No wildcard or hostname substring is accepted.
 
+For endpoint safety, the validator rejects **all URL query parameters and fragments**. This deliberately blocks libpq/psycopg2 routing overrides such as `host`, `hostaddr`, `port`, `service` and `servicefile`, as well as other connection-string options that could change the effective target or connection behavior. Do not append query parameters to `TEST_DATABASE_URL`; if a future test environment requires TLS or another connection option, add a separately reviewed, explicitly validated configuration rather than bypassing this guard.
+
 For a local database reached through `localhost` on port 5432, configure:
 
 ```powershell

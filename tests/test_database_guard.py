@@ -63,6 +63,29 @@ def test_unapproved_host_or_port_is_rejected(monkeypatch, database_url):
 
 
 @pytest.mark.parametrize(
+    "routing_query",
+    [
+        "host=remote-production-host",
+        "host=remote-a,remote-b",
+        "hostaddr=203.0.113.10",
+        "port=5433",
+        "service=production",
+        "servicefile=/tmp/pg_service.conf",
+        "dbname=other_database",
+        "options=-csearch_path=public",
+    ],
+)
+def test_libpq_query_parameters_cannot_override_approved_endpoint(
+    monkeypatch, routing_query
+):
+    monkeypatch.setenv(ALLOWLIST_ENV, "localhost:5432/caroai_test")
+    database_url = f"{LOCAL_URL}?{routing_query}"
+
+    with pytest.raises(ValueError, match="query parameters are not permitted"):
+        validate_disposable_postgres_target(database_url, CONFIRMATION)
+
+
+@pytest.mark.parametrize(
     ("database_url", "allowlist_entry"),
     [
         (LOCAL_URL, "localhost:5432/caroai_test"),
@@ -72,6 +95,15 @@ def test_unapproved_host_or_port_is_rejected(monkeypatch, database_url):
         ),
     ],
 )
+def test_url_fragment_is_rejected_even_for_allowlisted_authority(monkeypatch):
+    monkeypatch.setenv(ALLOWLIST_ENV, "localhost:5432/caroai_test")
+
+    with pytest.raises(ValueError, match="fragments are not permitted"):
+        validate_disposable_postgres_target(
+            f"{LOCAL_URL}#host=remote-production-host", CONFIRMATION
+        )
+
+
 def test_explicitly_allowlisted_local_disposable_target_is_accepted(
     monkeypatch, database_url, allowlist_entry
 ):
