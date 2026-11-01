@@ -2,6 +2,7 @@
 
 import os
 import re
+from urllib.parse import urlsplit
 
 from sqlalchemy.engine import make_url
 
@@ -9,7 +10,7 @@ from sqlalchemy.engine import make_url
 ALLOWLIST_ENV = "CAROAI_TEST_POSTGRES_ALLOWLIST"
 
 
-def _reject_connection_overrides(url):
+def _reject_connection_overrides(url, database_url):
     """Reject libpq URL options that can override the approved connection target."""
     # psycopg2/libpq query options such as host, hostaddr, port, service and
     # servicefile can redirect the effective connection away from url.host.
@@ -20,7 +21,7 @@ def _reject_connection_overrides(url):
             "PostgreSQL URL query parameters are not permitted by the disposable "
             f"endpoint guard (found: {parameter_names})"
         )
-    if url.fragment:
+    if urlsplit(database_url).fragment:
         raise ValueError("PostgreSQL URL fragments are not permitted")
 
 
@@ -37,7 +38,7 @@ def validate_disposable_postgres_target(
     if url.get_backend_name() != "postgresql":
         raise ValueError("TEST_DATABASE_URL must use PostgreSQL")
 
-    _reject_connection_overrides(url)
+    _reject_connection_overrides(url, database_url)
 
     database_name = url.database or ""
     if not re.search(r"(^|[_-])test([_-]|$)", database_name, re.IGNORECASE):
