@@ -249,7 +249,8 @@ jobs:
         shell: bash
         run: |
           echo "short_sha=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
-          echo "full_sha=$GITHUB_SHA"
+          echo "full_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "Release source SHA: $GITHUB_SHA"
       - name: Build and publish immutable full/short SHA tags
         uses: docker/build-push-action@v6
         with:
@@ -267,7 +268,6 @@ jobs:
           response=$(curl --fail --silent --show-error --get \
             --data-urlencode "imgURL=$IMAGE_NAME:$GITHUB_SHA" \
             "$RENDER_DEPLOY_HOOK")
-          echo "$response"
           deploy_id=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("deploy", {}).get("id", ""))')
           test -n "$deploy_id" || { echo "Render did not return a deployment ID"; exit 1; }
           echo "deploy_id=$deploy_id" >> "$GITHUB_OUTPUT"
@@ -307,10 +307,68 @@ jobs:
           for attempt in $(seq 1 36); do
             if curl --fail --silent --show-error "$PUBLIC_URL/health" >/dev/null && curl --fail --silent --show-error "$PUBLIC_URL/ready" >/dev/null; then
               echo "Public HTTPS /health and /ready passed."
-              exit 0
+              break
+            fi
+            if [ "$attempt" -eq 36 ]; then
+              echo "Public HTTPS health/readiness checks did not pass."
+              curl --fail --show-error "$PUBLIC_URL/health"
+              curl --fail --show-error "$PUBLIC_URL/ready"
+              exit 1
             fi
             sleep 10
           done
-          curl --fail --show-error "$PUBLIC_URL/health"
-          curl --fail --show-error "$PUBLIC_URL/ready"
-          exit 1
+      - name: Public API smoke — PvP, PvAI, and history
+        env:
+          PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
+        run: |
+          python - <<'PY'
+          import json
+          import urllib.request
+          import uuid
+
+          base = "${{ vars.CAROAI_PUBLIC_URL }}".rstrip("/")
+
+          def request(method, path, payload=None):
+              body = None if payload is None else json.dumps(payload).encode()
+              headers = {"Content-Type": "application/json"} if body else {}
+              req = urllib.request.Request(
+                  base + path, data=body, headers=headers, method=method
+              )
+              with urllib.request.urlopen(req, timeout=30) as response:
+                  raw = response.read().decode()
+                  return response.status, json.loads(raw) if raw else {}
+
+          marker = "m4-smoke-" + str(uuid.uuid4())
+          status, pvp = request(
+              "POST", "/api/games", {"mode": "HUMAN_VS_HUMAN"}
+          )
+          assert status == 201 and pvp.get("id"), ("PvP create", status, pvp)
+          pvp_id = pvp["id"]
+          status, pvp_move = request(
+              "POST", f"/api/games/{pvp_id}/moves", {"row": 0, "col": 0}
+          )
+          assert status == 200 and pvp_move["game"]["move_count"] == 1
+
+          status, pvai = request(
+              "POST", "/api/games", {"mode": "HUMAN_VS_AI"}
+          )
+          assert status == 201 and pvai.get("id"), ("PvAI create", status, pvai)
+          pvai_id = pvai["id"]
+          status, human_move = request(
+              "POST", f"/api/games/{pvai_id}/moves", {"row": 7, "col": 7}
+          )
+          assert status == 200 and human_move["game"]["current_player"] == "O"
+          status, ai_move = request(
+              "POST", f"/api/games/{pvai_id}/ai-move", {"difficulty": "easy"}
+          )
+          assert status == 200 and ai_move["move"]["player"] == "O"
+          assert ai_move["game"]["move_count"] == 2
+
+          _, history = request("GET", "/api/history?limit=100&offset=0")
+          ids = {item["id"] for item in history.get("items", [])}
+          assert pvp_id in ids and pvai_id in ids, (
+              "Created PvP/PvAI games were not both returned by history"
+          )
+          print("Public API smoke passed: PvP, PvAI, history.")
+          print(f"M4 smoke game IDs: PvP={pvp_id}; PvAI={pvai_id}")
+          PY
