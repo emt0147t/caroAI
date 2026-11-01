@@ -124,7 +124,10 @@ Then obtain the resulting Render deployment ID, poll the Render API using the se
 
 - Keep local `.env` outside Git; only sanitized placeholders belong in `.env.example`.
 - Check tracked files before every release: `git ls-files` and inspect environment/config files; verify no real `.env`, key, token, password, or database URL is tracked.
-- Run a repository secret scanner (for example, Gitleaks) over tracked history and inspect workflow logs for accidental values.
+- CI includes a blocking `secret-scan` job. It runs the Gitleaks Action over the PR commit range and then runs the pinned Gitleaks v8.30.1 CLI against the fully fetched repository history with `gitleaks git --redact --verbose --no-banner /repo`. Both the candidate image build and production release depend on this job.
+- Distinguish the two outputs: the Action's range scan alone is not proof that the complete repository history was scanned. The full-history CLI step must explicitly finish successfully and report no leaks.
+- For a local full-history scan from a complete clone, run `docker run --rm --volume "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 git --redact --verbose --no-banner /repo`. Do not write an unredacted report into the repository.
+- Inspect workflow logs for accidental values. If a real credential is detected, stop promotion/release, rotate the credential at its provider, then assess Git-history cleanup with repository owners.
 - If a real credential was committed, posted, or reused, revoke/rotate it at its provider. Removing it from the latest file is not sufficient because Git history and logs may retain it.
 - Never place production values in documentation, CI artifacts, issue comments, or screenshots.
 
