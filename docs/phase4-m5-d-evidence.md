@@ -365,3 +365,23 @@ This checkpoint records the exact evidence state for the PR snapshot before this
 | Production publish/deploy | **SKIPPED** — no production deployment was performed |
 
 The general-suite skips are separate from the dedicated PostgreSQL acceptance suite, which completed with zero skips. Production publish/deploy remains explicitly unverified and must not be inferred from successful CI, PostgreSQL acceptance, Compose, Docker build, or browser E2E results.
+
+
+## Final evidence checkpoint — PR snapshot `3c768b7` (2026-11-01)
+
+This checkpoint records the exact PR snapshot reviewed for the final documentation synchronization. It is a historical evidence record for this identified head; the documentation-only commit that appends it creates a new descendant and must receive its own CI and Browser E2E validation.
+
+| Evidence item | Verified value |
+|---|---|
+| PR head at this checkpoint | `3c768b71022e7ce5e24000bb81ab70d1e5c9ecbd` |
+| Base SHA | `225e60a77a51011a683645dbc400ff3e4ccf775c` |
+| Merge-validation SHA | `c962f8293bf3a06f0178c6b9abae1aefa1c00b2a` |
+| CaroAI CI | [Run #41265035775](https://github.com/emt0147t/caroAI/actions/runs/41265035775) — **SUCCESS** |
+| Browser E2E | [Run #41265035798](https://github.com/emt0147t/caroAI/actions/runs/41265035798) — **SUCCESS; 24/24 passed** |
+| General test suite | **238 passed, 11 skipped, 1 warning** |
+| Dedicated PostgreSQL acceptance | **15 passed, 0 skipped**; zero-skip guard passed |
+| Compose API/database persistence | **PASS** — same game state read back after API-container restart in disposable Compose |
+| Docker image build | **PASS — build only**; no registry push |
+| Production publish / Render verification | **SKIPPED** — no production deployment was attempted |
+
+The general-suite skips are separate from the dedicated PostgreSQL acceptance suite, which completed with zero skips. Compose and Browser E2E are PR/CI evidence only. Docker build does not establish image publication or deployment. T-12–T-17 remain **BLOCKED / NOT VERIFIED** pending accountable-owner evidence; PR #35 persisted-History contract remains **PENDING M1/maintainers**. Overall Phase 4 release remains **BLOCKED / NO-GO**.
