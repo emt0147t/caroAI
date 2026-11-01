@@ -414,3 +414,12 @@ M5 opened the M2-supplied source references at commit `83a8c5f87209d84c0cb12beea
 Run 2 records benchmark image ID `sha256:4fcae654ac9ec2ef8ded06218cf4c21a7893a0536cc22932884a3e671c89fc32`, but its RepoDigests are empty. Base image `python:3.11-slim` has no captured immutable image ID or RepoDigest. Record these as provenance gaps; do not fabricate digests. M1's PR #44 disposition accepts the documented limitation for the Phase 4 benchmark gate. Future workflow hardening may pin the base image by digest.
 
 **Issue #28 remains open** pending M2's pytest execution evidence and M1/Tech Lead closeout. Production release remains **BLOCKED / NO-GO**; benchmark acceptance does not imply production readiness.
+
+
+## PR #45 closeout evidence synchronization — 2026-11-01
+
+**Issue #28 is now CLOSED / COMPLETE.** Its final acceptance record includes M2's targeted AI regression result (59 passed on source SHA `83a8c5f87209d84c0cb12beea02a12e20dd23357`), full-suite result (238 passed, 11 skipped, 1 warning), verified Backend illegal-output rejection, the two separate Linux/Docker benchmark captures, and M1/Tech Lead sign-off **ACCEPTED WITH DOCUMENTED PROVENANCE LIMITATION**.
+
+The earlier pending statements in this evidence file are historical checkpoints and are superseded by this closeout. The missing immutable base-image identity/digest and empty benchmark-image RepoDigests remain transparently recorded; M1 accepted these limitations for the Issue #28 benchmark gate. They are not silently converted into immutable provenance.
+
+The closure is limited to Issue #28's AI regression/benchmark scope. It does not change the separate Phase 4 production-release status: **BLOCKED / NO-GO** pending production gates and the persisted-History contract decision.
