@@ -267,7 +267,7 @@ jobs:
 
   release:
     name: Approved production publish and Render verification
-    timeout-minutes: 20
+    timeout-minutes: 30
     if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_approved == true }}
     needs: [frontend, test, postgres-integration, compose-smoke, secret-scan, build]
     runs-on: ubuntu-latest
@@ -360,7 +360,7 @@ jobs:
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
-          response=$(curl --fail --silent --show-error --get \
+          response=$(curl --connect-timeout 5 --max-time 20 --fail --silent --show-error --get \
             --data-urlencode "imgURL=$IMAGE_NAME:$GITHUB_SHA" \
             "$RENDER_DEPLOY_HOOK")
           deploy_id=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("deploy", {}).get("id", ""))')
@@ -374,7 +374,7 @@ jobs:
           DEPLOY_ID: ${{ steps.render-deploy.outputs.deploy_id }}
         run: |
           for attempt in $(seq 1 60); do
-            response=$(curl --fail --silent --show-error \
+            response=$(curl --connect-timeout 5 --max-time 10 --fail --silent --show-error \
               --header "Authorization: Bearer $RENDER_API_KEY" \
               --header "Accept: application/json" \
               "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys/$DEPLOY_ID")
@@ -399,13 +399,13 @@ jobs:
             sleep 10
           done
       - name: Verify public HTTPS liveness and database readiness (read-only)
-        timeout-minutes: 8
+        timeout-minutes: 10
         env:
           PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
         run: |
           check_endpoint() {
             endpoint="$1"
-            for attempt in $(seq 1 36); do
+            for attempt in $(seq 1 12); do
               code=$(curl --connect-timeout 5 --max-time 10 --fail --silent \
                 --output /dev/null --write-out "%{http_code}" \
                 "$PUBLIC_URL/$endpoint" 2>/dev/null || true)
@@ -415,10 +415,10 @@ jobs:
                   return 0
                   ;;
               esac
-              echo "GET /$endpoint not ready (HTTP ${code:-no response}; attempt $attempt/36)."
-              sleep 10
+              echo "GET /$endpoint not ready (HTTP ${code:-no response}; attempt $attempt/12)."
+              sleep 5
             done
-            echo "GET /$endpoint failed after 36 attempts."
+            echo "GET /$endpoint failed after 12 attempts."
             return 1
           }
           check_endpoint health
