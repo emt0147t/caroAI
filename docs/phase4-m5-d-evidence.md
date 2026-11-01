@@ -389,7 +389,7 @@ The general-suite skips are separate from the dedicated PostgreSQL acceptance su
 
 ## PR #44 — Linux/Docker AI benchmark M5 reconciliation (2026-11-01)
 
-The independent M5 reconciliation is recorded in [Phase 4 M5 Linux/Docker benchmark reconciliation](phase4-m5-linux-docker-benchmark-reconciliation.md). The pinned-source benchmark artifact #13087737816 was checked against CSV and JSON: 198 matching rows, 165 measured calls, 33 warm-ups, 11 fixtures, and 55 measured calls per difficulty. Recalculated nearest-rank p95: EASY 6.418816 ms, MEDIUM 30.346136 ms, HARD 255.984226 ms; all are below the 2,000 ms Phase 4 AI-engine benchmark ceiling. Benchmark integrity checks pass. Evidence remains **PARTIAL overall** for Issue #28 because base-image immutable ID/digest metadata is absent, and the Backend illegal-move rejection plus separately named tactical regression evidence still require explicit owner references. PR #44 remains Draft; production publish/deploy was skipped. No workflow or AI implementation code was changed by M5.
+The initial M5 reconciliation of artifact #13087737816 is retained as historical run 1 in [Phase 4 M5 Linux/Docker benchmark reconciliation](phase4-m5-linux-docker-benchmark-reconciliation.md). PR #44 was subsequently independently approved and merged. The latest repeat run #41320187247 / artifact #13088582572 is recorded below; provenance limitations remain explicit, while M2's actual Backend/tactical pytest execution evidence is still pending. Production publish/deploy was skipped. No workflow or AI implementation code was changed by M5.
 
 
 ## PR #44 — M5 repeat benchmark and Backend evidence refresh — 2026-11-01
