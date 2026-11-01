@@ -385,3 +385,8 @@ This checkpoint records the exact PR snapshot reviewed for the final documentati
 | Production publish / Render verification | **SKIPPED** — no production deployment was attempted |
 
 The general-suite skips are separate from the dedicated PostgreSQL acceptance suite, which completed with zero skips. Compose and Browser E2E are PR/CI evidence only. Docker build does not establish image publication or deployment. T-12–T-17 remain **BLOCKED / NOT VERIFIED** pending accountable-owner evidence; PR #35 persisted-History contract remains **PENDING M1/maintainers**. Overall Phase 4 release remains **BLOCKED / NO-GO**.
+
+
+## PR #44 — Linux/Docker AI benchmark M5 reconciliation (2026-11-01)
+
+The independent M5 reconciliation is recorded in [Phase 4 M5 Linux/Docker benchmark reconciliation](phase4-m5-linux-docker-benchmark-reconciliation.md). The pinned-source benchmark artifact #13087737816 was checked against CSV and JSON: 198 matching rows, 165 measured calls, 33 warm-ups, 11 fixtures, and 55 measured calls per difficulty. Recalculated nearest-rank p95: EASY 6.418816 ms, MEDIUM 30.346136 ms, HARD 255.984226 ms; all are below the 2,000 ms Phase 4 AI-engine benchmark ceiling. Benchmark integrity checks pass. Evidence remains **PARTIAL overall** for Issue #28 because base-image immutable ID/digest metadata is absent, and the Backend illegal-move rejection plus separately named tactical regression evidence still require explicit owner references. PR #44 remains Draft; production publish/deploy was skipped. No workflow or AI implementation code was changed by M5.
