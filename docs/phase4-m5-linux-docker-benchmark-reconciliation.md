@@ -248,3 +248,23 @@ Owner follow-up:
 
 ---
 *Run 2 is the latest M5 reconciliation snapshot for artifact #13088582572 / workflow #41320187247. Run 1 remains preserved above as historical evidence; the two result sets are not pooled. No workflow, AI implementation, or deployment configuration was modified by this update.*
+
+
+## 9. Final Issue #28 closeout reconciliation — 2026-11-01
+
+This section supersedes the earlier provisional Issue #28 status in §§5, 7 and 8.6–8.8. Those passages accurately recorded the evidence state before M2 supplied the final regression evidence and M1/Tech Lead completed closeout; they are retained as historical checkpoints, not the current disposition.
+
+**Current authoritative disposition: Issue [#28](https://github.com/emt0147t/caroAI/issues/28) is CLOSED / COMPLETE (2026-11-01).** The final issue record states that all acceptance criteria for the AI tactical-regression and benchmark scope are met and records M1/Tech Lead sign-off as **ACCEPTED WITH DOCUMENTED PROVENANCE LIMITATION**.
+
+| Acceptance item | Final disposition | Evidence recorded in Issue #28 |
+|---|---|---|
+| AI tactical regression | **PASS** | M2 targeted AI regression suite: 59 passed on source SHA `83a8c5f87209d84c0cb12beea02a12e20dd23357`; full suite: 238 passed, 11 skipped, 1 warning. The 11 skips require `TEST_DATABASE_URL` and are not counted as passes. |
+| Backend illegal-output rejection | **VERIFIED / ACCEPTED** | Service/API negative-test definitions are linked at the named source SHA; Issue #28's final acceptance section records Backend illegal-output rejection as verified. |
+| Linux/Docker benchmark | **PASS** | Canonical run #41317622028 and repeat run #41320187247; raw-data and per-difficulty p95 reconciliation retained in §§1–4 and §8. |
+| p95 acceptance ceiling | **PASS — scoped** | M1 adopted ≤ 2,000 ms independently per difficulty as the Phase 4 Linux/Docker AI-engine benchmark ceiling only; it is not a production SLO or API latency target. |
+| Provenance | **ACCEPTED WITH DOCUMENTED LIMITATION** | Missing immutable base-image ID/digest and empty local benchmark-image RepoDigests remain disclosed; M1 accepted this limitation for Issue #28. No digest is inferred. |
+| Issue #28 closeout | **CLOSED / COMPLETE** | M1/Tech Lead final sign-off recorded in the issue body; state is closed with completed disposition. |
+
+The earlier “pytest execution pending” and “Issue #28 remains open” statements are superseded by this final issue-level acceptance. This update does not claim a new independent pytest run by M5; it records M2's supplied results and M1/Tech Lead's final acceptance.
+
+**Scope boundary:** Issue #28 closeout completes only the AI tactical-regression and benchmark scope. It does not approve production deployment, establish a production SLO, or close the separate Phase 4 release blockers. Overall production release remains **BLOCKED / NO-GO** until its own gates are satisfied.
