@@ -327,3 +327,24 @@ Both PostgreSQL test paths retain validation before engine creation and DDL:
 ### P2 — evidence boundary and release status
 
 The workflow runs above were triggered on the exact code-validation head in this checkpoint. The general-suite 11 skips are separate from the dedicated PostgreSQL suite's **zero** skips. Compose persistence is disposable CI API-container restart evidence; Docker is build-only. Production publish/Render was skipped, not executed. T-12–T-17 remain **BLOCKED / NOT VERIFIED** pending their owners; PR #35 persisted-History contract remains **PENDING M1/maintainers**. Overall Phase 4 release remains **BLOCKED / NO-GO**.
+
+
+## Documentation-descendant checkpoint — 2026-11-01
+
+This checkpoint separates the application-code validation from the documentation-only PR descendant, as requested in the latest group-lead review.
+
+| Snapshot | Exact identity | Evidence |
+|---|---|---|
+| Application code-validation head | `997ac2c7fc2ad25627b556c208740eb3e0f51de3` | [CaroAI CI #41263801155](https://github.com/emt0147t/caroAI/actions/runs/41263801155), [Browser E2E #41263801162](https://github.com/emt0147t/caroAI/actions/runs/41263801162) |
+| Code-validation merge SHA | `b040a8f654aa99df96b9cfb094b57c1ae6b93b3b` | CI and E2E both **SUCCESS** on the exact code head |
+| Documentation-only PR head before this checkpoint update | `0f1de82e1fcce2866711439a03711b07f4759222` | [CaroAI CI #41264025498](https://github.com/emt0147t/caroAI/actions/runs/41264025498), [Browser E2E #41264025497](https://github.com/emt0147t/caroAI/actions/runs/41264025497) |
+| Merge-validation SHA for that documentation-only PR head | `d09a7d89e02aae2c852d67bc823b1ea5a3e7d817` | Both workflows **SUCCESS**; docs-only descendant retained the validated application code |
+| Develop/base SHA | `225e60a77a51011a683645dbc400ff3e4ccf775c` | Branch remains **0 commits behind develop** |
+
+On the code-validation head, general Python tests reported **238 passed / 11 skipped / 1 warning**; dedicated PostgreSQL acceptance reported **15 passed / 0 skipped** with the explicit zero-skip guard. Compose persistence and Docker image build passed. Browser E2E reported **24/24 passed**, Playwright 1.56.1 / Chromium 141.0.7390.37; artifact [#13066651506](https://github.com/emt0147t/caroAI/actions/runs/41263801162/artifacts/13066651506).
+
+On the documentation-only PR head, the same acceptance results were rerun successfully: general suite **238 passed / 11 skipped / 1 warning**; PostgreSQL **15 passed / 0 skipped**; Compose persistence **PASS**; Docker build **PASS — build only**; Browser E2E **24/24 passed**, Playwright 1.56.1 / Chromium 141.0.7390.37; artifact [#13066871338](https://github.com/emt0147t/caroAI/actions/runs/41264025497/artifacts/13066871338). Production publish/Render verification was **SKIPPED**, not performed.
+
+The code-validation head `997ac2c` includes the final libpq routing-override rejection. The subsequent `0f1de82` snapshot changed only the four evidence documents. This checkpoint commit is itself a documentation-only descendant; the PR description records the resulting live PR head and its current merge-validation SHA after this update.
+
+T-12–T-17 remain **BLOCKED / NOT VERIFIED** pending their accountable owners. PR #35 persisted-History contract remains **PENDING M1/maintainers**. Overall Phase 4 release remains **BLOCKED / NO-GO**; no production deployment was attempted.
