@@ -1,7 +1,7 @@
 
 # CaroAI Phase 4 — M2 AI Regression and Benchmark Evidence
 
-**Overall status: PARTIAL — Windows evidence and local regression validation complete; Linux/Docker and SLO confirmation pending.**
+**Overall status: PARTIAL — Windows evidence and local regression validation complete; Linux/Docker evidence pending. M1 clarified that p95 ≤ 2,000 ms is a proposed performance target, not an adopted SLO.**
 
 ## 1. Source revisions
 
@@ -156,15 +156,13 @@ Do not combine Windows and Linux measurements into one environment report.
 
 Owner/dependency: M4.
 
-## 6. Proposed latency SLO
+## 6. Proposed latency target — not an adopted SLO
 
-The proposed p95 target of **≤ 2,000 ms** remains:
+**M1 clarification received:** p95 **≤ 2,000 ms** is a proposed performance target, not a formally adopted service-level objective (SLO).
 
-**PENDING_TEAM_CONFIRMATION**
+M2 therefore reports the measured latency against this proposal only. It does not claim that an SLO has been accepted or achieved. All three Windows aggregate p95 measurements are below 2,000 ms for the captured, equally weighted fixture workload, but this does not establish production-tail performance. The five-trial per-fixture p95 and workload aggregate must not be presented as production traffic guarantees.
 
-All three Windows aggregate p95 measurements are below 2,000 ms, but this does not itself constitute formal SLO acceptance. The five-trial per-fixture p95 and equal-weight fixture aggregate must not be presented as production traffic guarantees.
-
-Owner/dependency: M1 and team decision.
+**M2-06 status: CLARIFIED.** The threshold is classified as a proposal, not an accepted SLO. Any later decision to adopt it as a formal SLO belongs to M1/team and is not a blocker to accurately documenting the current M2 measurement evidence.
 
 ## 7. Remaining M2 acceptance work
 
@@ -175,15 +173,15 @@ Owner/dependency: M1 and team decision.
 | Difficulty depth/candidate configuration and demo-midgame latency comparison | VERIFIED | M2 |
 | Demo-board tactical interpretation and evaluator/search limitations | DOCUMENTED | M2 |
 | Linux/Docker benchmark on matching source SHA | NOT RUN / pending evidence | M4 |
-| Formal p95 SLO decision | PENDING TEAM CONFIRMATION | M1/team |
+| p95 ≤ 2,000 ms classification | CLARIFIED: proposed target only; not an adopted SLO | M1 clarification relayed to M2 |
 | QA evidence reconciliation | PENDING | M5 |
 | Issue #28 final acceptance/sign-off | OPEN | M2/M1/M4/M5 |
 
-Do not close Issue #28 until the Linux/Docker artifacts, SLO decision and M5 evidence reconciliation are available.
+Do not close Issue #28 until the Linux/Docker artifacts and M5 evidence reconciliation are available. The 2,000 ms threshold is documented as a proposal, not an accepted SLO.
 
 
 ## 8. M2 P1 — baseline-led optimization
 
 The three difficulty levels have visibly different configured search budgets (depth 1/2/3 and candidate limit 6/10/14) and different measured midgame latency on the fixed demo fixture (median 2.6847/11.6002/99.5755 ms for EASY/MEDIUM/HARD). This satisfies the configuration/latency comparison using the captured Windows baseline. The same move was selected on this one midgame fixture at all three levels, so no stronger claim about different strategic behavior is made.
 
-No optimization change set was created from this Windows baseline: there were zero measured trial failures, and the aggregate HARD p95 was 973.8549 ms against the still-unconfirmed 2,000 ms proposal. This is not formal SLO acceptance. Revisit optimization only if Linux/Docker measurements, the team's SLO decision, or further representative fixtures reveal a concrete performance or quality issue.
+No optimization change set was created from this Windows baseline: there were zero measured trial failures, and the aggregate HARD p95 was 973.8549 ms against the proposed 2,000 ms performance target. M1 clarified that this threshold is not an adopted SLO; the measurement is not a formal SLO acceptance. Revisit optimization only if Linux/Docker measurements, the team's SLO decision, or further representative fixtures reveal a concrete performance or quality issue.
