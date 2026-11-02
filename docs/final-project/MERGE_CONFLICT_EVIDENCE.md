@@ -1,9 +1,9 @@
 # CaroAI — Merge Conflict Resolution Evidence
-**University Final Project Requirement**: Genuine merge conflict created, resolved, and documented.  
-**Repository**: `emt0147t/caroAI`  
-**Common Base Commit**: `0ae4ead` (`docs(deploy): add baseline deployment configuration specification`)  
-**Resolution Merge Commit**: `67bdf86` (`chore(merge): resolve deployment configuration conflict unifying resource and networking policies`)  
-**Target Feature Branch**: `feature/final-project-delivery`  
+**University Final Project Requirement**: Genuine merge conflict created, resolved, and documented.
+**Repository**: `emt0147t/caroAI`
+**Common Base Commit**: `0ae4ead` (`docs(deploy): add baseline deployment configuration specification`)
+**Resolution Merge Commit**: `67bdf86` (`chore(merge): resolve deployment configuration conflict unifying resource and networking policies`)
+**Target Feature Branch**: `feature/final-project-delivery`
 
 ---
 

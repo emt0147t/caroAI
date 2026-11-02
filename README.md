@@ -297,8 +297,9 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 ---
 
 ## 17. Public HTTPS Application URL
-- **Production URL**: Configured in GitHub Environment as `CAROAI_PUBLIC_URL`
-- **Sample Endpoint**: `https://caroai.onrender.com`
+- **Production URL Status**: **CONFIGURED — NOT RUN** (Awaiting repository owner provisioning on Render)
+- **Configuration Parameter**: Configured in GitHub Environment `production` as variable `CAROAI_PUBLIC_URL`
+- **Illustrative Endpoint Format**: `https://<service-name>.onrender.com` (Placeholder only; live production deployment has not yet been executed)
 - Liveness Probe: `https://<public-host>/health`
 - Readiness Probe: `https://<public-host>/ready`
 

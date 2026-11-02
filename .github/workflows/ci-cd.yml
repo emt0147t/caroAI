@@ -280,6 +280,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          platforms: linux/amd64
           push: false
           tags: caroai-ci:${{ github.sha }}
 
@@ -363,6 +364,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          platforms: linux/amd64
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
@@ -373,6 +375,9 @@ jobs:
         run: |
           test -n "$IMAGE_DIGEST" || { echo "Docker build did not return an image digest"; exit 1; }
           echo "Published image digest: $IMAGE_DIGEST"
+          echo "### Production Release Artifacts" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Image Full SHA:** \`${IMAGE_NAME}:${GITHUB_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Image Digest:** \`${IMAGE_DIGEST}\`" >> "$GITHUB_STEP_SUMMARY"
       - name: Trigger Render deployment for exact full-SHA image
         id: render-deploy
         env:
@@ -422,23 +427,29 @@ jobs:
           PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
         run: |
           check_endpoint() {
-            endpoint="$1"
+            path="$1"
+            desc="$2"
+            url="${PUBLIC_URL}${path}"
             for attempt in $(seq 1 12); do
               code=$(curl --connect-timeout 5 --max-time 10 --fail --silent \
                 --output /dev/null --write-out "%{http_code}" \
-                "$PUBLIC_URL/$endpoint" 2>/dev/null || true)
+                "$url" 2>/dev/null || true)
               case "$code" in
                 2??)
-                  echo "GET /$endpoint passed (HTTP $code; attempt $attempt)."
+                  echo "GET $path ($desc) passed (HTTP $code; attempt $attempt)."
                   return 0
                   ;;
               esac
-              echo "GET /$endpoint not ready (HTTP ${code:-no response}; attempt $attempt/12)."
+              echo "GET $path ($desc) not ready (HTTP ${code:-no response}; attempt $attempt/12)."
               sleep 5
             done
-            echo "GET /$endpoint failed after 12 attempts."
+            echo "GET $path ($desc) failed after 12 attempts."
             return 1
           }
-          check_endpoint health
-          check_endpoint ready
-          echo "Production verification passed using GET-only health/readiness checks."
+          check_endpoint "/health" "Liveness probe"
+          check_endpoint "/ready" "Database readiness probe"
+          check_endpoint "/" "Root dashboard HTML UI"
+          check_endpoint "/history.html" "Game history UI page"
+          check_endpoint "/api/history" "History API JSON endpoint"
+          check_endpoint "/tokens.css" "CSS design tokens asset"
+          echo "Production verification passed using GET-only read-only smoke tests."

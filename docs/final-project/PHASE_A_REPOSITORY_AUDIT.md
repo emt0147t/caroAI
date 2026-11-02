@@ -1,9 +1,12 @@
 # CaroAI — Phase A Complete Repository Audit
-**Role**: Principal Software Engineer & Tech Lead & DevOps Engineer & QA Lead  
-**Date**: November 2, 2026  
-**Repository**: `emt0147t/caroAI`  
-**Current Baseline Develop SHA**: `432d8ccbe8ea03406cc1ec9f4aa9f7c44f805258`  
-**Current Main SHA**: `d444119d5eb757e364f904bb9eacddd27e14e507`  
+**Role**: Principal Software Engineer & Tech Lead & DevOps Engineer & QA Lead
+**Date**: November 2, 2026
+**Repository**: `emt0147t/caroAI`
+**Audit Baseline Develop SHA**: `432d8ccbe8ea03406cc1ec9f4aa9f7c44f805258` (Historical Snapshot)
+**Audit Baseline Main SHA**: `d444119d5eb757e364f904bb9eacddd27e14e507`
+
+> [!NOTE]
+> **Historical Snapshot Notice**: This document records the Phase A baseline audit conducted at commit `432d8ccbe8ea03406cc1ec9f4aa9f7c44f805258` prior to the integration of PR #46, PR #48, and PR #49. All historical metrics below reflect this specific milestone. For the current, verified post-merge production preflight baseline at commit `6cf9bf08b8fb374645b7ecf79eb7a886ac002ef6`, refer to [`docs/final-project/PRODUCTION_PREFLIGHT.md`](PRODUCTION_PREFLIGHT.md).
 
 ---
 
