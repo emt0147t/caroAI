@@ -4,9 +4,10 @@
 **Date:** November 2, 2026
 **Repository:** `emt0147t/caroAI` (`D:\caro-ai\caroAI`)
 **Integration Branch:** `develop`
-**Verified Commit SHA:** `6cf9bf08b8fb374645b7ecf79eb7a886ac002ef6` (PR #49 merged)
+**Verified Commit SHA:** `f796ef923a9d39e398139f0c540186a3ebb8a633`
 **Production Branch Baseline:** `main` (`d444119d5eb757e364f904bb9eacddd27e14e507`)
-**Verified CI Workflow Run:** GitHub Actions Run [#41462195364](https://github.com/emt0147t/caroAI/actions/runs/41462195364) (`status: completed`, `conclusion: success`)
+**Verified CI Workflow Run:** GitHub Actions Run [#41470234191](https://github.com/emt0147t/caroAI/actions/runs/41470234191) on `f796ef9` (`status: completed`, `conclusion: success`)
+**Historical PR #49 Baseline:** PR #49 merged at `6cf9bf08b8fb374645b7ecf79eb7a886ac002ef6` (CI Run [#41462195364](https://github.com/emt0147t/caroAI/actions/runs/41462195364))
 
 ---
 
@@ -15,13 +16,13 @@
 | Parameter | Current Audited Value | Status |
 |---|---|---|
 | **Current Branch** | `develop` | Aligned with `origin/develop` |
-| **Current Commit SHA** | `6cf9bf08b8fb374645b7ecf79eb7a886ac002ef6` | Verified on remote |
-| **Remote Branch SHA** | `6cf9bf08b8fb374645b7ecf79eb7a886ac002ef6` | In exact sync |
+| **Current Commit SHA** | `f796ef923a9d39e398139f0c540186a3ebb8a633` | Verified on remote |
+| **Remote Branch SHA** | `f796ef923a9d39e398139f0c540186a3ebb8a633` | In exact sync |
 | **Working Tree Status** | Clean (tracked changes audited) | Zero uncommitted external files |
-| **Main / Develop Relationship** | `main` is 0 commits ahead, 373 commits behind `develop` | Strictly linear ancestry; fast-forward promotion ready |
+| **Main / Develop Relationship** | `develop` is 387 commits ahead, 0 behind `main` | 338 non-merge commits, 49 merge commits; strictly linear ancestry |
 | **Backup Branch** | `backup/develop-before-pr49-sync-20261102` (`5326543`) | Preserved safely |
-| **Ruleset Configuration** | `CaroAI - Protect Develop` allows direct push; `Restrict deletions` and `Block force pushes` remain enabled | Routine engineering proceeds direct-to-develop |
-| **Latest Verified CI Run** | Run [#41462195364](https://github.com/emt0147t/caroAI/actions/runs/41462195364) on commit `6cf9bf0` | All 6 test jobs succeeded; release skipped as expected |
+| **Ruleset Configuration** | `CaroAI - Protect Develop` allows direct push; `Restrict deletions` and `Block force pushes` remain enabled | Routine engineering proceeds direct-to-develop; `main` requires PR + 1 approval |
+| **Latest Verified CI Run** | Run [#41470234191](https://github.com/emt0147t/caroAI/actions/runs/41470234191) on commit `f796ef9` | All 6 test/build jobs succeeded; release skipped as expected |
 
 ---
 
@@ -85,8 +86,8 @@ Comprehensive cross-check across application source code, Dockerfile, Docker Com
 | **Runtime User** | `appuser` (UID 10001, GID 10001) | Non-root runtime enforced in `Dockerfile` |
 | **Port Handling** | `ENV PORT=8000`, `--port ${PORT:-8000}` | Dynamically accepts Render port injection |
 | **Context Hygiene** | `.dockerignore` excludes `.env*`, `.git`, `.github`, `docs/`, `venv/` | Zero secrets or extraneous files in image layers |
-| **Tagging Scheme** | Full Commit SHA: `${IMAGE_NAME}:${GITHUB_SHA}`<br>Short SHA: `${IMAGE_NAME}:${GITHUB_SHA:0:12}` | Immutable commit-pinned tags (Full SHA is primary release reference) |
-| **Digest Tracking** | Output digest captured via `${{ steps.publish.outputs.digest }}` | Recorded in release step and exported to `$GITHUB_STEP_SUMMARY` |
+| **Tagging Scheme** | Full Commit SHA: `${IMAGE_NAME}:${GITHUB_SHA}`<br>Short SHA: `${IMAGE_NAME}:${GITHUB_SHA:0:12}` | Traceable commit-pinned tags (Full SHA is primary release reference; registry-side tag immutability is not asserted unless configured on Docker Hub) |
+| **Digest Tracking** | Output digest captured via `${{ steps.publish.outputs.digest }}` | Cryptographic content identifier recorded in release step and exported to `$GITHUB_STEP_SUMMARY` |
 | **Registry Publishing** | Push to `docker.io/${DOCKERHUB_USERNAME}/caroai` | **CONFIGURED — NOT RUN** (Pending owner credentials) |
 
 ---
@@ -99,7 +100,7 @@ Comprehensive cross-check across application source code, Dockerfile, Docker Com
 - **Auto-Deploy:** Must be set to **No** (disabled). Releases are driven exclusively by the GitHub Actions release workflow.
 - **Deploy Hook:** Enabled on Render; URL provided to GitHub secret `RENDER_DEPLOY_HOOK`.
 - **Deploy Verification:** Release workflow polls Render Deploy API (`https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys/$DEPLOY_ID`) until status is `live` AND image reference matches the exact requested SHA.
-- **Downtime Management:** Render zero-downtime deploy boots new container, validates `/ready`, drains old container with SIGTERM, and cuts over traffic.
+- **Downtime Management:** Render zero-downtime deploy is a platform capability designed to boot the new container, validate `/ready`, drain the old container with SIGTERM, and cut over traffic. Note: This behavior is conditional (subject to single-container limits and persistent-disk attachment constraints), and zero-downtime cutover has NOT been empirically tested or verified for this application on production.
 
 ### 5.2 Render Managed PostgreSQL
 - **Connection URL Preference:** Render provides an **Internal Database URL** (e.g. `postgresql://caroai_user:...@dpg-...-a/caroai_db`) and an External Database URL.
@@ -148,6 +149,10 @@ Configuration required in repository settings (**Settings** → **Environments**
 
 *Status note: Environment credentials have not been configured or tested in production. No secret values are stored in repository files.*
 
+### 7.1 Environment Protection & Approval Gate Review
+- **Environment Approval Gate:** While `.github/workflows/ci-cd.yml` references `environment: name: production`, GitHub Actions does NOT enforce manual approvals unless configured by the repository owner. Required Reviewers setting: **NOT VERIFIED — owner action required** under **Settings → Environments → `production`**.
+- **Deployment Branch Policy:** Environment deployment branch rules must be explicitly configured to restrict deployments exclusively to `main` (preventing unauthorized branches from triggering production actions). Status: **NOT VERIFIED — owner action required**.
+
 ---
 
 ## 8. Release Sequence & Promotion Flow
@@ -156,27 +161,35 @@ Configuration required in repository settings (**Settings** → **Environments**
 sequenceDiagram
     autonumber
     actor Owner as Tech Lead / Owner
-    participant Local as Local Git
+    actor Reviewer as Write-Access Reviewer
     participant GitHub as GitHub (develop & main)
     participant CI as GitHub Actions
     participant Hub as Docker Hub
     participant Render as Render Cloud
 
-    Note over Owner,Local: Step 1: Local validation complete on develop (6cf9bf0)
+    Note over Owner,GitHub: Step 1: Local & CI validation complete on develop (f796ef9)
     Owner->>Render: Step 2: Provision PostgreSQL (caroai_db) & Web Service
     Owner->>GitHub: Step 3: Populate Environment "production" secrets & variables
-    Owner->>Local: Step 4: Fast-forward promote develop to main
-    Local->>GitHub: Step 5: Push main to origin
-    Owner->>CI: Step 6: Dispatch "CaroAI CI" on main (release_approved=true)
-    CI->>CI: Step 7: Execute test gates & validate secrets
-    CI->>Hub: Step 8: Build & push image (linux/amd64, full SHA + short SHA)
-    CI->>Render: Step 9: Call Deploy Hook with imgURL=<IMAGE>:<FULL_SHA>
-    Render->>Hub: Step 10: Pull image & run migrations
-    Render->>Render: Step 11: Launch Uvicorn on $PORT
-    CI->>Render: Step 12: Poll Deploy API until status=live & exact SHA confirmed
-    CI->>Render: Step 13: Run GET-only smoke tests (/health, /ready, /, /history.html, /api/history, /tokens.css)
-    CI-->>Owner: Step 14: Release verified & live!
+    Owner->>GitHub: Step 4: Open Pull Request from develop into main
+    Reviewer->>GitHub: Step 5: Review and approve PR into main
+    Owner->>GitHub: Step 6: Merge PR into main
+    Owner->>CI: Step 7: Dispatch "CaroAI CI" on main (release_approved=true)
+    CI->>CI: Step 8: Execute test gates & validate secrets
+    CI->>Hub: Step 9: Build & push image (linux/amd64, full SHA + short SHA, digest tracked)
+    CI->>Render: Step 10: Call Deploy Hook with imgURL=<IMAGE>:<FULL_SHA>
+    Render->>Hub: Step 11: Pull image & run migrations
+    Render->>Render: Step 12: Launch Uvicorn on $PORT
+    CI->>Render: Step 13: Poll Deploy API until status=live & exact SHA confirmed
+    CI->>Render: Step 14: Run GET-only smoke tests (/health, /ready, /, /history.html, /api/history, /tokens.css)
+    CI-->>Owner: Step 15: Release verified & live!
 ```
+
+### 8.1 Promotion Rules & Branch Gating
+Direct push to `main` is strictly prohibited by repository rulesets (`main` enforces Pull Request reviews with at least 1 approval). Promotion from `develop` to `main` must follow the formal Pull Request sequence:
+1. Open a Pull Request from `develop` to `main`.
+2. A write-access team member reviews and submits an approving review.
+3. The PR is merged into `main`.
+4. Triggering the production release is a separate subsequent manual action via `workflow_dispatch` on `main` with `release_approved=true`.
 
 ---
 
@@ -187,7 +200,7 @@ sequenceDiagram
    - Select the previously healthy deployment and click **Rollback to this deploy**.
    - Render immediately points traffic to the previous Docker container image.
 2. **Git Rollback:**
-   - Revert the offending commit on `develop`, verify tests, fast-forward promote to `main`, and re-dispatch the release workflow.
+   - Revert the offending commit on `develop`, verify tests, promote to `main` via Pull Request and review approval, and re-dispatch the release workflow.
 3. **Database Schema Backward Compatibility:**
    - Migrations are strictly additive (`CREATE TABLE IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`). Previous application images remain fully compatible with the schema.
 
@@ -197,4 +210,4 @@ sequenceDiagram
 
 1. **Cloud Provisioning:** Render Web Service and Render Managed PostgreSQL must be provisioned under owner account.
 2. **GitHub Environment Secrets:** The 5 secrets and 1 variable in Environment `production` must be populated.
-3. **Main Branch Promotion:** `main` must be fast-forward promoted from `develop` (`6cf9bf0`) prior to triggering release.
+3. **Main Branch Promotion:** A Pull Request from `develop` (`f796ef9`) into `main` must be opened, approved by a reviewer, and merged prior to triggering the production release workflow on `main`. Direct push to `main` is prohibited by branch protection rules.

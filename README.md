@@ -264,16 +264,18 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 4. **Compose Smoke Job**: Boots full Compose stack, executes PvP/PvAI move sequences, restarts container, and verifies game state persistence.
 5. **Secret Scan Job**: Gitleaks PR check and full repository history audit.
 6. **Candidate Build Job**: Multi-stage build producing SHA-tagged image candidate without registry push.
-7. **Production Release Job**: Triggered manually via `workflow_dispatch` on `main` when approved. Publishes immutable SHA tags to Docker Hub, calls the Render Deploy Hook, and verifies live public HTTPS endpoints.
+7. **Production Release Job**: Triggered manually via `workflow_dispatch` on `main` when approved. Publishes traceable commit-SHA-tagged images (tracked by image content digest) to Docker Hub, calls the Render Deploy Hook, and verifies live public HTTPS endpoints. Note: Promotion from `develop` to `main` requires a Pull Request with at least 1 approval (branch protection on `main`), followed by dispatching this workflow on `main`.
 
 ---
 
 ## 15. Docker Hub Image Reference
+- **Status**: **CONFIGURED — NOT RUN** (Pending repository owner credentials; no images published yet)
 - **Registry**: `docker.io`
 - **Repository**: `${DOCKERHUB_USERNAME}/caroai`
-- **Tags**:
-  - Full SHA: `docker.io/${DOCKERHUB_USERNAME}/caroai:<commit-sha>`
+- **Tags & Digest**:
+  - Full Commit SHA: `docker.io/${DOCKERHUB_USERNAME}/caroai:<commit-sha>`
   - Short SHA: `docker.io/${DOCKERHUB_USERNAME}/caroai:<short-sha>`
+  - Digest Tracking: Each published build captures the cryptographic image digest (`$IMAGE_DIGEST`)
 - Pull command:
   ```bash
   docker pull <registry-username>/caroai:<tag>
@@ -297,9 +299,9 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 ---
 
 ## 17. Public HTTPS Application URL
-- **Production URL Status**: **CONFIGURED — NOT RUN** (Awaiting repository owner provisioning on Render)
-- **Configuration Parameter**: Configured in GitHub Environment `production` as variable `CAROAI_PUBLIC_URL`
-- **Illustrative Endpoint Format**: `https://<service-name>.onrender.com` (Placeholder only; live production deployment has not yet been executed)
+- **Production URL Status**: **CONFIGURED — NOT RUN** (Awaiting repository owner provisioning on Render; no public HTTPS endpoint is currently live)
+- **Configuration Parameter**: `CAROAI_PUBLIC_URL` is a required GitHub Environment variable (not pre-configured). It must be populated under GitHub Settings → Environments → `production`.
+- **Illustrative Endpoint Format**: `https://<service-name>.onrender.com` (Placeholder only; no live production service exists)
 - Liveness Probe: `https://<public-host>/health`
 - Readiness Probe: `https://<public-host>/ready`
 
@@ -308,7 +310,7 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 ## 18. Production PostgreSQL Configuration Overview
 - **Storage**: Managed persistent block storage (Render PostgreSQL).
 - **Driver**: Psycopg2-binary with SQLAlchemy connection pooling.
-- **Persistence Verification**: Game records and moves survive complete container restarts and image redeployments.
+- **Persistence Verification**: State persistence has been empirically verified locally and in CI (`compose-smoke`). Production persistence on managed cloud PostgreSQL is architecturally specified and configured, but remains unverified until live provisioning and deployment.
 - **Fail-Safe**: Zero client-side state is trusted; database is the single source of truth.
 
 ---
