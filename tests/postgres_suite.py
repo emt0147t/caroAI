@@ -153,26 +153,55 @@ def test_postgres_api_write_failure_rolls_back(monkeypatch):
     try:
         Base.metadata.create_all(engine)
         factory = _override_game_service(engine)
-        original = SQLAlchemyGameUnitOfWork.persist_move
 
-        def fail_after_staging(self, game_id, move, state):
-            original(self, game_id, move, state)
-            raise SQLAlchemyError("simulated database write failure")
-
-        monkeypatch.setattr(
-            SQLAlchemyGameUnitOfWork, "persist_move", fail_after_staging
-        )
         with TestClient(app, raise_server_exceptions=False) as client:
             created = client.post(
                 "/api/games", json={"mode": "HUMAN_VS_HUMAN"}
             )
             assert created.status_code == 201
             game_id = created.json()["id"]
+
+            # Persist eight legal moves first. The next X move completes five
+            # in a row and changes both the move table and terminal game fields.
+            for row, col in [
+                (0, 0), (1, 0),
+                (0, 1), (1, 1),
+                (0, 2), (1, 2),
+                (0, 3), (1, 3),
+            ]:
+                response = client.post(
+                    f"/api/games/{game_id}/moves",
+                    json={"row": row, "col": col},
+                )
+                assert response.status_code == 200
+
+            original = SQLAlchemyGameUnitOfWork.persist_move
+
+            def fail_after_staging(self, target_game_id, move, state):
+                # The normal implementation inserts/flushed the final move,
+                # updates status/result/ended_at, and flushes all changes.
+                original(self, target_game_id, move, state)
+                raise SQLAlchemyError("simulated database write failure")
+
+            monkeypatch.setattr(
+                SQLAlchemyGameUnitOfWork, "persist_move", fail_after_staging
+            )
             failed = client.post(
-                f"/api/games/{game_id}/moves", json={"row": 4, "col": 5}
+                f"/api/games/{game_id}/moves",
+                json={"row": 0, "col": 4},
             )
             assert failed.status_code == 503
 
+            # A new API request/session must see the pre-failure state.
+            reloaded = client.get(f"/api/games/{game_id}")
+            assert reloaded.status_code == 200
+            reloaded_game = reloaded.json()
+            assert reloaded_game["status"] == GameStatus.IN_PROGRESS.value
+            assert reloaded_game["move_count"] == 8
+            assert reloaded_game["winner"] is None
+            assert reloaded_game["board"][0][4] == "EMPTY"
+
+        # Verify committed rows and terminal metadata with a fresh DB session.
         with factory() as session:
             game = session.query(Game).filter_by(public_id=game_id).one()
             move_count = session.scalar(
@@ -180,9 +209,10 @@ def test_postgres_api_write_failure_rolls_back(monkeypatch):
                 .select_from(Move)
                 .where(Move.game_id == game.id)
             )
-            assert move_count == 0
+            assert move_count == 8
             assert game.status == GameStatus.IN_PROGRESS.value
             assert game.result is None
+            assert game.ended_at is None
     finally:
         app.dependency_overrides.pop(get_game_service, None)
         _drop_schema(admin_engine, engine, schema)
