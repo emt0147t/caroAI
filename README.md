@@ -299,8 +299,8 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 ---
 
 ## 17. Public HTTPS Application URL
-- **Production URL Status**: **CONFIGURED — NOT RUN** (Awaiting repository owner provisioning on Render; no public HTTPS endpoint is currently live)
-- **Configuration Parameter**: `CAROAI_PUBLIC_URL` is a required GitHub Environment variable (not pre-configured). It must be populated under GitHub Settings → Environments → `production`.
+- **Production URL Status**: **NOT DEPLOYED / NOT VERIFIED** (Awaiting repository owner provisioning on Render; no public HTTPS endpoint is currently live)
+- **Configuration Parameter**: `CAROAI_PUBLIC_URL` is a required GitHub Environment variable (not pre-configured). It must be populated under GitHub Settings → Environments → `production` once the service is provisioned.
 - **Illustrative Endpoint Format**: `https://<service-name>.onrender.com` (Placeholder only; no live production service exists)
 - Liveness Probe: `https://<public-host>/health`
 - Readiness Probe: `https://<public-host>/ready`
@@ -308,8 +308,9 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 ---
 
 ## 18. Production PostgreSQL Configuration Overview
-- **Storage**: Managed persistent block storage (Render PostgreSQL).
-- **Driver**: Psycopg2-binary with SQLAlchemy connection pooling.
+- **Storage**: Managed persistent block storage (Render PostgreSQL). Storage characteristics and durability depend on the owner's selected plan tier (Free, Starter, Standard).
+- **Plan & Storage Status**: **NOT VERIFIED — owner action required** (Since the cloud service has not yet been provisioned, the actual plan tier, persistent disk allocation, and retention policies remain unverified on live infrastructure).
+- **Driver**: Psycopg2-binary with SQLAlchemy connection pooling (`pool_pre_ping=True`).
 - **Persistence Verification**: State persistence has been empirically verified locally and in CI (`compose-smoke`). Production persistence on managed cloud PostgreSQL is architecturally specified and configured, but remains unverified until live provisioning and deployment.
 - **Fail-Safe**: Zero client-side state is trusted; database is the single source of truth.
 
@@ -328,10 +329,20 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 ---
 
 ## 20. Demonstration Instructions
-1. Open the public HTTPS homepage.
-2. Observe the green **Hệ thống sẵn sàng** status pill in the top navigation bar.
-3. Select **Người vs AI**, choose difficulty **Khó (Minimax)**, and click **Bắt đầu ván đấu →**.
-4. Play alternating moves on the 15 × 15 board; observe real-time AI responses calculated by the backend.
-5. Create a 5-in-a-row alignment; observe the backend-authoritative victory dialog.
-6. Click **Lịch sử** in the top navigation; verify your game appears in the persistent list with move count and result.
-7. Click **Mở bàn cờ →**; verify the game board reloads exactly from PostgreSQL storage.
+
+### 20.1 Local Environment Demonstration
+1. Start the application locally using Docker Compose:
+   ```powershell
+   docker compose up --build -d
+   ```
+   *(Or run locally with Python: `uvicorn app.main:app --host 0.0.0.0 --port 8000`).*
+2. Open the web interface in your browser at `http://localhost:8000` (or `http://localhost:8080` if accessing via Nginx).
+3. Observe the green **Hệ thống sẵn sàng** status pill in the top navigation bar (verifying backend liveness and database readiness).
+4. Select **Người vs AI**, choose difficulty **Khó (Minimax)**, and click **Bắt đầu ván đấu →**.
+5. Play alternating moves on the 15 × 15 board; observe real-time AI responses calculated server-side by the Minimax engine.
+6. Complete a game with a 5-in-a-row alignment; observe the backend-authoritative victory dialog and win state.
+7. Click **Lịch sử** in the top navigation bar; verify the finished game appears in the list with move count, duration, and result.
+8. Click **Mở bàn cờ →**; verify the full board and move sequence reload exactly from PostgreSQL persistence.
+
+### 20.2 Production Online Demonstration Note
+Once the repository owner provisions the Render Web Service and managed PostgreSQL instance and triggers the approved production release, the identical demonstration workflow can be performed online via the verified public HTTPS URL (`CAROAI_PUBLIC_URL`). Prior to live cloud provisioning, online demonstration is not available.

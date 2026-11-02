@@ -4,9 +4,10 @@
 **Date:** November 2, 2026
 **Repository:** `emt0147t/caroAI` (`D:\caro-ai\caroAI`)
 **Integration Branch:** `develop`
-**Verified Commit SHA:** `f796ef923a9d39e398139f0c540186a3ebb8a633`
+**Audit Evidence Baseline SHA:** `938a17408078ca58c9bec6bf42eec09758be6165`
 **Production Branch Baseline:** `main` (`d444119d5eb757e364f904bb9eacddd27e14e507`)
-**Verified CI Workflow Run:** GitHub Actions Run [#41470234191](https://github.com/emt0147t/caroAI/actions/runs/41470234191) on `f796ef9` (`status: completed`, `conclusion: success`)
+**Baseline CI Workflow Run:** GitHub Actions Run [#41475666768](https://github.com/emt0147t/caroAI/actions/runs/41475666768) (`status: completed`, `conclusion: success`)
+**Historical Preflight Run:** GitHub Actions Run [#41470234191](https://github.com/emt0147t/caroAI/actions/runs/41470234191) on `f796ef9`
 **Historical PR #49 Baseline:** PR #49 merged at `6cf9bf08b8fb374645b7ecf79eb7a886ac002ef6` (CI Run [#41462195364](https://github.com/emt0147t/caroAI/actions/runs/41462195364))
 
 ---
@@ -16,13 +17,17 @@
 | Parameter | Current Audited Value | Status |
 |---|---|---|
 | **Current Branch** | `develop` | Aligned with `origin/develop` |
-| **Current Commit SHA** | `f796ef923a9d39e398139f0c540186a3ebb8a633` | Verified on remote |
-| **Remote Branch SHA** | `f796ef923a9d39e398139f0c540186a3ebb8a633` | In exact sync |
+| **Audit Evidence Baseline SHA** | `938a17408078ca58c9bec6bf42eec09758be6165` | Verified on remote |
+| **Remote Branch SHA** | `938a17408078ca58c9bec6bf42eec09758be6165` | In exact sync |
 | **Working Tree Status** | Clean (tracked changes audited) | Zero uncommitted external files |
-| **Main / Develop Relationship** | `develop` is 387 commits ahead, 0 behind `main` | 338 non-merge commits, 49 merge commits; strictly linear ancestry |
+| **Main / Develop Relationship** | `develop` is 388 commits ahead, 0 behind `main` | 339 non-merge commits, 49 merge commits; strictly linear ancestry |
 | **Backup Branch** | `backup/develop-before-pr49-sync-20261102` (`5326543`) | Preserved safely |
 | **Ruleset Configuration** | `CaroAI - Protect Develop` allows direct push; `Restrict deletions` and `Block force pushes` remain enabled | Routine engineering proceeds direct-to-develop; `main` requires PR + 1 approval |
-| **Latest Verified CI Run** | Run [#41470234191](https://github.com/emt0147t/caroAI/actions/runs/41470234191) on commit `f796ef9` | All 6 test/build jobs succeeded; release skipped as expected |
+| **Baseline CI Verification** | Run [#41475666768](https://github.com/emt0147t/caroAI/actions/runs/41475666768) on commit `938a174` | All 6 test/build jobs succeeded; release skipped as expected |
+| **Historical CI Verification** | Run [#41470234191](https://github.com/emt0147t/caroAI/actions/runs/41470234191) on commit `f796ef9` | Preflight baseline run preserved for historical audit |
+
+> [!NOTE]
+> The documentation correction commit itself is subsequent to the audit evidence baseline (`938a174`) and is intentionally excluded from baseline contributor metrics.
 
 ---
 
@@ -140,14 +145,14 @@ Configuration required in repository settings (**Settings** → **Environments**
 
 | Secret / Variable Name | Type | Current Status | Operational Role |
 |---|---|---|---|
-| **`DOCKERHUB_USERNAME`** | Secret | **Not yet configured** | Docker Hub account username for registry login. |
-| **`DOCKERHUB_TOKEN`** | Secret | **Not yet configured** | Personal Access Token with Read/Write registry scope. |
-| **`RENDER_DEPLOY_HOOK`** | Secret | **Not yet configured** | Render Web Service Deploy Hook URL. |
-| **`RENDER_API_KEY`** | Secret | **Not yet configured** | Personal API key for polling Render deploy status API. |
-| **`RENDER_SERVICE_ID`** | Secret | **Not yet configured** | Service identifier (`srv-...`) from Render Web Service. |
-| **`CAROAI_PUBLIC_URL`** | Variable | **Not yet configured** | Public HTTPS URL (e.g. `https://<service-name>.onrender.com`). |
+| **`DOCKERHUB_USERNAME`** | Secret | **NOT VERIFIED — owner action required** | Docker Hub account username for registry login. |
+| **`DOCKERHUB_TOKEN`** | Secret | **NOT VERIFIED — owner action required** | Personal Access Token with Read/Write registry scope. |
+| **`RENDER_DEPLOY_HOOK`** | Secret | **NOT VERIFIED — owner action required** | Render Web Service Deploy Hook URL. |
+| **`RENDER_API_KEY`** | Secret | **NOT VERIFIED — owner action required** | Personal API key for polling Render deploy status API. |
+| **`RENDER_SERVICE_ID`** | Secret | **NOT VERIFIED — owner action required** | Service identifier (`srv-...`) from Render Web Service. |
+| **`CAROAI_PUBLIC_URL`** | Variable | **NOT VERIFIED — owner action required** | Public HTTPS URL (e.g. `https://<service-name>.onrender.com`). |
 
-*Status note: Environment credentials have not been configured or tested in production. No secret values are stored in repository files.*
+*Status note: Environment credentials and variables cannot be inspected or verified from repository code or CI runs. They must be configured directly by the repository owner in GitHub Settings.*
 
 ### 7.1 Environment Protection & Approval Gate Review
 - **Environment Approval Gate:** While `.github/workflows/ci-cd.yml` references `environment: name: production`, GitHub Actions does NOT enforce manual approvals unless configured by the repository owner. Required Reviewers setting: **NOT VERIFIED — owner action required** under **Settings → Environments → `production`**.
@@ -167,7 +172,7 @@ sequenceDiagram
     participant Hub as Docker Hub
     participant Render as Render Cloud
 
-    Note over Owner,GitHub: Step 1: Local & CI validation complete on develop (f796ef9)
+    Note over Owner,GitHub: Step 1: Local & CI validation complete on develop (938a174)
     Owner->>Render: Step 2: Provision PostgreSQL (caroai_db) & Web Service
     Owner->>GitHub: Step 3: Populate Environment "production" secrets & variables
     Owner->>GitHub: Step 4: Open Pull Request from develop into main
@@ -210,4 +215,4 @@ Direct push to `main` is strictly prohibited by repository rulesets (`main` enfo
 
 1. **Cloud Provisioning:** Render Web Service and Render Managed PostgreSQL must be provisioned under owner account.
 2. **GitHub Environment Secrets:** The 5 secrets and 1 variable in Environment `production` must be populated.
-3. **Main Branch Promotion:** A Pull Request from `develop` (`f796ef9`) into `main` must be opened, approved by a reviewer, and merged prior to triggering the production release workflow on `main`. Direct push to `main` is prohibited by branch protection rules.
+3. **Main Branch Promotion:** A Pull Request from `develop` (`938a174`) into `main` must be opened, approved by a reviewer, and merged prior to triggering the production release workflow on `main`. Direct push to `main` is prohibited by branch protection rules.
