@@ -122,7 +122,7 @@ jobs:
             docker compose logs --no-color db app
             exit 1
           fi
-      - name: Verify create/move, restart the API, and read persisted state
+      - name: Verify PvP/PvAI, game detail, history, and restart persistence
         run: |
           python - <<'PY'
           import json
@@ -138,8 +138,9 @@ jobs:
               req = urllib.request.Request(
                   BASE + path, data=body, headers=headers, method=method
               )
-              with urllib.request.urlopen(req, timeout=5) as response:
-                  return response.status, json.loads(response.read().decode())
+              with urllib.request.urlopen(req, timeout=10) as response:
+                  raw = response.read().decode()
+                  return response.status, json.loads(raw) if raw else {}
 
           def retry_get(path):
               last_error = None
@@ -156,33 +157,65 @@ jobs:
 
           try:
               retry_get("/api/history")
-              status, created = request(
+
+              status, pvp = request(
                   "POST", "/api/games", {"mode": "HUMAN_VS_HUMAN"}
               )
-              assert status == 201, (status, created)
-              game_id = created["id"]
-              status, moved = request(
-                  "POST", f"/api/games/{game_id}/moves",
+              assert status == 201 and pvp.get("id"), ("PvP create", status, pvp)
+              pvp_id = pvp["id"]
+              status, pvp_move = request(
+                  "POST", f"/api/games/{pvp_id}/moves",
                   {"row": 3, "col": 4},
               )
-              assert status == 200, (status, moved)
-              assert moved["game"]["move_count"] == 1
-              assert moved["game"]["board"][3][4] == "X"
+              assert status == 200 and pvp_move["game"]["move_count"] == 1
+              assert pvp_move["game"]["board"][3][4] == "X"
+
+              status, pvai = request(
+                  "POST", "/api/games", {"mode": "HUMAN_VS_AI"}
+              )
+              assert status == 201 and pvai.get("id"), ("PvAI create", status, pvai)
+              pvai_id = pvai["id"]
+              status, human_move = request(
+                  "POST", f"/api/games/{pvai_id}/moves",
+                  {"row": 7, "col": 7},
+              )
+              assert status == 200 and human_move["game"]["move_count"] == 1
+              assert human_move["game"]["current_player"] == "O"
+
+              status, ai_move = request(
+                  "POST", f"/api/games/{pvai_id}/ai-move",
+                  {"difficulty": "easy"},
+              )
+              assert status == 200 and ai_move["game"]["move_count"] == 2
+              assert ai_move["move"]["player"] == "O"
+
+              pvp_detail = retry_get(f"/api/games/{pvp_id}")
+              pvai_detail = retry_get(f"/api/games/{pvai_id}")
+              assert pvp_detail["move_count"] == 1
+              assert pvp_detail["board"][3][4] == "X"
+              assert pvai_detail["move_count"] == 2
+              assert any(cell == "X" for row in pvai_detail["board"] for cell in row)
+              assert any(cell == "O" for row in pvai_detail["board"] for cell in row)
 
               subprocess.run(
                   ["docker", "compose", "restart", "app"],
                   check=True, timeout=60,
               )
-              restored = retry_get(f"/api/games/{game_id}")
-              assert restored["move_count"] == 1
-              assert restored["board"][3][4] == "X"
-              assert restored["current_player"] == "O"
+              restored_pvp = retry_get(f"/api/games/{pvp_id}")
+              restored_pvai = retry_get(f"/api/games/{pvai_id}")
+              assert restored_pvp["move_count"] == 1
+              assert restored_pvp["board"][3][4] == "X"
+              assert restored_pvai["move_count"] == 2
 
-              history = retry_get("/api/history?limit=10&offset=0")
-              records = [item for item in history["items"] if item["id"] == game_id]
-              assert len(records) == 1
-              assert records[0]["move_count"] == 1
-              print("Compose persistence smoke passed across API container restart.")
+              history = retry_get("/api/history?limit=100&offset=0")
+              records = {item["id"]: item for item in history["items"]}
+              assert pvp_id in records and pvai_id in records
+              assert records[pvp_id]["move_count"] == 1
+              assert records[pvai_id]["move_count"] == 2
+              print(
+                  "Disposable Compose acceptance passed: PvP, PvAI, AI move, "
+                  "game detail, history, and API-restart persistence."
+              )
           except Exception:
               subprocess.run(
                   ["docker", "compose", "logs", "--no-color", "app", "db"],
@@ -194,9 +227,32 @@ jobs:
         if: always()
         run: docker compose down --volumes --remove-orphans
 
+  secret-scan:
+    name: Secret scan (PR diff and full Git history)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout complete repository history
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan PR commit range with Gitleaks Action
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+      - name: Scan every commit reachable from this branch
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/repo" \
+            ghcr.io/gitleaks/gitleaks:v8.30.1 \
+            git --redact --verbose --no-banner /repo
+
   build:
     name: Docker image build (no publish/deploy)
-    needs: [frontend, test, postgres-integration, compose-smoke]
+    needs: [frontend, test, postgres-integration, compose-smoke, secret-scan]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -211,8 +267,9 @@ jobs:
 
   release:
     name: Approved production publish and Render verification
+    timeout-minutes: 30
     if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_approved == true }}
-    needs: [frontend, test, postgres-integration, compose-smoke, build]
+    needs: [frontend, test, postgres-integration, compose-smoke, secret-scan, build]
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -238,7 +295,38 @@ jobs:
           test -n "$RENDER_API_KEY" || { echo "Missing production Environment secret RENDER_API_KEY"; exit 1; }
           test -n "$RENDER_SERVICE_ID" || { echo "Missing production Environment secret RENDER_SERVICE_ID"; exit 1; }
           test -n "$PUBLIC_URL" || { echo "Missing production Environment variable CAROAI_PUBLIC_URL"; exit 1; }
-          case "$PUBLIC_URL" in https://*) ;; *) echo "CAROAI_PUBLIC_URL must use HTTPS"; exit 1 ;; esac
+          python - <<'PY'
+          import ipaddress
+          import os
+          import re
+          from urllib.parse import urlsplit
+
+          value = os.environ["PUBLIC_URL"]
+          parsed = urlsplit(value)
+          if parsed.scheme != "https" or not parsed.hostname:
+              raise SystemExit("CAROAI_PUBLIC_URL must be an HTTPS URL with a hostname")
+          hostname = parsed.hostname
+          try:
+              ipaddress.ip_address(hostname)
+          except ValueError:
+              labels = hostname.rstrip(".").split(".")
+              valid_label = re.compile(
+                  r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$"
+              )
+              if len(labels) < 2 or any(not valid_label.fullmatch(label) for label in labels):
+                  raise SystemExit("CAROAI_PUBLIC_URL must contain a valid public hostname or IP address")
+          if parsed.username or parsed.password:
+              raise SystemExit("CAROAI_PUBLIC_URL must not contain URL credentials")
+          if parsed.query or parsed.fragment or parsed.path:
+              raise SystemExit("CAROAI_PUBLIC_URL must not contain a path, query, or fragment")
+          try:
+              parsed.port
+          except ValueError as exc:
+              raise SystemExit(f"CAROAI_PUBLIC_URL has an invalid port: {exc}")
+          if value.endswith("/"):
+              raise SystemExit("CAROAI_PUBLIC_URL must not end with a slash")
+          print("Public URL format is valid (HTTPS, hostname present, no credentials/path/query/fragment).")
+          PY
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -249,8 +337,10 @@ jobs:
         shell: bash
         run: |
           echo "short_sha=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
-          echo "full_sha=$GITHUB_SHA"
-      - name: Build and publish immutable full/short SHA tags
+          echo "full_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "Release source SHA: $GITHUB_SHA"
+      - name: Build and publish full/short SHA-tagged image references
+        id: publish
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -259,18 +349,24 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.short_sha }}
+      - name: Record published image digest
+        env:
+          IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}
+        run: |
+          test -n "$IMAGE_DIGEST" || { echo "Docker build did not return an image digest"; exit 1; }
+          echo "Published image digest: $IMAGE_DIGEST"
       - name: Trigger Render deployment for exact full-SHA image
         id: render-deploy
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
-          response=$(curl --fail --silent --show-error --get \
+          response=$(curl --connect-timeout 5 --max-time 20 --fail --silent --show-error --get \
             --data-urlencode "imgURL=$IMAGE_NAME:$GITHUB_SHA" \
             "$RENDER_DEPLOY_HOOK")
-          echo "$response"
           deploy_id=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("deploy", {}).get("id", ""))')
           test -n "$deploy_id" || { echo "Render did not return a deployment ID"; exit 1; }
           echo "deploy_id=$deploy_id" >> "$GITHUB_OUTPUT"
+          echo "Render deployment ID: $deploy_id"
       - name: Wait for Render to confirm exact image is live
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
@@ -278,7 +374,7 @@ jobs:
           DEPLOY_ID: ${{ steps.render-deploy.outputs.deploy_id }}
         run: |
           for attempt in $(seq 1 60); do
-            response=$(curl --fail --silent --show-error \
+            response=$(curl --connect-timeout 5 --max-time 10 --fail --silent --show-error \
               --header "Authorization: Bearer $RENDER_API_KEY" \
               --header "Accept: application/json" \
               "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys/$DEPLOY_ID")
@@ -286,10 +382,12 @@ jobs:
             image_ref=$(printf '%s' "$response" | python -c 'import json,sys; print(json.load(sys.stdin).get("image", {}).get("ref", ""))')
             echo "Render deploy status=$status image=$image_ref"
             if [ "$status" = "live" ]; then
-              case "$image_ref" in
-                *":$GITHUB_SHA") echo "Render confirms the requested SHA image is live."; break ;;
-                *) echo "Render image ref does not match full SHA $GITHUB_SHA"; exit 1 ;;
-              esac
+              if [ "$image_ref" = "$IMAGE_NAME:$GITHUB_SHA" ]; then
+                echo "Render confirms the exact requested image is live: $image_ref"
+                break
+              fi
+              echo "Render image ref mismatch: expected $IMAGE_NAME:$GITHUB_SHA"
+              exit 1
             fi
             case "$status" in
               build_failed|update_failed|pre_deploy_failed|canceled|deactivated)
@@ -300,17 +398,29 @@ jobs:
             fi
             sleep 10
           done
-      - name: Verify public HTTPS liveness and database readiness
+      - name: Verify public HTTPS liveness and database readiness (read-only)
+        timeout-minutes: 10
         env:
           PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
         run: |
-          for attempt in $(seq 1 36); do
-            if curl --fail --silent --show-error "$PUBLIC_URL/health" >/dev/null && curl --fail --silent --show-error "$PUBLIC_URL/ready" >/dev/null; then
-              echo "Public HTTPS /health and /ready passed."
-              exit 0
-            fi
-            sleep 10
-          done
-          curl --fail --show-error "$PUBLIC_URL/health"
-          curl --fail --show-error "$PUBLIC_URL/ready"
-          exit 1
+          check_endpoint() {
+            endpoint="$1"
+            for attempt in $(seq 1 12); do
+              code=$(curl --connect-timeout 5 --max-time 10 --fail --silent \
+                --output /dev/null --write-out "%{http_code}" \
+                "$PUBLIC_URL/$endpoint" 2>/dev/null || true)
+              case "$code" in
+                2??)
+                  echo "GET /$endpoint passed (HTTP $code; attempt $attempt)."
+                  return 0
+                  ;;
+              esac
+              echo "GET /$endpoint not ready (HTTP ${code:-no response}; attempt $attempt/12)."
+              sleep 5
+            done
+            echo "GET /$endpoint failed after 12 attempts."
+            return 1
+          }
+          check_endpoint health
+          check_endpoint ready
+          echo "Production verification passed using GET-only health/readiness checks."
