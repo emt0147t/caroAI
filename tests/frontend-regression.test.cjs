@@ -47,3 +47,12 @@ test('busy state disables board and new game controls to prevent duplicate reque
   assert.match(gameScript, /b\.disabled = s\.busy/);
   assert.match(gameScript, /newBtn\.disabled = value/);
 });
+
+test('welcome dashboard includes health indicator, metrics grid, and rules reference', () => {
+  assert.match(welcome, /id="systemStatus"/);
+  assert.match(welcome, /class="metrics-grid"/);
+  assert.match(welcome, /id="recentGamesList"/);
+  assert.match(welcome, /id="rulesSection"/);
+  assert.match(welcome, /checkSystemHealth\(\)/);
+  assert.match(welcome, /loadDashboardStats\(\)/);
+});

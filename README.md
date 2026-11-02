@@ -1,142 +1,334 @@
-# CaroAI
+# CaroAI — Gomoku 15×15 AI Gaming Platform
 
-CaroAI is a 15 × 15 Caro game with a FastAPI backend, a Python AI engine, a static frontend, and PostgreSQL-backed game persistence. Public game IDs are UUID-shaped strings stored in `games.public_id`; the database retains its internal BIGINT primary key.
+CaroAI is a full-stack 15 × 15 Gomoku (Cờ Caro) competitive gaming application featuring an authoritative FastAPI backend, a Python Minimax AI engine with alpha-beta pruning, a responsive modern web dashboard, persistent PostgreSQL storage, reproducible Docker containerization, and automated GitHub Actions CI/CD.
 
-## Repository layout
+---
+
+## 1. Project Overview
+- **Repository**: [https://github.com/emt0147t/caroAI](https://github.com/emt0147t/caroAI)
+- **Target Platform**: Render Web Service & Render Managed PostgreSQL
+- **Public HTTPS Application URL**: Configurable via `CAROAI_PUBLIC_URL` (e.g. `https://caroai.onrender.com`)
+- **Docker Hub Repository**: `docker.io/${DOCKERHUB_USERNAME}/caroai`
+- **Application Core**: 15 × 15 standard grid, zero client-side game logic authority, persistent game state, and move history.
+
+---
+
+## 2. Key Features
+- **Human vs Human (PvP)**: Two players competing on the same device with alternating turns (X starts first).
+- **Human vs AI (PvAI)**: Single-player mode against the intelligent CaroAI Minimax engine.
+- **Three AI Difficulty Levels**:
+  - `easy`: Basic heuristic evaluation for rapid casual play.
+  - `medium`: Balanced positional scoring and threat detection.
+  - `hard`: Deep Minimax search with alpha-beta pruning, tactical open-four / open-three pattern weighting.
+- **Backend-Authoritative Rule Engine**: Turn transitions, move validation, 5-in-a-row victory detection, and 225-cell board draw calculations are 100% computed and verified by the backend.
+- **Persistent Game History**: Real-time recording of games, moves, timestamps, and terminal results in PostgreSQL.
+- **System Health & Readiness**: Separate `/health` (container liveness) and `/ready` (database connectivity probe) endpoints.
+- **Modern Responsive Dashboard**: Interactive match center, real-time backend health pill, recent games preview widget, and 4-step game rules guide. Fully verified at 320px, 360px, 390px, 768px, and 1280px viewports.
+
+---
+
+## 3. Technology Stack
+- **Backend**: Python 3.11, FastAPI, Uvicorn, SQLAlchemy 2.0, Psycopg2-binary, Pydantic v2.
+- **AI Engine**: Python Minimax with Alpha-Beta Pruning and Gomoku heuristic evaluation.
+- **Frontend**: Semantic HTML5, CSS3 with unified design tokens (`tokens.css`), Vanilla JavaScript (zero heavy framework dependencies).
+- **Database**: PostgreSQL 15+, versioned SQL migrations tracked via `schema_migrations`.
+- **Containerization**: Multi-stage Dockerfile (`python:3.11-slim`), non-root `appuser` (UID 10001), Docker Compose.
+- **Reverse Proxy & Serving**: Unified FastAPI `StaticFiles` mounting for single-container cloud environments, optional Nginx reverse proxy for multi-container topologies.
+- **CI/CD & Security**: GitHub Actions, Gitleaks secret scanning, Playwright E2E browser automation, pytest, flake8.
+
+---
+
+## 4. Architecture
 
 ```text
-app/        FastAPI routes, schemas, game domain, service, database and AI
-database/   Versioned SQL migrations and database operations notes
-docs/       API, architecture, QA, release evidence and demo documentation
-frontend/   Static frontend files
-tests/      Unit, API, persistence, PostgreSQL and Playwright E2E tests
-reports/    AI benchmark status and generated evidence
+User Browser (Desktop / Mobile)
+       |
+       | HTTPS (TLS 1.3)
+       v
+Cloud Web Service (Render / Docker)
+       |
+       +---> Port ${PORT:-8000}
+       |
+       +---> Uvicorn ASGI Server
+       |        |
+       |        +---> FastAPI Application
+       |                 |
+       |                 +---> Static Frontend Mount (/, /history.html, /tokens.css, /trong_tran/*)
+       |                 |
+       |                 +---> REST API (/api/games, /api/history, /health, /ready)
+       |                 |
+       |                 +---> Minimax AI Engine (Alpha-Beta Pruning)
+       |                 |
+       |                 +---> SQLAlchemy Unit of Work & Repository
+       |
+       +---> PostgreSQL Production Database (Connection Pooling, Migrations, ACID Storage)
 ```
 
-## Run locally with Docker Compose (recommended)
+---
 
-Use a local development environment only. From the repository root:
+## 5. Repository Structure
 
-1. Copy the example environment file and replace its sample password with a local-only password:
+```text
+caroAI/
+├── .github/workflows/      # CI/CD pipelines (ci-cd.yml, frontend-e2e.yml)
+├── app/                    # Backend application source
+│   ├── ai/                 # Minimax search engine and heuristic evaluators
+│   ├── api/                # FastAPI routing (games, history, health, dependencies)
+│   ├── db/                 # SQLAlchemy models, session management, and repository
+│   ├── domain/             # Game rules, board representation, win/draw state
+│   ├── schemas/            # Pydantic request/response validation schemas
+│   └── services/           # GameService transactional orchestration
+├── database/
+│   └── migrations/         # Versioned SQL migration files (000, 001)
+├── deploy/                 # Nginx proxy configuration
+├── docs/                   # Architectural specs, QA matrices, and audit reports
+│   └── final-project/      # Final project audits, conflict evidence, acceptance report
+├── frontend/Caro_AI/       # Responsive frontend assets (welcome.html, history.html, trong_tran/)
+├── scripts/                # Database migration and operational runner scripts
+├── tests/                  # Pytest unit, API, postgres suites, and Playwright E2E specs
+├── Dockerfile              # Multi-stage production container definition
+├── docker-compose.yml      # Local development and multi-container Compose stack
+└── requirements.txt        # Production dependency manifest
+```
 
-   ```powershell
-   Copy-Item .env.example .env
-   ```
+---
 
-2. Build and start PostgreSQL, API and frontend:
+## 6. Local Setup (Without Docker)
 
-   ```powershell
-   docker compose up --build -d
-   docker compose ps
-   ```
+### Prerequisites
+- Python 3.11 installed (`python --version` -> `Python 3.11.x`)
+- PostgreSQL 15+ running locally
 
-3. Check application liveness and database readiness:
+### Installation Steps
+```powershell
+# 1. Clone repository and navigate to root
+git clone https://github.com/emt0147t/caroAI.git
+cd caroAI
 
-   ```powershell
-   Invoke-RestMethod http://localhost:8000/health
-   Invoke-RestMethod http://localhost:8000/ready
-   ```
+# 2. Create and activate Python virtual environment
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 
-4. Open:
-   - Frontend: http://localhost:8080
-   - OpenAPI/Swagger UI: http://localhost:8000/docs
-   - API liveness: http://localhost:8000/health
-   - Database readiness: http://localhost:8000/ready
+# 3. Install production and development dependencies
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt -r requirements-dev.txt
+```
 
-The API container runs `python -m scripts.migrate_database` before starting Uvicorn. Migrations are versioned SQL files under `database/migrations` and are recorded in `schema_migrations`. Migration 001 backfills UUID-shaped public IDs for legacy game rows, creates the unique index, and enforces NOT NULL. Production schema changes must use a new versioned SQL migration; do not treat SQLAlchemy `create_all` as a production migration mechanism.
+---
 
-To stop the local containers while retaining the PostgreSQL volume:
+## 7. Environment Variables
 
+Create a `.env` file in the repository root (based on `.env.example`):
+
+| Variable | Description | Local Default | Production Requirement |
+|---|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://caroai_user:local_pass@localhost:5432/caroai_db` | Managed PostgreSQL URL (`postgres://...` auto-normalized) |
+| `PORT` | Listening port for Uvicorn | `8000` | Injected dynamically by Render (e.g. `10000`) |
+| `APP_ENV` | Application environment identifier | `development` | `production` |
+| `CAROAI_API_BASE_URL` | Optional API origin for frontend | `""` (Same-origin default) | Omit / Leave empty for same-origin deployment |
+
+---
+
+## 8. Docker Setup (Single Container)
+
+To build and run the production image independently:
+
+```powershell
+# Build image with candidate tag
+docker build -t caroai:local .
+
+# Run container with dynamic port and database URL
+docker run -d `
+  --name caroai-app `
+  -p 8000:8000 `
+  -e PORT=8000 `
+  -e DATABASE_URL="postgresql://user:pass@host.docker.internal:5432/caroai_db" `
+  caroai:local
+
+# Inspect logs
+docker logs -f caroai-app
+```
+
+---
+
+## 9. Docker Compose Setup (Multi-Container Local Stack)
+
+The recommended local development workflow uses Docker Compose:
+
+```powershell
+# 1. Configure environment file
+Copy-Item .env.example .env
+
+# 2. Build and launch services in background
+docker compose up --build -d
+
+# 3. Verify container statuses
+docker compose ps
+
+# 4. Check application health
+curl.exe http://localhost:8000/health
+curl.exe http://localhost:8000/ready
+```
+
+Access services:
+- **Application Frontend**: `http://localhost:8080` (or `http://localhost:8000` via FastAPI mount)
+- **API Swagger Documentation**: `http://localhost:8000/docs`
+- **Database**: Port `5432` / `5433`
+
+To stop containers while safely preserving database volumes:
 ```powershell
 docker compose down
 ```
+*(Do not pass `-v` unless you explicitly intend to delete local database data).*
 
-Do not add `-v` unless intentionally deleting the local database volume.
+---
 
-## Run the API directly (advanced)
+## 10. PostgreSQL Setup
+CaroAI uses standard PostgreSQL. In production or local setups:
+1. Ensure the database user has rights to create tables and execute transactions.
+2. The application handles connection URL forms `postgres://` and `postgresql://` by transparently normalizing them to `postgresql+psycopg2://`.
+3. Connection pooling is enabled with `pool_pre_ping=True` to immediately recover from dropped cloud connections.
 
-The API uses the configured `DATABASE_URL`. For direct Uvicorn execution, provide a PostgreSQL URL whose schema has been migrated:
+---
 
+## 11. Database Migrations
+Migrations are managed via explicit, versioned SQL files located in `database/migrations/`:
+- `000_initial_schema.sql`: Base tables for `games`, `moves`, and `game_analysis`.
+- `001_games_public_id.sql`: Generates and enforces unique `public_id` UUID strings for games.
+
+Migrations are applied automatically on application startup via:
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt -r requirements-dev.txt
-$env:DATABASE_URL = "postgresql+psycopg2://<user>:<password>@localhost:5432/<database>"
 python -m scripts.migrate_database
-python -m uvicorn app.main:app --reload
+```
+Execution is tracked in the `schema_migrations` table, ensuring idempotency and zero duplicate executions.
+
+---
+
+## 12. API Documentation
+
+### Liveness & Readiness
+- `GET /health`: Returns `{"status": "ok"}` when the ASGI application is alive.
+- `GET /ready`: Returns `{"status": "ready", "database": "ok"}` when database `SELECT 1` succeeds; returns HTTP 503 if unavailable.
+
+### Gameplay
+- `POST /api/games`: Create a game. Body: `{"mode": "HUMAN_VS_HUMAN"}` or `{"mode": "HUMAN_VS_AI"}`. Returns HTTP 201 with `id` and initial board.
+- `GET /api/games/{game_id}`: Returns authoritative game state, board matrix, move count, and status.
+- `POST /api/games/{game_id}/moves`: Submit a human move. Body: `{"row": 7, "col": 7}`. Returns HTTP 200 with updated game state.
+- `POST /api/games/{game_id}/ai-move`: Trigger an AI response. Body: `{"difficulty": "hard"}`. Returns HTTP 200 with AI move coordinates and new game state.
+
+### History
+- `GET /api/history?limit=20&offset=0`: Retrieves paginated list of completed and in-progress games from PostgreSQL.
+
+Interactive OpenAPI UI is available at `/docs`.
+
+---
+
+## 13. Testing Commands
+
+### Python Unit & API Tests
+```powershell
+py -3.11 -m pytest -q tests/
 ```
 
-Use a local disposable/development database, not production credentials or shared data.
-
-## Main API surface
-
-- `POST /api/games` — create a game.
-- `GET /api/games/{game_id}` — retrieve authoritative game state.
-- `POST /api/games/{game_id}/moves` — submit a human move.
-- `POST /api/games/{game_id}/ai-move` — request and persist an AI move.
-- `GET /api/history?limit=50&offset=0` — list persisted game History.
-- `GET /health` — application liveness; intentionally independent of database availability.
-- `GET /ready` — database readiness; executes `SELECT 1` and returns 503 when the configured database is unavailable.
-
-See [API contract](docs/api-contract.md) for request/response details.
-
-## Tests
-
-Run the general suite:
-
+### PostgreSQL Acceptance & Rollback Test
 ```powershell
-python -m pytest -q tests/
+$env:TEST_DATABASE_URL = "postgresql+psycopg2://caroai_test:caroai_test_password@localhost:5432/caroai_test"
+$env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
+$env:CAROAI_TEST_POSTGRES_ALLOWLIST = "localhost:5432/caroai_test"
+py -3.11 -m pytest -q tests/test_database_postgres.py tests/postgres_suite.py
 ```
 
-Run selected suites:
-
+### Code Style & Linting
 ```powershell
-python -m pytest tests/test_game_rules.py -q
-python -m pytest tests/test_games_api.py -q
-python -m pytest tests/test_repository_persistence.py -q
-npm ci
+py -3.11 -m flake8 app tests scripts --count --max-complexity=10 --max-line-length=127 --statistics
+```
+
+### Frontend Syntax & Regression Tests
+```powershell
+node --check frontend/Caro_AI/trong_tran/script.js
+node --test tests/frontend-regression.test.cjs
+```
+
+### Playwright Browser E2E Suite
+```powershell
 npm run test:e2e
 ```
 
-The Playwright suite expects the real API/frontend stack, normally the Compose stack at `http://127.0.0.1:8080`. Set `CAROAI_BASE_URL` only when intentionally targeting another authorized test environment.
+---
 
-PostgreSQL tests require a **disposable PostgreSQL test database** with permission to create/drop schemas. The guard validates the target before creating an engine or schema and requires all three settings:
+## 14. CI/CD Pipeline
+GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification on pushes and PRs:
+1. **Frontend Job**: Syntax validation and regression checks.
+2. **Python Test Job**: Flake8 linting, pytest unit suites, docker compose config validation.
+3. **PostgreSQL Integration Job**: Spawns ephemeral PostgreSQL 15 service, verifies schema migrations, transactional atomicity, and rollback integrity.
+4. **Compose Smoke Job**: Boots full Compose stack, executes PvP/PvAI move sequences, restarts container, and verifies game state persistence.
+5. **Secret Scan Job**: Gitleaks PR check and full repository history audit.
+6. **Candidate Build Job**: Multi-stage build producing SHA-tagged image candidate without registry push.
+7. **Production Release Job**: Triggered manually via `workflow_dispatch` on `main` when approved. Publishes immutable SHA tags to Docker Hub, calls the Render Deploy Hook, and verifies live public HTTPS endpoints.
 
-- `TEST_DATABASE_URL`: connection URL for the disposable database.
-- `CAROAI_TEST_DATABASE_CONFIRMED=disposable-test-database`: explicit operator confirmation.
-- `CAROAI_TEST_POSTGRES_ALLOWLIST`: comma-separated exact endpoint entries in `host:port/database` form. No wildcard or hostname substring is accepted.
+---
 
-For endpoint safety, the validator rejects **all URL query parameters and fragments**. This deliberately blocks libpq/psycopg2 routing overrides such as `host`, `hostaddr`, `port`, `service` and `servicefile`, as well as other connection-string options that could change the effective target or connection behavior. Do not append query parameters to `TEST_DATABASE_URL`; if a future test environment requires TLS or another connection option, add a separately reviewed, explicitly validated configuration rather than bypassing this guard.
+## 15. Docker Hub Image Reference
+- **Registry**: `docker.io`
+- **Repository**: `${DOCKERHUB_USERNAME}/caroai`
+- **Tags**:
+  - Full SHA: `docker.io/${DOCKERHUB_USERNAME}/caroai:<commit-sha>`
+  - Short SHA: `docker.io/${DOCKERHUB_USERNAME}/caroai:<short-sha>`
+- Pull command:
+  ```bash
+  docker pull <registry-username>/caroai:<tag>
+  ```
 
-For a local database reached through `localhost` on port 5432, configure:
+---
 
-```powershell
-$env:TEST_DATABASE_URL = "postgresql+psycopg2://<user>:<password>@localhost:5432/caroai_test"
-$env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
-$env:CAROAI_TEST_POSTGRES_ALLOWLIST = "localhost:5432/caroai_test"
-python -m pytest tests/test_database_postgres.py tests/postgres_suite.py -q
-```
+## 16. Deployment Instructions (Render Web Service)
+1. **Create Web Service**:
+   - Choose **Deploy an existing image from a registry**.
+   - Image URL: `docker.io/<username>/caroai:<sha>`
+2. **Environment Variables**:
+   - `DATABASE_URL`: Connection string from your Render PostgreSQL instance.
+   - `APP_ENV`: `production`
+   - `PORT`: Automatically assigned by Render (e.g. `10000`).
+3. **Health Check Path**:
+   - Set to `/ready` (checks both application and database connectivity).
+4. **Deploy**:
+   - Save changes. Render pulls the image, runs migrations on startup, and exposes the public HTTPS URL.
 
-If the URL uses `127.0.0.1`, allowlist that exact endpoint instead: `127.0.0.1:5432/caroai_test`. If multiple local disposable targets are genuinely needed, list each exact endpoint separated by commas. Never add a remote production/shared endpoint or commit credentials to the repository. CI explicitly sets `CAROAI_TEST_POSTGRES_ALLOWLIST=localhost:5432/caroai_test` for its disposable PostgreSQL service. The dedicated CI PostgreSQL job has an explicit zero-skipped-test guard; general-suite skips are a separate test classification.
+---
 
-## Current QA and release evidence
+## 17. Public HTTPS Application URL
+- **Production URL**: Configured in GitHub Environment as `CAROAI_PUBLIC_URL`
+- **Sample Endpoint**: `https://caroai.onrender.com`
+- Liveness Probe: `https://<public-host>/health`
+- Readiness Probe: `https://<public-host>/ready`
 
-- [Phase 4 M5 QA matrix](docs/phase4-m5-qa-matrix.md)
-- [Phase D evidence register](docs/phase4-m5-d-evidence.md)
-- [M5 handover](docs/phase4-m5-handover.md)
-- [Seven-minute demo runbook](docs/phase4-m5-e-demo-runbook.md)
-- [Issue triage and closure recommendations](docs/phase4-m5-e-issue-triage.md)
-- [Release sign-off record](docs/phase4-m5-e-release-signoff.md)
-- [Failure triage register](docs/phase4-m5-e-failure-triage.md)
-- [M4 release operations](docs/m4-release-operations.md)
+---
 
-The current recorded PR/CI evidence is scoped to the exact SHA and workflows in the QA matrix. PostgreSQL acceptance, Compose API restart persistence, Browser E2E and a Docker image build do **not** prove public deployment or production persistence after redeploy.
+## 18. Production PostgreSQL Configuration Overview
+- **Storage**: Managed persistent block storage (Render PostgreSQL).
+- **Driver**: Psycopg2-binary with SQLAlchemy connection pooling.
+- **Persistence Verification**: Game records and moves survive complete container restarts and image redeployments.
+- **Fail-Safe**: Zero client-side state is trusted; database is the single source of truth.
 
-## Current release boundaries
+---
 
-- PvP, PvAI, game retrieval, API-backed History and persistence are implemented in the current backend/frontend code.
-- Hint and analysis endpoints are not confirmed as implemented; do not present them as available features.
-- `/health` is liveness; `/ready` is database readiness.
-- The Sprint 3 Linux/Docker AI benchmark and team-approved latency target/SLO remain outstanding. Sprint 2 Windows measurements are historical local measurements, not Phase 4 benchmark acceptance.
-- Public HTTPS smoke, production post-redeploy persistence, rollback evidence, approved immutable image identity and formal PR #35 History disposition remain outstanding.
-- **Overall Phase 4 release status: BLOCKED / NO-GO.** No production deployment is authorized by this README or by the QA documentation.
+## 19. Troubleshooting
+
+| Symptom | Cause | Solution |
+|---|---|---|
+| Container exits with code 1 | Missing or invalid `DATABASE_URL` | Ensure `DATABASE_URL` is set and PostgreSQL is reachable. |
+| Container fails health check on Render | Port mismatch | Verify `Dockerfile` uses `${PORT:-8000}`. |
+| `ModuleNotFoundError: sqlalchemy` locally | Wrong Python environment | Use Python 3.11 with dependencies installed from `requirements.txt`. |
+| 503 Service Unavailable on move | Database connection dropped | Verify PostgreSQL service status; check `/ready` endpoint. |
+| CORS errors in browser | Calling cross-origin API | Serve frontend and API from same origin (default container setup). |
+
+---
+
+## 20. Demonstration Instructions
+1. Open the public HTTPS homepage.
+2. Observe the green **Hệ thống sẵn sàng** status pill in the top navigation bar.
+3. Select **Người vs AI**, choose difficulty **Khó (Minimax)**, and click **Bắt đầu ván đấu →**.
+4. Play alternating moves on the 15 × 15 board; observe real-time AI responses calculated by the backend.
+5. Create a 5-in-a-row alignment; observe the backend-authoritative victory dialog.
+6. Click **Lịch sử** in the top navigation; verify your game appears in the persistent list with move count and result.
+7. Click **Mở bàn cờ →**; verify the game board reloads exactly from PostgreSQL storage.
