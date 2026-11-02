@@ -13,3 +13,5 @@ The production deployment runs as a Docker web service on Render backed by manag
 | Listening Port | Configurable `${PORT:-8000}` | HTTP/HTTPS Proxy |
 | Memory Allocation | 512MB RAM with 450MB Warning Threshold | Render Standard Plan |
 | CPU Allocation | 0.5 vCPU Guaranteed Compute | Container CPU Shares |
+| Database Pooling | 10 persistent connections, 5 max overflow | SQLAlchemy Engine |
+| Zero-Downtime Grace | 45 seconds readiness validation window | Render Deploy Hook |
