@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 COPY --from=builder /app/wheels /wheels
 RUN if [ -d /wheels ] && [ "$(ls -A /wheels)" ]; then pip install --no-cache-dir /wheels/*; fi && rm -rf /wheels
 COPY --chown=appuser:appuser . .
+ENV PORT=8000
 USER appuser
 EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD curl -f http://localhost:8000/ready || exit 1
-CMD ["sh", "-c", "python -m scripts.migrate_database && exec python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD sh -c 'curl -f http://localhost:${PORT:-8000}/ready || exit 1'
+CMD ["sh", "-c", "python -m scripts.migrate_database && exec python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
