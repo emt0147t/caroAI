@@ -172,7 +172,7 @@ jobs:
               raise RuntimeError(f"Timed out waiting for static {path}: {last_error}")
 
           try:
-              check_static("/", "<title>Cờ Caro AI - Bắt đầu</title>")
+              check_static("/", "<title>CaroAI · Đấu trường Cờ Caro 15 × 15</title>")
               check_static("/history.html", "Lịch sử")
               check_static("/tokens.css", "--ui-font")
               retry_get("/api/history")
