@@ -57,28 +57,39 @@ const { chromium } = require('@playwright/test');
     });
     await desktopPage.screenshot({ path: path.join(outputDir, 'history-1280x800.png'), fullPage: true });
 
-    // 3. Desktop 1280x800 Dark Screenshots
+    // 3. Desktop 1280x800 Dark Screenshots (candidate only).
+    // The original baseline predates the shared theme API, so absence of that API
+    // must skip only dark-mode evidence rather than failing the baseline capture.
     await desktopPage.goto(baseUrl + '/', { waitUntil: 'networkidle' });
-    await desktopPage.evaluate(() => {
-      window.CaroAI.theme.apply('dark');
-      localStorage.setItem('caroai_theme', 'dark');
-    });
-    await desktopPage.screenshot({ path: path.join(outputDir, 'dark-start-1280x800.png'), fullPage: true });
+    const supportsDarkTheme = await desktopPage.evaluate(
+      () => typeof window.CaroAI?.theme?.apply === 'function'
+    );
 
-    await desktopPage.goto(baseUrl + '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id), {
-      waitUntil: 'networkidle'
-    });
-    await desktopPage.locator('#board .cell').first().waitFor({ state: 'visible' });
-    await desktopPage.screenshot({ path: path.join(outputDir, 'dark-game-1280x800.png'), fullPage: true });
+    if (supportsDarkTheme) {
+      await desktopPage.evaluate(() => {
+        window.CaroAI.theme.apply('dark');
+        localStorage.setItem('caroai_theme', 'dark');
+      });
+      await desktopPage.screenshot({ path: path.join(outputDir, 'dark-start-1280x800.png'), fullPage: true });
 
-    await desktopPage.goto(baseUrl + '/history.html', { waitUntil: 'networkidle' });
-    await desktopPage.waitForFunction(() => {
-      const state = document.querySelector('#state');
-      return state && !state.textContent.includes('Đang tải');
-    });
-    await desktopPage.screenshot({ path: path.join(outputDir, 'dark-history-1280x800.png'), fullPage: true });
+      await desktopPage.goto(baseUrl + '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id), {
+        waitUntil: 'networkidle'
+      });
+      await desktopPage.locator('#board .cell').first().waitFor({ state: 'visible' });
+      await desktopPage.screenshot({ path: path.join(outputDir, 'dark-game-1280x800.png'), fullPage: true });
 
-    process.stdout.write('Captured start, game and history screenshots (mobile, desktop, and dark) for ' + label + '.\n');
+      await desktopPage.goto(baseUrl + '/history.html', { waitUntil: 'networkidle' });
+      await desktopPage.waitForFunction(() => {
+        const state = document.querySelector('#state');
+        return state && !state.textContent.includes('Đang tải');
+      });
+      await desktopPage.screenshot({ path: path.join(outputDir, 'dark-history-1280x800.png'), fullPage: true });
+    } else {
+      process.stdout.write('Skipping dark screenshots for ' + label + ': theme API is unavailable.\n');
+    }
+
+    process.stdout.write('Captured start, game and history screenshots (mobile and desktop light' +
+      (supportsDarkTheme ? ', plus desktop dark' : '') + ') for ' + label + '.\n');
   } finally {
     await browser.close();
   }
