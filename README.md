@@ -291,7 +291,11 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 
 ### 16.1 Neon Database Setup
 1. Create a project in [Neon Console](https://neon.tech) (e.g. `caroai-demo`, AWS Singapore `ap-southeast-1`, PostgreSQL 18, database `neondb`, branch `production`).
-2. Copy the pooled PostgreSQL connection string with TLS enabled. *(Never commit database connection strings or passwords into documentation or source code).*
+2. Copy the **direct (non-pooler)** PostgreSQL connection string.
+   - **Connection Mode**: The deployed CaroAI production service uses Neon's direct connection rather than the pooled connection (`-pooler` endpoint on port 5432/6543).
+   - **Internal Pooling Distinction**: CaroAI's FastAPI application manages its own internal connection pooling via SQLAlchemy (`pool_pre_ping=True`, pool recycling), so it connects directly to Neon without an external transaction pooler.
+   - **TLS & Channel Binding**: The deployed connection string requires TLS (`sslmode=require`) and channel binding (`channel_binding=require`).
+   - **Security Policy**: Never print, commit, or document the actual hostname, username, password, or `DATABASE_URL` in documentation or source code.
 
 ### 16.2 Render Web Service Setup
 1. **Create Web Service**:
@@ -320,7 +324,7 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 - **Official Production Release**: **PENDING / NOT RUN**
   - The automated release workflow on protected `main` has not run.
   - Full-SHA and short-SHA release tags from GitHub Actions are still pending.
-  - Environment variable `CAROAI_PUBLIC_URL` has been configured under GitHub Settings → Environments → `production` by the repository owner, but awaits verification via an official release execution on `main`.
+  - **Environment Variable `CAROAI_PUBLIC_URL`**: Status is **UNCONFIRMED — PENDING OWNER VERIFICATION** under GitHub Settings → Environments → `production`. Do not claim it is configured or infer its presence from the five Environment secrets.
   - Illustrative Endpoint Format: `https://<service-name>.onrender.com`
 
 ---
@@ -333,8 +337,8 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 - **PostgreSQL Version**: 18
 - **Database Name**: `neondb`
 - **Branch**: `production`
-- **Configuration**: `DATABASE_URL` is configured in Render Web Service environment settings (actual connection string and credentials are never written into documentation).
-- **Driver**: Psycopg2-binary with SQLAlchemy connection pooling (`pool_pre_ping=True`).
+- **Configuration**: `DATABASE_URL` is configured in Render Web Service environment settings using Neon direct (non-pooler) connection with `sslmode=require` and `channel_binding=require` (actual hostname, username, password, and connection string are never written into documentation).
+- **Driver**: Psycopg2-binary with SQLAlchemy internal connection pooling (`pool_pre_ping=True`).
 - **Migrations**: `000_initial_schema.sql` and `001_games_public_id.sql` applied successfully on startup; Render startup logs confirmed schema up to date.
 - **Persistence Verification**: **PASS**.
   - Verified on live cloud infrastructure via Render Web Service restart.

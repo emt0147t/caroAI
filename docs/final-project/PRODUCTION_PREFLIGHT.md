@@ -5,10 +5,12 @@
 **Repository:** `emt0147t/caroAI` (`D:\caro-ai\caroAI`)
 **Integration Branch:** `develop`
 **Audit Evidence Baseline SHA:** `938a17408078ca58c9bec6bf42eec09758be6165`
-**Reconciliation Develop HEAD:** `2a46000b455f9b9779fd7289c6b22ae080aaa44c` (at time of reconciliation task)
+**Historical Pre-Hardening Develop Snapshot:** `2a46000b455f9b9779fd7289c6b22ae080aaa44c` (CI Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622))
+**Current Verified Develop HEAD:** `caf9d92f2120f5af0c5c8f197856ffde2ab6b9c8`
 **Production Branch Baseline:** `main` (`d444119d5eb757e364f904bb9eacddd27e14e507`)
+**Latest PR CI Workflow Run:** GitHub Actions Run [#41565255360](https://github.com/emt0147t/caroAI/actions/runs/41565255360) on `caf9d92` (`status: completed`, `conclusion: success`)
+**Historical PR CI Run:** GitHub Actions Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) on `2a46000`
 **Baseline CI Workflow Run:** GitHub Actions Run [#41475666768](https://github.com/emt0147t/caroAI/actions/runs/41475666768) (`status: completed`, `conclusion: success`)
-**PR-Triggered CI Run:** GitHub Actions Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) on PR #50 (`2a46000`)
 **Historical Preflight Run:** GitHub Actions Run [#41470234191](https://github.com/emt0147t/caroAI/actions/runs/41470234191) on `f796ef9`
 **Historical PR #49 Baseline:** PR #49 merged at `6cf9bf08b8fb374645b7ecf79eb7a886ac002ef6` (CI Run [#41462195364](https://github.com/emt0147t/caroAI/actions/runs/41462195364))
 
@@ -20,18 +22,20 @@
 |---|---|---|
 | **Current Branch** | `develop` | Aligned with `origin/develop` |
 | **Audit Evidence Baseline SHA** | `938a17408078ca58c9bec6bf42eec09758be6165` | Preserved historical audit metrics baseline |
-| **Current develop HEAD** | `2a46000b455f9b9779fd7289c6b22ae080aaa44c` | Recorded at time of reconciliation task |
-| **Remote Branch SHA** | `2a46000b455f9b9779fd7289c6b22ae080aaa44c` | In exact sync (`origin/develop`) |
+| **Historical Develop Snapshot** | `2a46000b455f9b9779fd7289c6b22ae080aaa44c` | Pre-hardening develop snapshot (CI Run #41502411622) |
+| **Current Verified develop HEAD** | `caf9d92f2120f5af0c5c8f197856ffde2ab6b9c8` | Post-hardening verified develop HEAD |
+| **Remote Branch SHA** | `caf9d92f2120f5af0c5c8f197856ffde2ab6b9c8` | In exact sync (`origin/develop`) |
 | **Working Tree Status** | Clean (tracked changes audited) | Zero uncommitted external files |
 | **Main / Develop Relationship** | `develop` is 388 commits ahead, 0 behind `main` | 339 non-merge commits, 49 merge commits (at baseline `938a174`); strictly linear ancestry |
 | **Backup Branch** | `backup/develop-before-pr49-sync-20261102` (`5326543`) | Preserved safely |
 | **Ruleset Configuration** | `CaroAI - Protect Develop` allows direct push; `Restrict deletions` and `Block force pushes` remain enabled | Routine engineering proceeds direct-to-develop; `main` requires PR + 1 approval |
 | **Baseline CI Verification** | Run [#41475666768](https://github.com/emt0147t/caroAI/actions/runs/41475666768) on commit `938a174` | All 6 test/build jobs succeeded; release skipped as expected |
-| **PR CI Verification** | Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) on commit `2a46000` | PR #50 verification pipeline executed |
+| **Historical PR CI Run** | Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) on commit `2a46000` | Historical PR #50 pre-hardening verification |
+| **Latest PR CI Verification** | Run [#41565255360](https://github.com/emt0147t/caroAI/actions/runs/41565255360) on commit `caf9d92` | All 6 test/build jobs succeeded; release skipped intentionally |
 | **Historical CI Verification** | Run [#41470234191](https://github.com/emt0147t/caroAI/actions/runs/41470234191) on commit `f796ef9` | Preflight baseline run preserved for historical audit |
 
 > [!NOTE]
-> The historical audit metrics baseline (`938a174`) is preserved for contributor and commit accounting. Subsequent maintenance commits (`a9e753b`, `2a46000`, and reconciliation edits) are tracked separately. At the time of this reconciliation task, `develop` HEAD is `2a46000b455f9b9779fd7289c6b22ae080aaa44c`.
+> The historical audit metrics baseline (`938a174`) is preserved for contributor and commit accounting. Subsequent maintenance commits (`a9e753b`, historical pre-hardening snapshot `2a46000`, post-hardening `caf9d92`, and final documentation accuracy pass) are tracked separately. The current verified `develop` HEAD is `caf9d92f2120f5af0c5c8f197856ffde2ab6b9c8`.
 
 ---
 
@@ -102,6 +106,24 @@ Comprehensive cross-check across application source code, Dockerfile, Docker Com
 | **Digest Tracking** | Output digest captured via `${{ steps.publish.outputs.digest }}` | Cryptographic content identifier recorded in release step and exported to `$GITHUB_STEP_SUMMARY` |
 | **Automated Release Publishing** | Push to `docker.io/emt0147/caroai` via CI/CD on `main` | **PENDING / NOT RUN** (Automated release workflow on `main` has not run) |
 
+### 4.1 Final Container Filesystem Inspection Evidence
+A final container filesystem inspection was performed against the locally built review image:
+- **Image**: `caroai:premerge-review`
+- **Image ID**: `sha256:270e19a83a4aecc6e94fc0d90800ce562184b394c0b10cc6836362d9093c11a5`
+- **Inspection Command**:
+  ```bash
+  docker run --rm --entrypoint sh caroai:premerge-review -c "id; echo '--- ENV FILE CHECK ---'; find /app -type f \( -name '.env' -o -name '.env.*' \) -print"
+  ```
+- **Observed Inspection Output**:
+  - Runtime identity: `uid=10001(appuser) gid=10001(appuser)` (non-root execution verified).
+  - Environment template: `/app/.env.example` present.
+  - Secret file check: No `.env`, `.env.local`, or `.env.production` files found under `/app`.
+- **Inspection Scope & Precision Note**:
+  - This is a final container filesystem inspection of the built review image.
+  - It is not a complete scan of all historical image layers.
+  - Gitleaks full Git-history scanning is a separate CI check.
+  - No claim is made that all historical image layers have been independently scanned.
+
 ---
 
 ## 5. Render Web Service & Neon PostgreSQL Preflight
@@ -127,8 +149,10 @@ Comprehensive cross-check across application source code, Dockerfile, Docker Com
 - **PostgreSQL Version:** 18
 - **Database Name:** `neondb`
 - **Branch:** `production`
-- **Configuration:** `DATABASE_URL` is configured directly within the Render Web Service environment settings. (The raw connection string, password, and host credentials are strictly confidential and never stored in repository files or documentation).
-- **TLS / SSL Policy:** Neon mandates TLS encryption for all connections (`sslmode=require`). Application `normalize_database_url()` transparently configures `psycopg2-binary` connection parameters.
+- **Connection Mode:** Direct (non-pooler) connection. Neon provides both pooled (`-pooler` endpoint on port 5432/6543) and direct connections. The deployed CaroAI production service uses the direct connection.
+- **Connection Security & Parameters:** Mandates TLS encryption (`sslmode=require`) and channel binding (`channel_binding=require`).
+- **Configuration Security:** `DATABASE_URL` is configured directly within the Render Web Service environment settings. (The raw hostname, username, password, and connection string are strictly confidential and never printed, committed, or documented).
+- **Internal Pooling Distinction:** The FastAPI application maintains its own internal connection pool via SQLAlchemy with `pool_pre_ping=True`, so it connects directly to Neon without an external transaction pooler.
 - **Migration Execution:** Startup migration runner (`scripts/migrate_database.py`) applied `000_initial_schema.sql` and `001_games_public_id.sql` idempotently, tracked via `schema_migrations`. Render startup confirmed schema up to date.
 - **Cloud Persistence Verification:** **PASS**.
   - Interactive PvP and PvAI match creation succeeded against live database.
@@ -178,9 +202,9 @@ Configuration entered in repository settings (**Settings** → **Environments** 
 | **`RENDER_DEPLOY_HOOK`** | Secret | Entered by owner (pending release job validation) | Render Web Service Deploy Hook URL. |
 | **`RENDER_API_KEY`** | Secret | Entered by owner (pending release job validation) | Personal API key for polling Render deploy status API. |
 | **`RENDER_SERVICE_ID`** | Secret | Entered by owner (pending release job validation) | Service identifier (`srv-dbkd2dflk1mc73fd2ukg`) from Render Web Service. |
-| **`CAROAI_PUBLIC_URL`** | Variable | Entered by owner (pending release job validation) | Public HTTPS URL (bootstrap: `https://caroai-bootstrap-a9e753b33198.onrender.com`). |
+| **`CAROAI_PUBLIC_URL`** | Variable | **UNCONFIRMED — PENDING OWNER VERIFICATION** | Public HTTPS URL (do not claim configured or infer from Environment secrets). |
 
-*Status note: Environment secrets were entered by the repository owner in GitHub Settings → Environments → `production`. However, because the production release job is skipped during standard push/PR CI runs, these secrets have not yet been validated by a successful executing release job.*
+*Status note: The five production secrets (`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `RENDER_DEPLOY_HOOK`, `RENDER_API_KEY`, `RENDER_SERVICE_ID`) were entered by the repository owner under GitHub Settings → Environments → `production`, but because release jobs are skipped during CI runs, these secrets have not yet been validated by an executing release job. Meanwhile, `CAROAI_PUBLIC_URL` is UNCONFIRMED — PENDING OWNER VERIFICATION; its configuration in GitHub Settings has not been independently confirmed and must not be inferred from the presence of the secrets.*
 
 ### 7.1 Environment Protection & Approval Gate Review
 - **Environment Approval Gate:** While `.github/workflows/ci-cd.yml` references `environment: name: production`, GitHub Actions does not enforce manual approvals unless configured by the repository owner. Required Reviewers setting: **Unconfirmed / awaiting verification** under **Settings → Environments → `production`** (do not claim configured unless independently confirmed).
@@ -242,6 +266,6 @@ Direct push to `main` is strictly prohibited by repository rulesets (`main` enfo
 ## 10. Remaining Steps Prior to Official Release
 
 1. **Bootstrap Deployment Verified:** Bootstrap Web Service (`srv-dbkd2dflk1mc73fd2ukg`) is LIVE at `https://caroai-bootstrap-a9e753b33198.onrender.com` connected to Neon PostgreSQL, with schema migrations applied and post-restart persistence verified (`POST-RESTART PERSISTENCE: PASS`).
-2. **GitHub Environment Secrets:** Secrets and variables in Environment `production` have been entered by the repository owner, but remain to be validated by an executing release job.
+2. **GitHub Environment Secrets & Variables:** The five secrets in Environment `production` have been entered by the repository owner, but remain to be validated by an executing release job. Environment variable `CAROAI_PUBLIC_URL` remains UNCONFIRMED — PENDING OWNER VERIFICATION.
 3. **PR #50 Promotion to `main`:** Pull Request #50 from `develop` into `main` must be reviewed by a write-access team member, approved, and merged.
 4. **Trigger Official Production Release:** Following merge of PR #50, dispatch `CaroAI CI/CD` on `main` with `release_approved=true` to publish traceable commit-SHA images to Docker Hub and trigger the official deployment hook.

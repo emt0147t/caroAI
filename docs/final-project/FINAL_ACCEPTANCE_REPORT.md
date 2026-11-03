@@ -4,9 +4,9 @@
 **Repository**: `emt0147t/caroAI`
 **Evaluation Role**: Principal Software Engineer + Tech Lead + DevOps Engineer + QA Lead
 **Assessment Date**: November 2, 2026 (Reconciled November 3, 2026)
-**Integration Branch**: `develop` (Audit Baseline Commit SHA: `938a17408078ca58c9bec6bf42eec09758be6165`, Reconciliation HEAD: `2a46000b455f9b9779fd7289c6b22ae080aaa44c`)
+**Integration Branch**: `develop` (Audit Baseline Commit SHA: `938a17408078ca58c9bec6bf42eec09758be6165`, Historical Pre-Hardening Develop Snapshot: `2a46000b455f9b9779fd7289c6b22ae080aaa44c`, Current Verified Develop HEAD: `caf9d92f2120f5af0c5c8f197856ffde2ab6b9c8`)
 **Production Branch**: `main` (Baseline SHA: `d444119d5eb757e364f904bb9eacddd27e14e507`)
-**Delivery PR Status**: [Pull Request #49](https://github.com/emt0147t/caroAI/pull/49) (`feature/final-project-delivery` → `develop`) was successfully merged into `develop` via official merge commit `6cf9bf08b8fb374645b7ecf79eb7a886ac002ef6`. Direct pushes to `develop` succeeded at `f796ef9` and audit baseline `938a174` (CI Run [#41475666768](https://github.com/emt0147t/caroAI/actions/runs/41475666768) verified). PR #50 opened from `develop` targeting `main` (CI Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) verified).
+**Delivery PR Status**: [Pull Request #49](https://github.com/emt0147t/caroAI/pull/49) (`feature/final-project-delivery` → `develop`) was successfully merged into `develop` via official merge commit `6cf9bf08b8fb374645b7ecf79eb7a886ac002ef6`. Direct pushes to `develop` succeeded at `f796ef9` and audit baseline `938a174` (CI Run [#41475666768](https://github.com/emt0147t/caroAI/actions/runs/41475666768) verified). PR #50 opened from `develop` targeting `main` (Historical CI Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) on `2a46000`; Latest CI Run [#41565255360](https://github.com/emt0147t/caroAI/actions/runs/41565255360) on `caf9d92` verified).
 
 ---
 
@@ -26,11 +26,11 @@ CaroAI is a university Final Project delivering a full-stack, 15×15 Gomoku (C�
 |---|---|---|---|---|---|
 | **Git Commits (>= 30)** | At least 30 meaningful commits in repository history | **PASS** | `origin/main..938a174` yields **388 commits** (339 non-merge, 49 merge commits). Core implementation and engineering commits alone total **159 commits**. | `origin/develop` (Baseline `938a174`) | None. Exceeds requirement by >5x for implementation commits and >12x overall. |
 | **Five-Member Collaboration** | Demonstrable contribution across all 5 team members | **PASS** | Exact shortlog on non-merges (N=339): Vũ Duy Hiếu (142 commits, 41.9%), Nguyễn Xuân Thành (86 commits, 25.4%), Mạc Quang Vinh (51 commits, 15.0%), Ngọc Hiền (41 commits, 12.1%), Trần Danh Kiên (19 commits, 5.6%). Sums exactly to 339 non-merge commits (100.0%). | `docs/final-project/GIT_COLLABORATION_AUDIT.md` (Baseline `938a174`) | None. Preserved in Git commit graph without squashing or history rewriting. |
-| **Feature Branches & PRs** | Clean branch workflow, PR reviews, branch protection | **PASS** | 42 total Pull Requests across repository history. PR #49 reviewed and merged into `develop` (`6cf9bf0`). PR #50 opened targeting `main` from `develop` (`2a46000`, CI Run #41502411622). Note: 3 unmerged historical documentation PRs (#25, #26, #27) remain open from Sprint 3 planning. | PR #46, #47, #48, #49, PR #50 | None. PR #49 merged; PR #50 open for promotion to `main`. |
+| **Feature Branches & PRs** | Clean branch workflow, PR reviews, branch protection | **PASS** | 42 total Pull Requests across repository history. PR #49 reviewed and merged into `develop` (`6cf9bf0`). PR #50 opened targeting `main` from `develop` (Current Head SHA: `caf9d92`, CI Run #41565255360; historical snapshot `2a46000`, CI Run #41502411622). Note: 3 unmerged historical documentation PRs (#25, #26, #27) remain open from Sprint 3 planning. | PR #46, #47, #48, #49, PR #50 | None. PR #49 merged; PR #50 open for promotion to `main`. |
 | **Merge Conflict Resolution** | Genuine conflict created, resolved, tested, and documented | **PASS** | Competing branches `feature/deploy-config-resources` (`8fe6c02`) and `feature/deploy-config-networking` (`30530b7`) conflicted on `docs/final-project/deployment-config.md`. Resolved into `67bdf86`. | `67bdf86` | None. Documented with unified diffs and markers in `MERGE_CONFLICT_EVIDENCE.md`. |
 | **Multi-Stage Dockerfile** | Non-root user, dynamic port `${PORT:-8000}`, healthcheck | **PASS** | Built candidate image `caroai:candidate` (`sha256:630fe329...`). Unified container serves both static UI and API on same port. Healthcheck validates `http://localhost:${PORT:-8000}/ready`. | `Dockerfile` | None. Verified locally and via CI check `Docker image build`. |
 | **Docker Hub Publishing** | Automated release job publishes full-SHA and short-SHA tags to Docker Hub | **BOOTSTRAP PUBLISHED / OFFICIAL MAIN RELEASE PENDING** | Bootstrap image `bootstrap-a9e753b33198` manually published to `emt0147/caroai` and live on Render. Production release workflow in `.github/workflows/ci-cd.yml` configured to build, tag (`${GITHUB_SHA}` and short SHA, tracked via image digest), and publish upon manual approval on `main`. | Docker Hub `emt0147/caroai:bootstrap-a9e753b33198` | Automated release job from GitHub Actions on `main` has not run; full-SHA and short-SHA tags pending PR #50 merge. |
-| **GitHub Actions CI/CD** | Automated pipeline: Test → Lint → DB Acceptance → Compose Smoke → Secret Scan → Build | **PASS** | Automated workflow executes 7 jobs on push/PR: `frontend`, `test`, `postgres-integration`, `compose-smoke`, `secret-scan` (Gitleaks), `build`, `release`. Verified push baseline: [#41475666768](https://github.com/emt0147t/caroAI/actions/runs/41475666768) on `938a174`. Verified PR run: [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) on PR #50 (`2a46000`). | Head `938a174` (Run #41475666768), PR #50 (Run #41502411622) | Release job deliberately gated to require manual authorization on `main`. |
+| **GitHub Actions CI/CD** | Automated pipeline: Test → Lint → DB Acceptance → Compose Smoke → Secret Scan → Build | **PASS** | Automated workflow executes 7 jobs on push/PR: `frontend`, `test`, `postgres-integration`, `compose-smoke`, `secret-scan` (Gitleaks), `build`, `release`. Verified push baseline: [#41475666768](https://github.com/emt0147t/caroAI/actions/runs/41475666768) on `938a174`. Verified PR runs: historical snapshot [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) on `2a46000`, latest post-hardening [#41565255360](https://github.com/emt0147t/caroAI/actions/runs/41565255360) on `caf9d92`. | Head `938a174` (Run #41475666768), PR #50 (Run #41565255360) | Release job deliberately gated to require manual authorization on `main` (intentionally skipped in CI). |
 | **PostgreSQL Persistence** | Authoritative persistence surviving container restart and rollback | **PASS (Local, CI & Cloud Bootstrap)** | Verified in CI `compose-smoke` and local container restart test (15/15 passed). Verified on live cloud infrastructure: Render Web Service (`srv-dbkd2dflk1mc73fd2ukg`) connected to Neon PostgreSQL (`caroai-demo`, `neondb`). Schema migrations applied, PvP/PvAI games created, AI move returned player O, and all game states remained intact after Render restart (`POST-RESTART PERSISTENCE: PASS`). | `tests/postgres_suite.py`, Neon DB | None. State persistence empirically verified in local, CI, and live cloud environments. |
 | **Public HTTPS Address** | Publicly accessible URL on Render with live game | **BOOTSTRAP LIVE & VERIFIED / OFFICIAL RELEASE PENDING** | Bootstrap service is LIVE and verified at `https://caroai-bootstrap-a9e753b33198.onrender.com`. All endpoints (`/health`, `/ready`, `/`, `/history.html`, `/api/history`, `/tokens.css`) return HTTP 200. Official production release via GitHub Actions on `main` remains pending PR #50 merge and release approval. | [Live Bootstrap Demo](https://caroai-bootstrap-a9e753b33198.onrender.com) | Automated release from `main` pending PR #50 merge and manual workflow dispatch. |
 | **Comprehensive Technical Documentation** | Full README, setup guide, architecture, testing, API docs | **PASS** | `README.md` updated with all 20 required sections. Full audits in `docs/final-project/`: `PRODUCTION_PREFLIGHT.md`, `GIT_COLLABORATION_AUDIT.md`, `FINAL_ACCEPTANCE_REPORT.md`, `PHASE_A_REPOSITORY_AUDIT.md`, `MERGE_CONFLICT_EVIDENCE.md`, `deployment-config.md`. | `README.md` | None. |
@@ -55,14 +55,24 @@ All core verification jobs executed against commit `938a17408078ca58c9bec6bf42ee
 > [!NOTE]
 > **Playwright Browser E2E Provenance:** The 28 Playwright browser E2E tests are configured in dedicated workflow `.github/workflows/frontend-e2e.yml` and ran successfully in GitHub Actions Run [#41460505248](https://github.com/emt0147t/caroAI/actions/runs/41460505248) (commit `734a90b`), as well as in local pre-commit verification (`npm run test:e2e`, 28 passed, 0 failed, 24.6s). They are not part of Run #41475666768, which executed the core `ci-cd.yml` workflow.
 
-### 3.2 PR-Triggered CI Run #41502411622 Evidence (PR #50 targeting `main`)
-Pull Request #50 triggered GitHub Actions Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) against commit `2a46000b455f9b9779fd7289c6b22ae080aaa44c`:
+### 3.2 Latest PR-Triggered CI Run #41565255360 Evidence (PR #50 on `caf9d92`)
+Pull Request #50 triggered GitHub Actions Run [#41565255360](https://github.com/emt0147t/caroAI/actions/runs/41565255360) against verified commit `caf9d92f2120f5af0c5c8f197856ffde2ab6b9c8`:
 - **Workflow:** CaroAI CI/CD (`ci-cd.yml`)
 - **Event:** `pull_request` (targeting `main`)
-- **Status:** Completed
-- **Verification Jobs:** All automated PR test gates executed successfully, verifying frontend syntax and regressions, Python code quality and test suites, PostgreSQL integration, Docker Compose smoke tests, and Gitleaks secret scanning.
+- **Status:** Completed (`conclusion: success`)
+- **Job Results:**
+  - **Python tests and lint** — `success` (flake8: 0 errors; pytest: 242 passed, 11 skipped)
+  - **Frontend syntax and regression checks** — `success` (node --check passed, 7 node regression tests passed)
+  - **PostgreSQL service/API/migration acceptance** — `success` (15/15 passed against ephemeral PostgreSQL 15 service)
+  - **Compose API/database persistence after restart** — `success` (game state persisted across restart)
+  - **Secret scan (PR diff and full Git history)** — `success` (Gitleaks scanned 0 secrets)
+  - **Docker image build (no publish/deploy)** — `success` (multi-stage build succeeded)
+  - **Approved production publish and Render verification** — `skipped intentionally` (release job gated for authorized `main` dispatch)
 
-### 3.3 Live Cloud Bootstrap Deployment & Persistence Evidence
+### 3.3 Historical PR CI Run #41502411622 Evidence (PR #50 on `2a46000`)
+Pull Request #50 previously executed GitHub Actions Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) against pre-hardening develop snapshot `2a46000b455f9b9779fd7289c6b22ae080aaa44c`, serving as historical pre-hardening verification evidence.
+
+### 3.4 Live Cloud Bootstrap Deployment & Persistence Evidence
 The live cloud bootstrap deployment was provisioned and comprehensively validated:
 - **Docker Hub Image:** `docker.io/emt0147/caroai:bootstrap-a9e753b33198` (manually published by repository owner `emt0147`).
 - **Render Web Service:**
@@ -77,7 +87,7 @@ The live cloud bootstrap deployment was provisioned and comprehensively validate
   - PostgreSQL Version: 18
   - Database Name: `neondb`
   - Branch: `production`
-  - Connection: `DATABASE_URL` configured in Render Web Service environment settings.
+  - Connection Mode: Direct (non-pooler) connection with `sslmode=require` and `channel_binding=require`. `DATABASE_URL` configured in Render environment settings (raw credentials never documented).
 - **Startup Migrations:** Render startup logs confirmed migrations `000_initial_schema.sql` and `001_games_public_id.sql` applied successfully; schema up to date.
 - **Endpoint Verification (HTTP 200 OK):**
   - `GET /health`: HTTP 200 `{"status":"ok"}`
@@ -95,7 +105,7 @@ The live cloud bootstrap deployment was provisioned and comprehensively validate
   - Following container restart, both PvP and PvAI games and histories remained completely intact and retrievable.
   - **Verdict:** `POST-RESTART PERSISTENCE: PASS`.
 
-### 3.4 Local Test Execution Evidence
+### 3.5 Local Test Execution & Final Container Filesystem Inspection Evidence
 
 | Test Suite | Command | Total Tests / Metrics | Result | Duration |
 |---|---|---|---|---|
@@ -110,13 +120,31 @@ The live cloud bootstrap deployment was provisioned and comprehensively validate
 | **All 8 API Endpoints** | Live audit against running backend container | All 8 endpoints 200/201 OK | **PASS** | Clean |
 | **Container Persistence** | State preserved after `docker restart caroai-backend` | `GET /api/games/{id}` 200 OK | **PASS** | Clean |
 
+#### Final Container Filesystem Inspection Evidence
+A final container filesystem inspection was performed against review image `caroai:premerge-review`:
+- **Image**: `caroai:premerge-review`
+- **Image ID**: `sha256:270e19a83a4aecc6e94fc0d90800ce562184b394c0b10cc6836362d9093c11a5`
+- **Inspection Command**:
+  ```bash
+  docker run --rm --entrypoint sh caroai:premerge-review -c "id; echo '--- ENV FILE CHECK ---'; find /app -type f \( -name '.env' -o -name '.env.*' \) -print"
+  ```
+- **Observed Inspection Output**:
+  - Runtime identity: `uid=10001(appuser) gid=10001(appuser)`.
+  - Environment template: `/app/.env.example` present.
+  - Secret file check: No `.env`, `.env.local`, or `.env.production` files found under `/app`.
+- **Inspection Scope & Precision Note**:
+  - This is a final container filesystem inspection of the review image.
+  - It is not a complete scan of all historical image layers.
+  - Gitleaks full Git-history scanning is a separate CI check.
+  - No claim is made that all historical image layers have been independently scanned.
+
 ---
 
 ## 4. Pull Request #49 Integration & Branch Ruleset Transition
 
 ### 4.1 PR #49 Integration, PR #50 Status & Open PR Inventory
 - **PR #49 (Final Delivery PR)**: [PR #49](https://github.com/emt0147t/caroAI/pull/49) (`feature/final-project-delivery` → `develop`, Head SHA: `b22e0bd597f858be6777d7e4b8685a56c04521c2`) was officially merged into `develop` via merge commit `6cf9bf08b8fb374645b7ecf79eb7a886ac002ef6`.
-- **PR #50 (Production Promotion PR)**: Pull Request #50 (`develop` → `main`, Head SHA: `2a46000b455f9b9779fd7289c6b22ae080aaa44c`) was opened to promote verified engineering to `main`. Triggered CI Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) (all tests passed).
+- **PR #50 (Production Promotion PR)**: Pull Request #50 (`develop` → `main`) promotes verified engineering to `main`. Current verified Head SHA is `caf9d92f2120f5af0c5c8f197856ffde2ab6b9c8` (CI Run [#41565255360](https://github.com/emt0147t/caroAI/actions/runs/41565255360) passed). Historical pre-hardening snapshot was `2a46000` (CI Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622)).
 - **Open Pull Requests (4 PRs)**:
   - **PR #50**: Active pre-merge PR from `develop` into `main`.
   - **PR #25**: `docs: add Sprint 3 phase 3 team execution plan` (created 2026-10-16 by `emt0147t`)
@@ -141,8 +169,8 @@ Infrastructure and release rollout status as of PR #50 pre-merge reconciliation:
    - Connected to Neon Serverless PostgreSQL (`caroai-demo`, AWS Singapore `ap-southeast-1`, `neondb`).
    - Migrations executed, API endpoints 200 OK, PvP/PvAI gameplay verified, and data persistence verified across service restart (`POST-RESTART PERSISTENCE: PASS`).
 2. **GitHub Production Environment Secrets & Variables**:
-   - Secrets (`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `RENDER_DEPLOY_HOOK`, `RENDER_API_KEY`, `RENDER_SERVICE_ID`) and variable `CAROAI_PUBLIC_URL` have been entered by the repository owner in GitHub Settings → Environments → `production`.
-   - Note: Because release jobs are skipped during CI runs, these secrets have not yet been validated by an executing release job.
+   - The five production secrets (`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `RENDER_DEPLOY_HOOK`, `RENDER_API_KEY`, `RENDER_SERVICE_ID`) are owner-reported entered under GitHub Settings → Environments → `production`, but have not yet been validated by an executing production release (release jobs skipped in CI).
+   - **Environment Variable `CAROAI_PUBLIC_URL`**: Status is **UNCONFIRMED — PENDING OWNER VERIFICATION**. Do not claim it is configured or infer its presence from the five secrets.
 3. **GitHub Production Environment Protections**:
    - Under Settings → Environments → `production`:
      - **Required reviewers**: Unconfirmed / awaiting verification (do not claim configured unless independently confirmed).
