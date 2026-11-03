@@ -3,12 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cờ CARO AI · Chiến Thắng!</title>
+    <title>CaroAI · Chiến Thắng!</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/tokens.css">
     <script src="/theme-sound.js"></script>
+    <script>
+        // Canonical forwarding: if game_id is present, forward to the authoritative board view
+        const params = new URLSearchParams(window.location.search);
+        const gameId = params.get("game_id");
+        if (gameId) {
+            window.location.replace("/trong_tran/index.html?game_id=" + encodeURIComponent(gameId));
+        }
+    </script>
     <style>
         :root {
             --bg-main: var(--ui-color-canvas);
@@ -26,10 +34,6 @@
         .result-icon { width: 56px; height: 56px; margin: 0 auto 16px; display: grid; place-items: center; border-radius: 14px; background: var(--ui-color-success-soft); color: var(--color-win); }
         .result-title { font-size: 1.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px; letter-spacing: -0.5px; }
         .result-subtitle { font-size: 0.95rem; color: var(--text-sub); margin-bottom: 32px; line-height: 1.5; }
-        .stats-box { background: var(--ui-color-surface-subdued); border: 1px solid var(--border-color); border-radius: 14px; padding: 16px; display: flex; justify-content: space-around; margin-bottom: 32px; }
-        .stat-item { text-align: center; }
-        .stat-label { font-size: 0.8rem; color: var(--text-sub); font-weight: 600; margin-bottom: 4px; }
-        .stat-value { font-size: 1.1rem; color: var(--text-main); font-weight: 800; font-variant-numeric: tabular-nums; }
         .actions { display: flex; gap: 12px; }
         .btn { flex: 1; padding: 12px 18px; border-radius: 12px; font-size: 0.95rem; font-weight: 700; cursor: pointer; border: none; transition: background var(--ui-motion-fast), transform var(--ui-motion-fast); text-decoration: none; display: inline-flex; justify-content: center; align-items: center; }
         .btn-primary { background: var(--text-main); color: var(--card-bg); }
@@ -41,7 +45,7 @@
 <body>
     <div class="result-card">
         <div class="status-badge">
-            Khởi tạo thành công
+            Kết quả ván đấu
         </div>
         <div class="result-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -50,26 +54,11 @@
             </svg>
         </div>
         <h1 class="result-title">Chiến Thắng!</h1>
-        <p class="result-subtitle">Chúc mừng! Bạn đã tạo ra chuỗi 5 nước đi liên tiếp chính xác và đánh bại đối thủ.</p>
-        
-        <div class="stats-box">
-            <div class="stat-item">
-                <div class="stat-label">Thời gian</div>
-                <div class="stat-value">03:45</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Tổng nước đi</div>
-                <div class="stat-value">25</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Độ chính xác</div>
-                <div class="stat-value">92%</div>
-            </div>
-        </div>
+        <p class="result-subtitle">Kết quả và thế cờ được bảo lưu tự động bởi Backend. Bạn có thể mở lại bàn đấu chính thức hoặc xem danh sách ván đấu.</p>
 
         <div class="actions">
-            <a href="../trong_tran/index.html" class="btn btn-primary">Chơi Lại</a>
-            <a href="../welcome.html" class="btn btn-secondary">Trang Chủ</a>
+            <a href="/welcome.html" class="btn btn-primary">Bắt Đầu Ván Mới</a>
+            <a href="/history.html" class="btn btn-secondary">Xem Lịch Sử</a>
         </div>
     </div>
 </body>
