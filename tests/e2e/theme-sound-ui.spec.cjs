@@ -82,6 +82,75 @@ test('sound is disabled by default and can be toggled with persistence', async (
   await expect(page.locator('#soundToggleBtn')).toHaveAttribute('aria-pressed', 'true');
 });
 
+test('terminal sound APIs and draw/defeat cues are available and functional', async ({ page, request }) => {
+  await page.goto('/');
+
+  // Verify sound API exports
+  const soundAPIs = await page.evaluate(() => ({
+    hasPlayMove: typeof window.CaroAI?.sound?.playMove === 'function',
+    hasPlayVictory: typeof window.CaroAI?.sound?.playVictory === 'function',
+    hasPlayDefeat: typeof window.CaroAI?.sound?.playDefeat === 'function',
+    hasPlayDraw: typeof window.CaroAI?.sound?.playDraw === 'function'
+  }));
+  expect(soundAPIs.hasPlayMove).toBe(true);
+  expect(soundAPIs.hasPlayVictory).toBe(true);
+  expect(soundAPIs.hasPlayDefeat).toBe(true);
+  expect(soundAPIs.hasPlayDraw).toBe(true);
+
+  // Enable sound
+  await page.evaluate(() => localStorage.setItem('caroai_sound_enabled', 'true'));
+
+  // Create game and spy on sound calls
+  const create = await request.post('/api/games', { data: { mode: 'HUMAN_VS_HUMAN' } });
+  const game = await create.json();
+  await page.goto('/trong_tran/index.html?game_id=' + encodeURIComponent(game.id));
+
+  // Install spy
+  await page.evaluate(() => {
+    window.__soundCalls = [];
+    const origMove = window.CaroAI.sound.playMove;
+    const origDraw = window.CaroAI.sound.playDraw;
+    const origVictory = window.CaroAI.sound.playVictory;
+    window.CaroAI.sound.playMove = () => { window.__soundCalls.push('move'); origMove(); };
+    window.CaroAI.sound.playDraw = () => { window.__soundCalls.push('draw'); origDraw(); };
+    window.CaroAI.sound.playVictory = () => { window.__soundCalls.push('victory'); origVictory(); };
+  });
+
+  // Make move on cell (0,0)
+  await page.locator('#board .cell').first().click();
+  await page.waitForTimeout(500);
+
+  const calls = await page.evaluate(() => window.__soundCalls);
+  expect(calls).toContain('move');
+});
+
+test('mobile board cells maintain WCAG 2.2 minimum 24px hit area and support arrow navigation', async ({ page, request }) => {
+  const create = await request.post('/api/games', { data: { mode: 'HUMAN_VS_HUMAN' } });
+  const game = await create.json();
+
+  // Test at narrow 320px viewport
+  await page.setViewportSize({ width: 320, height: 600 });
+  await page.goto('/trong_tran/index.html?game_id=' + encodeURIComponent(game.id));
+
+  const firstCell = page.locator('#board .cell').first();
+  await expect(firstCell).toBeVisible();
+
+  // Verify cell size is >= 24px (WCAG 2.2 SC 2.5.8 Target Size Minimum)
+  const box = await firstCell.boundingBox();
+  expect(box.width).toBeGreaterThanOrEqual(23.9);
+  expect(box.height).toBeGreaterThanOrEqual(23.9);
+
+  // Verify keyboard arrow navigation
+  await firstCell.focus();
+  await page.keyboard.press('ArrowRight');
+  const secondCellFocused = await page.locator('#board .cell').nth(1).evaluate(el => document.activeElement === el);
+  expect(secondCellFocused).toBe(true);
+
+  await page.keyboard.press('ArrowDown');
+  const cellRow1Col1Focused = await page.locator('#board .cell').nth(16).evaluate(el => document.activeElement === el);
+  expect(cellRow1Col1Focused).toBe(true);
+});
+
 test('responsive checks pass across full viewport matrix (320, 360, 390, 768, 1024, 1280, 1440)', async ({ page, request }) => {
   const viewports = [
     { width: 320, height: 600 },

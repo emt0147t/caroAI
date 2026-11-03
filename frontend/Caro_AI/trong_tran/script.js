@@ -113,6 +113,16 @@ function render() {
     b.className = "cell " + (p ? p.toLowerCase() : "") + (isStar ? " star-point" : "") + (s.lastMove?.row === r && s.lastMove?.col === c ? " last-move" : "");
     b.disabled = s.busy || g.status !== "IN_PROGRESS" || !!p || !humanTurn;
     b.addEventListener("click", () => makeMove(r, c));
+    b.addEventListener("keydown", (e) => {
+      let targetR = r, targetC = c;
+      if (e.key === "ArrowUp") targetR = Math.max(0, r - 1);
+      else if (e.key === "ArrowDown") targetR = Math.min(N - 1, r + 1);
+      else if (e.key === "ArrowLeft") targetC = Math.max(0, c - 1);
+      else if (e.key === "ArrowRight") targetC = Math.min(N - 1, c + 1);
+      else return;
+      e.preventDefault();
+      board.children[targetR * N + targetC]?.focus();
+    });
     board.appendChild(b);
   }
 }
@@ -161,6 +171,24 @@ async function loadGame(id, resumeAI = true) {
   }
 }
 
+function playMoveOrTerminalSound(game) {
+  if (!window.CaroAI?.sound?.isEnabled?.()) return;
+  const status = game?.status;
+  if (status === "X_WON") {
+    window.CaroAI.sound.playVictory();
+  } else if (status === "O_WON") {
+    if (game?.mode === "HUMAN_VS_AI") {
+      window.CaroAI.sound.playDefeat();
+    } else {
+      window.CaroAI.sound.playVictory();
+    }
+  } else if (status === "DRAW") {
+    window.CaroAI.sound.playDraw();
+  } else {
+    window.CaroAI.sound.playMove();
+  }
+}
+
 async function makeMove(row, col) {
   const g = s.game;
   if (s.busy || !s.id || !g || g.status !== "IN_PROGRESS" || (g.mode === "HUMAN_VS_AI" && g.current_player !== "X")) return;
@@ -174,10 +202,7 @@ async function makeMove(row, col) {
     s.game = result.game;
     s.lastMove = result.move || null;
     updateUrl();
-    window.CaroAI?.sound?.playMove();
-    if (["X_WON", "O_WON"].includes(result.game?.status)) {
-      window.CaroAI?.sound?.playVictory();
-    }
+    playMoveOrTerminalSound(result.game);
   } catch (e) {
     try {
       s.game = await api("/api/games/" + encodeURIComponent(s.id));
@@ -206,10 +231,7 @@ async function aiMove() {
     s.game = result.game;
     s.lastMove = result.move || null;
     updateUrl();
-    window.CaroAI?.sound?.playMove();
-    if (["X_WON", "O_WON"].includes(result.game?.status)) {
-      window.CaroAI?.sound?.playVictory();
-    }
+    playMoveOrTerminalSound(result.game);
   } catch (e) {
     try {
       s.game = await api("/api/games/" + encodeURIComponent(s.id));
