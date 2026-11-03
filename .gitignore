@@ -29,6 +29,9 @@ Thumbs.db
 .coverage
 .coverage.*
 htmlcov/
+playwright-report/
+test-results/
+POST_RELEASE_A1_AUDIT/
 
 # ML artifacts
 *.pkl
