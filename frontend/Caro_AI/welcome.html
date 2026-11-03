@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cờ Caro AI - Bắt đầu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/tokens.css">
+  <style>
+    :root {
+      --bg: var(--ui-color-canvas);
+      --card: var(--ui-color-surface);
+      --border: var(--ui-color-border);
+      --ink: var(--ui-color-text);
+      --sub: var(--ui-color-muted);
+      --accent: var(--ui-color-accent);
+      --pale: var(--ui-color-accent-soft);
+      --error: var(--ui-color-error);
+      --color-x: var(--ui-color-x);
+      --color-o: var(--ui-color-o);
+      --card-shadow: 0 10px 30px rgba(44, 37, 35, 0.05);
+      --card-shadow-hover: 0 16px 36px rgba(44, 37, 35, 0.09);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--ui-font);
+    }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* Dashboard Layout Shell */
+    .dashboard-shell {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 28px;
+      width: 100%;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+    }
+
+    /* Header Navigation - Visually Top (order: 1) */
+    .dashboard-header {
+      order: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 12px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--ui-radius-panel);
+      box-shadow: var(--card-shadow);
+    }
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: var(--ink);
+      color: #ffffff;
+      font-size: 1.35rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .brand-meta {
+      display: flex;
+      flex-direction: column;
+    }
+    .brand-name {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--pale);
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .brand-tagline {
+      font-size: 0.8rem;
+      color: var(--sub);
+      font-weight: 500;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      background: #faf7f4;
+      color: var(--sub);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+    .status-pill.status-online {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      color: #065f46;
+    }
+    .status-pill.status-online .status-dot {
+      background: #10b981;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+    .status-pill.status-offline {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #991b1b;
+    }
+    .status-pill.status-offline .status-dot {
+      background: #ef4444;
+    }
+    .nav-link {
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: var(--ui-radius-control);
+      transition: background var(--ui-motion-fast), color var(--ui-motion-fast);
+    }
+    .nav-link:hover {
+      background: var(--pale);
+      color: var(--accent);
+    }
+    .nav-link.active {
+      color: var(--accent);
+      background: var(--pale);
+    }
+
+    /* Main Card - First in DOM, Visually row 2 (order: 2) */
+    .card {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--ui-radius-feature);
+      padding: 36px;
+      box-shadow: var(--card-shadow);
+      transition: box-shadow var(--ui-motion-fast);
+    }
+    .card:hover {
+      box-shadow: var(--card-shadow-hover);
+    }
+    .dashboard-launcher {
+      order: 2;
+      display: flex;
+      flex-direction: column;
+    }
+    .launcher-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--accent);
+      background: var(--pale);
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+      align-self: flex-start;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.25;
+      color: var(--ink);
+    }
+    .subtitle {
+      color: var(--sub);
+      font-size: 0.94rem;
+      line-height: 1.6;
+      margin: 10px 0 24px;
+    }
+
+    /* Mode Selection Section */
+    .group {
+      margin: 20px 0;
+    }
+    .label {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--sub);
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .choice {
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 14px;
+      background: #faf7f4;
+      color: var(--ink);
+      font-weight: 700;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: border-color var(--ui-motion-fast), background var(--ui-motion-fast), transform var(--ui-motion-fast);
+    }
+    .choice:hover {
+      background: #f5f0eb;
+      border-color: #d8cec4;
+    }
+    .choice[aria-pressed="true"] {
+      border-color: var(--accent);
+      background: var(--pale);
+      color: var(--accent);
+    }
+    .choice-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .choice-title {
+      font-size: 1rem;
+      font-weight: 800;
+    }
+    .choice-tag {
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.06);
+      color: inherit;
+    }
+    .choice[aria-pressed="true"] .choice-tag {
+      background: rgba(43, 138, 110, 0.15);
+      color: var(--accent);
+    }
+    .choice-desc {
+      font-size: 0.78rem;
+      color: var(--sub);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .choice[aria-pressed="true"] .choice-desc {
+      color: #216d56;
+    }
+
+    /* Difficulty Group */
+    select {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #faf7f4;
+      color: var(--ink);
+      font-weight: 600;
+      font-size: 0.95rem;
+      appearance: auto;
+      transition: border-color var(--ui-motion-fast);
+    }
+    select:focus {
+      border-color: var(--accent);
+    }
+    .difficulty-desc {
+      font-size: 0.8rem;
+      color: var(--sub);
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    /* Start Button & Error Message */
+    .start {
+      width: 100%;
+      margin-top: 14px;
+      padding: 16px;
+      border: 0;
+      border-radius: 14px;
+      background: var(--ink);
+      color: #ffffff;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background var(--ui-motion-fast), transform var(--ui-motion-fast);
+    }
+    .start:hover:not(:disabled) {
+      background: #191413;
+    }
+    .start:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+    button:disabled, select:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+    .message {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 12px;
+      background: var(--ui-color-error-soft);
+      color: var(--error);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      border: 1px solid #fecaca;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .foot {
+      text-align: center;
+      color: var(--sub);
+      font-size: 0.82rem;
+      margin-top: 22px;
+      line-height: 1.6;
+    }
+    .foot a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .foot a:hover {
+      text-decoration: underline;
+    }
+
+    /* Right Column: Dashboard Stats & Recent Games (order: 3) */
+    .dashboard-overview {
+      order: 3;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .stats-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--ui-radius-feature);
+      padding: 30px;
+      box-shadow: var(--card-shadow);
+    }
+    .stats-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stats-header h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+    .stats-header a {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .stats-header a:hover {
+      text-decoration: underline;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .metric-box {
+      background: #faf7f4;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .metric-value {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+    .metric-label {
+      font-size: 0.75rem;
+      color: var(--sub);
+      font-weight: 600;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    /* Recent Matches Mini-List */
+    .recent-section-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--sub);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .recent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .recent-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      background: #faf7f4;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: background var(--ui-motion-fast);
+    }
+    .recent-row:hover {
+      background: #f5f0eb;
+    }
+    .recent-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .recent-mode {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .recent-meta {
+      font-size: 0.78rem;
+      color: var(--sub);
+      font-weight: 500;
+    }
+    .result-tag {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .result-tag.result-x_won {
+      background: #fee4e2;
+      color: var(--color-x);
+    }
+    .result-tag.result-o_won {
+      background: #d1fae5;
+      color: var(--color-o);
+    }
+    .result-tag.result-draw {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+    .result-tag.result-in_progress {
+      background: #fef3c7;
+      color: #b45309;
+    }
+    .recent-open {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: white;
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .recent-open:hover {
+      background: var(--pale);
+      border-color: var(--accent);
+    }
+    .recent-empty {
+      padding: 18px;
+      text-align: center;
+      color: var(--sub);
+      font-size: 0.88rem;
+      background: #faf7f4;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+    }
+
+    /* Features Showcase Section (order: 4) */
+    .dashboard-features {
+      order: 4;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--ui-radius-panel);
+      padding: 24px 20px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: var(--pale);
+      color: var(--accent);
+      font-size: 1.25rem;
+      margin-bottom: 4px;
+    }
+    .feature-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .feature-desc {
+      font-size: 0.85rem;
+      color: var(--sub);
+      line-height: 1.5;
+    }
+
+    /* Rules & How-to-play Section (order: 5) */
+    .dashboard-rules {
+      order: 5;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--ui-radius-feature);
+      padding: 32px;
+      box-shadow: var(--card-shadow);
+    }
+    .rules-header {
+      margin-bottom: 20px;
+    }
+    .rules-header h2 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+    .rules-header p {
+      color: var(--sub);
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .rule-item {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 16px;
+      background: #faf7f4;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+    .rule-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-size: 0.82rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .rule-content h3 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+    .rule-content p {
+      font-size: 0.82rem;
+      color: var(--sub);
+      line-height: 1.5;
+    }
+
+    /* Footer (order: 6) */
+    .dashboard-footer {
+      order: 6;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      color: var(--sub);
+      font-size: 0.82rem;
+    }
+    .footer-links {
+      display: flex;
+      gap: 16px;
+    }
+    .footer-links a {
+      color: var(--sub);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .footer-links a:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    /* Desktop Multi-column Grid (>= 860px) */
+    @media (min-width: 860px) {
+      .dashboard-shell {
+        grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+      }
+      .dashboard-header {
+        grid-column: 1 / -1;
+      }
+      .dashboard-launcher {
+        grid-column: 1;
+      }
+      .dashboard-overview {
+        grid-column: 2;
+      }
+      .dashboard-features {
+        grid-column: 1 / -1;
+      }
+      .dashboard-rules {
+        grid-column: 1 / -1;
+      }
+      .dashboard-footer {
+        grid-column: 1 / -1;
+      }
+    }
+
+    /* Mobile Responsive Adjustments (<= 480px and down to 320px) */
+    @media (max-width: 768px) {
+      .dashboard-features {
+        grid-template-columns: 1fr;
+      }
+      .rules-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 480px) {
+      .dashboard-shell {
+        padding: 16px 12px 36px;
+        gap: 18px;
+      }
+      .card {
+        padding: 24px 16px;
+      }
+      .stats-card {
+        padding: 22px 16px;
+      }
+      .dashboard-rules {
+        padding: 22px 16px;
+      }
+      h1 {
+        font-size: 1.65rem;
+      }
+      .choices {
+        grid-template-columns: 1fr;
+      }
+      .metrics-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .dashboard-header {
+        padding: 12px 14px;
+      }
+      .header-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-shell">
+
+    <!-- 1. Primary Game Launcher: FIRST in DOM to satisfy keyboard Tab order and ux.spec.cjs -->
+    <main class="card dashboard-launcher" id="playCard">
+      <div class="launcher-badge">Bàn cờ 15 × 15 · Gomoku Engine</div>
+      <h1>Cờ Caro AI</h1>
+      <p class="subtitle">Chọn cách chơi và bắt đầu ván mới. Trạng thái và luật chơi được xử lý bởi Backend.</p>
+
+      <section class="group" aria-labelledby="modeLabel">
+        <span id="modeLabel" class="label">Chế độ chơi</span>
+        <div class="choices">
+          <button class="choice" type="button" data-mode="HUMAN_VS_HUMAN" aria-pressed="true" aria-label="Người vs Người">
+            <div class="choice-header">
+              <span class="choice-title">Người vs Người</span>
+              <span class="choice-tag">PvP</span>
+            </div>
+            <span class="choice-desc">Hai người so tài trực tiếp trên cùng một thiết bị</span>
+          </button>
+          <button class="choice" type="button" data-mode="HUMAN_VS_AI" aria-pressed="false" aria-label="Người vs AI">
+            <div class="choice-header">
+              <span class="choice-title">Người vs AI</span>
+              <span class="choice-tag">PvAI</span>
+            </div>
+            <span class="choice-desc">Thử thách thuật toán tính toán nước đi Minimax</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="group hidden" id="difficultyGroup">
+        <label class="label" for="difficulty">Độ khó AI</label>
+        <select id="difficulty">
+          <option value="easy">Dễ · Thử nghiệm nhanh</option>
+          <option value="medium" selected>Trung bình · Chiến thuật cân bằng</option>
+          <option value="hard">Khó · Tối ưu sâu Minimax</option>
+        </select>
+        <p class="difficulty-desc">Động cơ AI sẽ tự động phân tích thế cờ và đánh trả khi tới lượt quân O.</p>
+      </section>
+
+      <button id="startBtn" class="start" type="button">Bắt đầu ván đấu →</button>
+      <p id="message" class="message hidden" role="alert"></p>
+
+      <p class="foot">Bàn cờ 15 × 15 · X đi trước · <a href="history.html">Xem lịch sử ván đấu</a></p>
+    </main>
+
+    <!-- 2. Header Bar: Visually Top via CSS order: 1 -->
+    <header class="dashboard-header">
+      <a href="/" class="brand-wrap">
+        <div class="brand-logo" aria-hidden="true">#</div>
+        <div class="brand-meta">
+          <div class="brand-name">CaroAI <span class="brand-badge">v2.0</span></div>
+          <span class="brand-tagline">Đấu trường Gomoku trực tuyến</span>
+        </div>
+      </a>
+      <div class="header-actions">
+        <div id="systemStatus" class="status-pill" role="status" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="statusText">Đang kiểm tra...</span>
+        </div>
+        <nav class="header-nav" aria-label="Điều hướng chính">
+          <a href="#playCard" class="nav-link active">Chơi ngay</a>
+          <a href="history.html" class="nav-link">Lịch sử</a>
+          <a href="#rulesSection" class="nav-link">Luật chơi</a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- 3. Dashboard Match Center & Live Stats Panel: order: 3 -->
+    <aside class="dashboard-overview" aria-label="Tổng quan đấu trường">
+      <section class="stats-card">
+        <div class="stats-header">
+          <h2>Tổng Quan Đấu Trường</h2>
+          <a href="history.html">Xem toàn bộ →</a>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-value" id="totalGamesCount">—</div>
+            <div class="metric-label">Ván đã lưu</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value">15 × 15</div>
+            <div class="metric-label">Kích thước ô</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value">PvP / AI</div>
+            <div class="metric-label">Chế độ chơi</div>
+          </div>
+        </div>
+
+        <div class="recent-section-title">Ván đấu gần đây</div>
+        <div id="recentGamesList" class="recent-list" aria-live="polite">
+          <p class="recent-empty">Đang đồng bộ từ Backend…</p>
+        </div>
+      </section>
+    </aside>
+
+    <!-- 4. Feature Showcase Cards: order: 4 -->
+    <section class="dashboard-features" aria-label="Đặc điểm nổi bật">
+      <article class="feature-card">
+        <div class="feature-icon" aria-hidden="true">🎯</div>
+        <h3 class="feature-title">Chuẩn Gomoku 15 × 15</h3>
+        <p class="feature-desc">Bàn cờ 15 hàng 15 cột với 225 giao điểm chuẩn thi đấu. Tạo thành chuỗi 5 quân liên tiếp để chiến thắng.</p>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon" aria-hidden="true">⚡</div>
+        <h3 class="feature-title">Backend Quyết Định Tuyệt Đối</h3>
+        <p class="feature-desc">Mọi nước đi, kiểm tra hợp lệ, phân định thắng/thua/hòa và bảo lưu trạng thái đều do FastAPI & PostgreSQL xác thực.</p>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon" aria-hidden="true">🧠</div>
+        <h3 class="feature-title">Động Cơ AI Minimax</h3>
+        <p class="feature-desc">Tích hợp thuật toán Minimax kết hợp Alpha-Beta pruning và nhận diện mẫu hình chiến thuật công thủ thông minh.</p>
+      </article>
+    </section>
+
+    <!-- 5. Game Rules Guide: order: 5 -->
+    <section id="rulesSection" class="dashboard-rules" aria-labelledby="rulesTitle">
+      <div class="rules-header">
+        <h2 id="rulesTitle">Luật Chơi & Hướng Dẫn Ván Đấu</h2>
+        <p>Quy tắc chuẩn quốc tế giúp bạn bắt đầu ván cờ một cách tự tin.</p>
+      </div>
+      <div class="rules-grid">
+        <div class="rule-item">
+          <div class="rule-num">1</div>
+          <div class="rule-content">
+            <h3>Lượt đi đầu tiên</h3>
+            <p>Quân X luôn đi trước. Người chơi chọn một ô còn trống trên bàn cờ 15 × 15 để thực hiện nước đánh hợp lệ.</p>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">2</div>
+          <div class="rule-content">
+            <h3>Luân phiên lượt</h3>
+            <p>Hai bên luân phiên đặt quân. Trong chế độ Người vs AI, máy tính sẽ tự động tính toán nước đi tốt nhất sau nước của bạn.</p>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">3</div>
+          <div class="rule-content">
+            <h3>Điều kiện chiến thắng</h3>
+            <p>Người chơi đầu tiên tạo được chuỗi đúng hoặc nhiều hơn 5 quân cờ liên tiếp theo hàng ngang, dọc hoặc chéo sẽ thắng.</p>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">4</div>
+          <div class="rule-content">
+            <h3>Phân định kết quả hòa</h3>
+            <p>Khi toàn bộ 225 ô trên bàn cờ đã được lấp đầy mà không bên nào tạo được 5 quân liên tiếp, ván đấu kết thúc với kết quả Hòa.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Dashboard Footer: order: 6 -->
+    <footer class="dashboard-footer">
+      <div>© CaroAI · Nền tảng Cờ Caro Trí Tuệ Nhân Tạo 15 × 15</div>
+      <nav class="footer-links" aria-label="Điều hướng chân trang">
+        <a href="#playCard">Lên đầu trang ↑</a>
+        <a href="history.html">Lịch sử đấu</a>
+        <a href="#rulesSection">Luật chơi</a>
+      </nav>
+    </footer>
+
+  </div>
+
+  <script>
+    // Cross-origin deployments must allow this frontend origin through a specific CORS allowlist.
+    const API = String(window.CAROAI_API_BASE_URL || "").replace(/\/$/, "");
+    let selectedMode = "HUMAN_VS_HUMAN";
+    const choices = [...document.querySelectorAll("[data-mode]")];
+    const difficultyGroup = document.getElementById("difficultyGroup");
+    const difficulty = document.getElementById("difficulty");
+    const start = document.getElementById("startBtn");
+    const message = document.getElementById("message");
+
+    choices.forEach(button => button.addEventListener("click", () => {
+      selectedMode = button.dataset.mode;
+      choices.forEach(item => item.setAttribute("aria-pressed", String(item === button)));
+      difficultyGroup.classList.toggle("hidden", selectedMode !== "HUMAN_VS_AI");
+      message.classList.add("hidden");
+    }));
+
+    start.addEventListener("click", async () => {
+      if (start.disabled) return;
+      start.disabled = true;
+      message.classList.add("hidden");
+      start.textContent = "Đang tạo ván...";
+      try {
+        const response = await fetch(API + "/api/games", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: selectedMode })
+        });
+        let data = null;
+        try { data = await response.json(); } catch (_) {}
+        if (!response.ok) throw new Error(data?.detail || ("HTTP " + response.status));
+        if (!data?.id) throw new Error("Backend không trả về game ID hợp lệ.");
+        const params = new URLSearchParams({ game_id: data.id, mode: data.mode, difficulty: selectedMode === "HUMAN_VS_AI" ? difficulty.value : "medium" });
+        window.location.href = "trong_tran/index.html?" + params.toString();
+      } catch (error) {
+        message.textContent = error instanceof TypeError
+          ? "Không kết nối được Backend. Hãy kiểm tra server, CORS và API base URL."
+          : "Không thể tạo ván: " + error.message;
+        message.classList.remove("hidden");
+      } finally {
+        start.disabled = false;
+        start.textContent = "Bắt đầu ván đấu →";
+      }
+    });
+
+    // Health check indicator
+    async function checkSystemHealth() {
+      const statusEl = document.getElementById("systemStatus");
+      const textEl = document.getElementById("statusText");
+      if (!statusEl || !textEl) return;
+      try {
+        const res = await fetch(API + "/health");
+        if (res.ok) {
+          statusEl.className = "status-pill status-online";
+          textEl.textContent = "Hệ thống sẵn sàng";
+        } else {
+          statusEl.className = "status-pill status-offline";
+          textEl.textContent = "HTTP " + res.status;
+        }
+      } catch (_) {
+        statusEl.className = "status-pill status-offline";
+        textEl.textContent = "Mất kết nối Backend";
+      }
+    }
+
+    // Dashboard overview statistics and recent matches preview
+    async function loadDashboardStats() {
+      const totalCountEl = document.getElementById("totalGamesCount");
+      const recentListEl = document.getElementById("recentGamesList");
+      if (!totalCountEl || !recentListEl) return;
+      try {
+        const res = await fetch(API + "/api/history?limit=3&offset=0", {
+          headers: { Accept: "application/json" }
+        });
+        let data = null;
+        try { data = await res.json(); } catch (_) {}
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const items = Array.isArray(data) ? data : (data?.items || data?.games || []);
+        const valid = items.filter(g => g && typeof g.id === "string" && g.id.trim());
+
+        totalCountEl.textContent = (typeof data?.total === "number") ? String(data.total) : String(valid.length);
+        recentListEl.replaceChildren();
+
+        if (valid.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "recent-empty";
+          empty.textContent = "Chưa có ván đấu nào được lưu.";
+          recentListEl.append(empty);
+          return;
+        }
+
+        for (const g of valid.slice(0, 3)) {
+          const row = document.createElement("div");
+          row.className = "recent-row";
+
+          const info = document.createElement("div");
+          info.className = "recent-info";
+
+          const modeSpan = document.createElement("span");
+          modeSpan.className = "recent-mode";
+          modeSpan.textContent = g.mode === "HUMAN_VS_AI" ? "Người vs AI" : "Người vs Người";
+
+          const metaSpan = document.createElement("span");
+          metaSpan.className = "recent-meta";
+          const moves = Number.isFinite(Number(g.move_count)) ? g.move_count + " nước" : "";
+          metaSpan.textContent = moves;
+
+          info.append(modeSpan, metaSpan);
+
+          const badge = document.createElement("span");
+          const resVal = g.result || g.status || "IN_PROGRESS";
+          badge.className = "result-tag result-" + String(resVal).toLowerCase();
+          badge.textContent = ({ IN_PROGRESS: "Đang chơi", X_WON: "X thắng", O_WON: "O thắng", DRAW: "Hòa" })[resVal] || resVal;
+
+          const link = document.createElement("a");
+          link.className = "recent-open";
+          link.href = "/trong_tran/index.html?game_id=" + encodeURIComponent(g.id) + "&mode=" + encodeURIComponent(g.mode || "");
+          link.textContent = "Mở →";
+
+          row.append(info, badge, link);
+          recentListEl.append(row);
+        }
+      } catch (_) {
+        totalCountEl.textContent = "—";
+        recentListEl.replaceChildren();
+        const fallback = document.createElement("p");
+        fallback.className = "recent-empty";
+        fallback.textContent = "Lịch sử khả dụng tại trang Lịch sử.";
+        recentListEl.append(fallback);
+      }
+    }
+
+    checkSystemHealth();
+    loadDashboardStats();
+  </script>
+</body>
+</html>

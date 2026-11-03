@@ -1,0 +1,259 @@
+name: Phase 4 Linux Docker AI benchmark
+
+on:
+  push:
+    branches:
+      - feature/phase4-m4-m5-linux-benchmark
+    paths:
+      - .github/workflows/phase4-linux-docker-benchmark.yml
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - .github/workflows/phase4-linux-docker-benchmark.yml
+
+permissions:
+  contents: read
+
+jobs:
+  linux-docker-benchmark:
+    name: Linux Docker benchmark (pinned Phase 4 source)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      BENCHMARK_SOURCE_SHA: 2b4e3c167d7ca0a2a5b530b7a251ced6dd37d526
+      OUTPUT_DIR: reports/benchmark-linux-docker-phase4-2b4e3c1
+      IMAGE_TAG: caroai-phase4-benchmark:2b4e3c167d7c
+      CPU_LIMIT: "2"
+      MEMORY_LIMIT: 4g
+    steps:
+      - name: Checkout exact benchmark source revision
+        uses: actions/checkout@v4
+        with:
+          ref: 2b4e3c167d7ca0a2a5b530b7a251ced6dd37d526
+          fetch-depth: 0
+
+      - name: Verify benchmark source identity and clean measured files
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$BENCHMARK_SOURCE_SHA"
+          test -z "$(git status --porcelain -- app/ai scripts/benchmark_ai_sprint3.py reports/ai-demo-boards.json)"
+          echo "Verified benchmark source: $actual"
+
+      - name: Build the benchmark container from the pinned repository Dockerfile
+        run: |
+          docker build --pull \
+            --label "org.opencontainers.image.revision=$BENCHMARK_SOURCE_SHA" \
+            --tag "$IMAGE_TAG" \
+            --file Dockerfile .
+
+      - name: Capture host, Docker, image and resource-limit metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUTPUT_DIR"
+          export DOCKER_SERVER_VERSION="$(docker version --format '{{.Server.Version}}')"
+          export BENCHMARK_IMAGE_ID="$(docker image inspect "$IMAGE_TAG" --format '{{.Id}}')"
+          export BENCHMARK_IMAGE_REPODIGESTS="$(docker image inspect "$IMAGE_TAG" --format '{{json .RepoDigests}}')"
+          export BASE_IMAGE_ID="$(docker image inspect python:3.11-slim --format '{{.Id}}')"
+          export BASE_IMAGE_REPODIGESTS="$(docker image inspect python:3.11-slim --format '{{json .RepoDigests}}')"
+          export HOST_UNAME="$(uname -a)"
+          export HOST_LSCPU="$(lscpu | sed -n '1,24p')"
+          export BENCHMARK_COMMAND="python scripts/benchmark_ai_sprint3.py --runs 5 --warmup 1 --source-sha $BENCHMARK_SOURCE_SHA --output-dir /results"
+          export DOCKER_RUN_LIMITS="--cpus=$CPU_LIMIT --memory=$MEMORY_LIMIT"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          def parse_json_env(name):
+              value = os.environ.get(name, "[]")
+              try:
+                  return json.loads(value)
+              except json.JSONDecodeError:
+                  return value
+
+          payload = {
+              "schema_version": 1,
+              "benchmark_source_sha": os.environ["BENCHMARK_SOURCE_SHA"],
+              "workflow_commit_sha": os.environ.get("GITHUB_SHA"),
+              "github_runner": {
+                  "os": os.environ.get("RUNNER_OS"),
+                  "arch": os.environ.get("RUNNER_ARCH"),
+                  "name": os.environ.get("RUNNER_NAME"),
+                  "host_uname": os.environ.get("HOST_UNAME"),
+                  "host_lscpu_excerpt": os.environ.get("HOST_LSCPU"),
+              },
+              "docker": {
+                  "server_version": os.environ.get("DOCKER_SERVER_VERSION"),
+                  "benchmark_image_tag": os.environ.get("IMAGE_TAG"),
+                  "benchmark_image_id": os.environ.get("BENCHMARK_IMAGE_ID"),
+                  "benchmark_image_repo_digests": parse_json_env("BENCHMARK_IMAGE_REPODIGESTS"),
+                  "base_image": "python:3.11-slim",
+                  "base_image_id": os.environ.get("BASE_IMAGE_ID"),
+                  "base_image_repo_digests": parse_json_env("BASE_IMAGE_REPODIGESTS"),
+                  "resource_limits": {
+                      "cpus": os.environ.get("CPU_LIMIT"),
+                      "memory": os.environ.get("MEMORY_LIMIT"),
+                      "docker_run_flags": os.environ.get("DOCKER_RUN_LIMITS"),
+                  },
+              },
+              "protocol": {
+                  "fixtures": 11,
+                  "difficulties": ["EASY", "MEDIUM", "HARD"],
+                  "measured_trials_per_fixture_difficulty": 5,
+                  "warmups_per_fixture_difficulty": 1,
+                  "percentile_method": "nearest_rank",
+              },
+              "command": os.environ.get("BENCHMARK_COMMAND"),
+          }
+          out = Path(os.environ["OUTPUT_DIR"]) / "run-metadata.json"
+          out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+          print(out.read_text(encoding="utf-8"))
+          PY
+
+      - name: Run benchmark inside CPU/memory-limited Linux container
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --cpus="$CPU_LIMIT" \
+            --memory="$MEMORY_LIMIT" \
+            --user "$(id -u):$(id -g)" \
+            --volume "$GITHUB_WORKSPACE/$OUTPUT_DIR:/results" \
+            --workdir /app \
+            --entrypoint python \
+            "$IMAGE_TAG" \
+            scripts/benchmark_ai_sprint3.py \
+              --runs 5 \
+              --warmup 1 \
+              --source-sha "$BENCHMARK_SOURCE_SHA" \
+              --output-dir /results
+
+      - name: Recalculate raw evidence and enforce M1 acceptance gates
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "$OUTPUT_DIR/ai-benchmark.csv"
+          test -f "$OUTPUT_DIR/ai-benchmark.json"
+          python - <<'PY'
+          import csv
+          import json
+          import math
+          import os
+          import statistics
+          from collections import Counter, defaultdict
+          from pathlib import Path
+
+          output = Path(os.environ["OUTPUT_DIR"])
+          expected_sha = os.environ["BENCHMARK_SOURCE_SHA"]
+          failures = []
+          summary = {
+              "decision": "M1 2026-11-01: p95 <= 2000 ms is the Phase 4 Linux/Docker AI-engine benchmark ceiling per difficulty; not a production SLO.",
+              "source_sha": expected_sha,
+              "limits": {"cpus": os.environ["CPU_LIMIT"], "memory": os.environ["MEMORY_LIMIT"]},
+          }
+
+          json_path = output / "ai-benchmark.json"
+          csv_path = output / "ai-benchmark.csv"
+          if json_path.exists() and csv_path.exists():
+              payload = json.loads(json_path.read_text(encoding="utf-8"))
+              records = payload.get("records", [])
+              with csv_path.open(newline="", encoding="utf-8") as handle:
+                  csv_rows = list(csv.DictReader(handle))
+
+              measured = [r for r in records if not r.get("is_warmup")]
+              warmups = [r for r in records if r.get("is_warmup")]
+              summary["record_counts"] = {
+                  "json_total": len(records),
+                  "csv_total": len(csv_rows),
+                  "measured": len(measured),
+                  "warmups": len(warmups),
+                  "fixtures": payload.get("fixture_count"),
+                  "difficulties": payload.get("difficulty_count"),
+              }
+
+              def check(condition, message):
+                  if not condition:
+                      failures.append(message)
+
+              check(len(records) == 198, "Expected exactly 198 JSON rows (165 measured + 33 warm-ups).")
+              check(len(csv_rows) == 198, "Expected exactly 198 CSV rows.")
+              check(payload.get("fixture_count") == 11, "Expected 11 fixed fixtures.")
+              check(payload.get("difficulty_count") == 3, "Expected three difficulty levels.")
+              check(payload.get("runs_per_fixture_difficulty") == 5, "Expected five measured trials per fixture/difficulty.")
+              check(payload.get("warmup_per_fixture_difficulty") == 1, "Expected one warm-up per fixture/difficulty.")
+              check(payload.get("percentile_method") == "nearest_rank", "Percentile method must be nearest_rank.")
+              check(all(r.get("source_sha") == expected_sha for r in records), "JSON contains a source SHA mismatch.")
+              check(all(r.get("source_sha") == expected_sha for r in csv_rows), "CSV contains a source SHA mismatch.")
+              check(all(str(r.get("environment_id", "")).startswith("linux-") for r in records), "Not every row identifies a Linux environment.")
+              check(len(measured) == 165 and len(warmups) == 33, "Measured/warm-up record counts do not match protocol.")
+
+              fixture_difficulty_counts = Counter((r.get("fixture"), r.get("difficulty"), bool(r.get("is_warmup"))) for r in records)
+              for fixture in {r.get("fixture") for r in records}:
+                  for difficulty in ("EASY", "MEDIUM", "HARD"):
+                      check(fixture_difficulty_counts[(fixture, difficulty, False)] == 5, f"{fixture}/{difficulty}: expected 5 measured trials.")
+                      check(fixture_difficulty_counts[(fixture, difficulty, True)] == 1, f"{fixture}/{difficulty}: expected 1 warm-up.")
+
+              trial_failures = [
+                  r for r in measured
+                  if r.get("error_type")
+                  or not r.get("output_shape_valid")
+                  or not r.get("legal_move")
+                  or not r.get("board_unchanged")
+                  or r.get("expected_move_ok") is False
+              ]
+              check(not trial_failures, f"Found {len(trial_failures)} failed measured trial(s).")
+
+              groups = defaultdict(list)
+              for row in measured:
+                  groups[row["difficulty"]].append(float(row["elapsed_ms"]))
+              by_difficulty = {}
+              for difficulty in ("EASY", "MEDIUM", "HARD"):
+                  values = sorted(groups[difficulty])
+                  p95 = values[math.ceil(0.95 * len(values)) - 1] if values else None
+                  median = statistics.median(values) if values else None
+                  passed = len(values) == 55 and p95 is not None and p95 <= 2000 and not trial_failures
+                  by_difficulty[difficulty] = {
+                      "sample_count": len(values),
+                      "median_ms": median,
+                      "p95_nearest_rank_ms": p95,
+                      "threshold_ms": 2000,
+                      "performance_gate": "PASS" if passed else "FAIL",
+                  }
+                  check(len(values) == 55, f"{difficulty}: expected 55 measured samples.")
+                  check(p95 is not None and p95 <= 2000, f"{difficulty}: p95 exceeds 2,000 ms or is missing.")
+
+              summary["per_difficulty_recalculated_from_csv-equivalent-json"] = by_difficulty
+              summary["measured_trial_failures"] = len(trial_failures)
+              summary["reconciliation_checks"] = "PASS" if not failures else "FAIL"
+          else:
+              failures.append("Benchmark raw CSV/JSON not produced.")
+
+          summary["gate_failures"] = failures
+          summary["overall_gate"] = "PASS" if not failures else "FAIL"
+          (output / "phase4-gate-evaluation.json").write_text(
+              json.dumps(summary, indent=2) + "\n", encoding="utf-8"
+          )
+
+          if (output / "ai-benchmark.md").exists():
+              with (output / "ai-benchmark.md").open("a", encoding="utf-8") as report:
+                  report.write("\n## M1 acceptance decision (2026-11-01)\n\n")
+                  report.write("The 2,000 ms p95 threshold is the Phase 4 Linux/Docker AI-engine benchmark acceptance ceiling per difficulty. It is not a production SLO or end-to-end API latency guarantee. See \`phase4-gate-evaluation.json\` and \`run-metadata.json\` for the scope and independent gate result.\n")
+
+          print(json.dumps(summary, indent=2))
+          if failures:
+              raise SystemExit(1)
+          PY
+
+      - name: Upload Linux/Docker benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-linux-docker-benchmark-${{ github.sha }}
+          path: reports/benchmark-linux-docker-phase4-2b4e3c1/
+          if-no-files-found: warn
+          retention-days: 90

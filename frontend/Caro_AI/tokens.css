@@ -1,0 +1,58 @@
+:root {
+  color-scheme: light;
+  --ui-font: "Plus Jakarta Sans", system-ui, sans-serif;
+
+  --ui-color-canvas: #f4efeb;
+  --ui-color-surface: #ffffff;
+  --ui-color-text: #2c2523;
+  --ui-color-muted: #786e65;
+  --ui-color-border: #e2d9d0;
+  --ui-color-accent: #2b8a6e;
+  --ui-color-accent-soft: #e8f3f0;
+  --ui-color-error: #b42318;
+  --ui-color-error-soft: #fef3f2;
+  --ui-color-x: #e05638;
+  --ui-color-o: #2b8a6e;
+  --ui-color-last-move: #ffb703;
+
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 20px;
+  --ui-space-6: 24px;
+  --ui-space-8: 32px;
+
+  --ui-radius-control: 10px;
+  --ui-radius-panel: 18px;
+  --ui-radius-card: 20px;
+  --ui-radius-feature: 26px;
+  --ui-shadow-card: 0 12px 32px rgba(60, 40, 20, .05);
+
+  --ui-focus: #1769aa;
+  --ui-focus-soft: rgba(23, 105, 170, .18);
+  --ui-motion-fast: 140ms;
+}
+
+:where(html, body, button, input, select, textarea) {
+  font-family: var(--ui-font);
+}
+
+:where(a, button, select, input, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px var(--ui-focus-soft);
+}
+
+:where(button, a, select) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
