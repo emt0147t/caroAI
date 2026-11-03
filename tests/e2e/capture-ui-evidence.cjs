@@ -2,7 +2,14 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { chromium } = require('@playwright/test');
 
+async function disableMotion(page) {
+  await page.addStyleTag({
+    content: '*, *::before, *::after { transition: none !important; animation: none !important; }'
+  });
+}
+
 async function stabilizeStartPage(page) {
+  await disableMotion(page);
   await page.evaluate(() => {
     const list = document.getElementById('recentGamesList');
     if (list) {
@@ -18,12 +25,12 @@ async function stabilizeStartPage(page) {
 }
 
 async function stabilizeHistoryPage(page) {
+  await disableMotion(page);
   await page.evaluate(() => {
-    document.querySelectorAll('.item-time, .item-meta span, .recent-meta').forEach(el => {
-      if (el.textContent.includes('/') || el.textContent.includes(':')) {
-        el.textContent = '12:00:00 01/01/2026';
-      }
-    });
+    const list = document.getElementById('list');
+    if (list) {
+      list.innerHTML = '<article class="item"><div><div class="name">Người vs Người</div><div class="meta">12:00:00 01/01/2026 · Đang chơi · 2 nước</div></div><a href="#">Mở bàn cờ →</a></article>';
+    }
   });
 }
 
@@ -55,6 +62,7 @@ async function stabilizeHistoryPage(page) {
     await mobilePage.goto(baseUrl + '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id), {
       waitUntil: 'networkidle'
     });
+    await disableMotion(mobilePage);
     await mobilePage.locator('#board .cell').first().waitFor({ state: 'visible' });
     await mobilePage.screenshot({ path: path.join(outputDir, 'game-390x844.png'), fullPage: true });
 
@@ -75,6 +83,7 @@ async function stabilizeHistoryPage(page) {
     await desktopPage.goto(baseUrl + '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id), {
       waitUntil: 'networkidle'
     });
+    await disableMotion(desktopPage);
     await desktopPage.locator('#board .cell').first().waitFor({ state: 'visible' });
     await desktopPage.screenshot({ path: path.join(outputDir, 'game-1280x800.png'), fullPage: true });
 
@@ -94,6 +103,7 @@ async function stabilizeHistoryPage(page) {
 
     if (supportsDarkTheme) {
       // 3. Desktop 1280x800 Dark Screenshots
+      await disableMotion(desktopPage);
       await desktopPage.evaluate(() => {
         window.CaroAI.theme.apply('dark');
         localStorage.setItem('caroai_theme', 'dark');
@@ -104,6 +114,7 @@ async function stabilizeHistoryPage(page) {
       await desktopPage.goto(baseUrl + '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id), {
         waitUntil: 'networkidle'
       });
+      await disableMotion(desktopPage);
       await desktopPage.locator('#board .cell').first().waitFor({ state: 'visible' });
       await desktopPage.screenshot({ path: path.join(outputDir, 'dark-game-1280x800.png'), fullPage: true });
 
@@ -118,6 +129,7 @@ async function stabilizeHistoryPage(page) {
       // 4. Mobile 390x844 Dark Screenshots (Task A1-05 requirement)
       const mobileDarkPage = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
       await mobileDarkPage.goto(baseUrl + '/', { waitUntil: 'networkidle' });
+      await disableMotion(mobileDarkPage);
       await mobileDarkPage.evaluate(() => {
         window.CaroAI.theme.apply('dark');
         localStorage.setItem('caroai_theme', 'dark');
@@ -128,6 +140,7 @@ async function stabilizeHistoryPage(page) {
       await mobileDarkPage.goto(baseUrl + '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id), {
         waitUntil: 'networkidle'
       });
+      await disableMotion(mobileDarkPage);
       await mobileDarkPage.locator('#board .cell').first().waitFor({ state: 'visible' });
       await mobileDarkPage.screenshot({ path: path.join(outputDir, 'dark-game-390x844.png'), fullPage: true });
 

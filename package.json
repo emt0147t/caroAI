@@ -5,7 +5,7 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:visual": "node tests/e2e/compare-visual-evidence.cjs",
-    "test:visual:update": "node tests/e2e/capture-ui-evidence.cjs && node -e \"require('fs').cpSync('evidence/candidate', 'evidence/baseline', {recursive: true})\""
+    "test:visual:mutation": "node tests/e2e/test-visual-mutation.cjs"
   },
   "devDependencies": {"@playwright/test":"1.56.1"}
 }

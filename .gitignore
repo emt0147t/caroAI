@@ -32,6 +32,8 @@ htmlcov/
 playwright-report/
 test-results/
 POST_RELEASE_A1_AUDIT/
+evidence/before/
+evidence/diff/
 
 # ML artifacts
 *.pkl

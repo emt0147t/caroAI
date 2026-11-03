@@ -85,7 +85,7 @@ jobs:
         run: node tests/e2e/capture-ui-evidence.cjs
       - name: Run visual regression comparison
         env:
-          BASELINE_DIR: evidence/baseline
+          BASELINE_DIR: evidence/before
           CANDIDATE_DIR: evidence/candidate
           DIFF_DIR: evidence/diff
           VISUAL_DIFF_THRESHOLD: "0.02"
