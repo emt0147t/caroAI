@@ -1,20 +1,49 @@
+/* CaroAI Shared Design Tokens — Refined Tabletop Theme System */
+
 :root {
   color-scheme: light;
-  --ui-font: "Plus Jakarta Sans", system-ui, sans-serif;
+  --ui-font: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --ui-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --ui-color-canvas: #f4efeb;
+  /* Refined Tabletop Light Palette */
+  --ui-color-canvas: #f7f4ee;
   --ui-color-surface: #ffffff;
-  --ui-color-text: #2c2523;
-  --ui-color-muted: #786e65;
-  --ui-color-border: #e2d9d0;
-  --ui-color-accent: #2b8a6e;
-  --ui-color-accent-soft: #e8f3f0;
+  --ui-color-surface-subdued: #f2ece2;
+  --ui-color-surface-elevated: #ffffff;
+  
+  --ui-color-text: #1e2522;
+  --ui-color-muted: #66706b;
+  --ui-color-border: #dfd7cb;
+  --ui-color-border-strong: #c8bfb1;
+
+  --ui-color-accent: #246953;
+  --ui-color-accent-hover: #1b5240;
+  --ui-color-accent-soft: #eaf2ed;
+  
   --ui-color-error: #b42318;
   --ui-color-error-soft: #fef3f2;
-  --ui-color-x: #e05638;
-  --ui-color-o: #2b8a6e;
-  --ui-color-last-move: #ffb703;
+  --ui-color-error-border: #fecdca;
+  --ui-color-success: #027a48;
+  --ui-color-success-soft: #ecfdf3;
+  --ui-color-success-border: #a7f3d0;
+  --ui-color-warning: #b45309;
+  --ui-color-warning-soft: #fef3c7;
 
+  /* Tabletop Game Tokens */
+  --ui-color-x: #c84a31;
+  --ui-color-x-soft: rgba(200, 74, 49, 0.12);
+  --ui-color-o: #1e6b75;
+  --ui-color-o-soft: rgba(30, 107, 117, 0.12);
+  --ui-color-last-move: #d97706;
+  --ui-color-last-move-glow: rgba(217, 119, 6, 0.32);
+
+  --ui-board-bg: #fbf8f3;
+  --ui-board-frame: #ede5d8;
+  --ui-board-grid: #d8cebf;
+  --ui-board-star: #8a7e70;
+  --ui-cell-hover: #efe8dd;
+
+  /* Spacing Scale */
   --ui-space-1: 4px;
   --ui-space-2: 8px;
   --ui-space-3: 12px;
@@ -22,37 +51,178 @@
   --ui-space-5: 20px;
   --ui-space-6: 24px;
   --ui-space-8: 32px;
+  --ui-space-10: 40px;
+  --ui-space-12: 48px;
 
+  /* Radii */
   --ui-radius-control: 10px;
-  --ui-radius-panel: 18px;
+  --ui-radius-panel: 16px;
   --ui-radius-card: 20px;
-  --ui-radius-feature: 26px;
-  --ui-shadow-card: 0 12px 32px rgba(60, 40, 20, .05);
+  --ui-radius-feature: 24px;
+  --ui-radius-pill: 9999px;
 
+  /* Shadows */
+  --ui-shadow-sm: 0 2px 4px rgba(30, 24, 18, 0.04);
+  --ui-shadow-card: 0 10px 28px rgba(30, 24, 18, 0.06);
+  --ui-shadow-hover: 0 16px 36px rgba(30, 24, 18, 0.1);
+  --ui-shadow-board: 0 12px 36px rgba(40, 32, 24, 0.09), 0 2px 6px rgba(40, 32, 24, 0.04);
+
+  /* Focus Indicator (strictly preserves 3px outline for test suite) */
   --ui-focus: #1769aa;
-  --ui-focus-soft: rgba(23, 105, 170, .18);
+  --ui-focus-soft: rgba(23, 105, 170, 0.18);
+
+  /* Motion */
   --ui-motion-fast: 140ms;
+  --ui-motion-base: 220ms;
+  --ui-motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Dark Theme Tokens (Refined Tabletop Night Session) */
+:root[data-theme="dark"],
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ui-color-canvas: #15181b;
+  --ui-color-surface: #1f2428;
+  --ui-color-surface-subdued: #191e21;
+  --ui-color-surface-elevated: #262c31;
+
+  --ui-color-text: #f0ece5;
+  --ui-color-muted: #9aa39e;
+  --ui-color-border: #31383e;
+  --ui-color-border-strong: #444e56;
+
+  --ui-color-accent: #3cb68a;
+  --ui-color-accent-hover: #4cd4a2;
+  --ui-color-accent-soft: rgba(60, 182, 138, 0.15);
+
+  --ui-color-error: #f87171;
+  --ui-color-error-soft: rgba(248, 113, 113, 0.12);
+  --ui-color-error-border: rgba(248, 113, 113, 0.3);
+  --ui-color-success: #34d399;
+  --ui-color-success-soft: rgba(52, 211, 153, 0.12);
+  --ui-color-success-border: rgba(52, 211, 153, 0.3);
+  --ui-color-warning: #fbbf24;
+  --ui-color-warning-soft: rgba(251, 191, 36, 0.14);
+
+  --ui-color-x: #ea6c52;
+  --ui-color-x-soft: rgba(234, 108, 82, 0.18);
+  --ui-color-o: #38b2ac;
+  --ui-color-o-soft: rgba(56, 178, 172, 0.18);
+  --ui-color-last-move: #f59e0b;
+  --ui-color-last-move-glow: rgba(245, 158, 11, 0.4);
+
+  --ui-board-bg: #1c2125;
+  --ui-board-frame: #282f35;
+  --ui-board-grid: #333c43;
+  --ui-board-star: #6e7a83;
+  --ui-cell-hover: #272f35;
+
+  --ui-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.25);
+  --ui-shadow-card: 0 10px 30px rgba(0, 0, 0, 0.38);
+  --ui-shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.48);
+  --ui-shadow-board: 0 14px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  --ui-focus: #38bdf8;
+  --ui-focus-soft: rgba(56, 189, 248, 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]),
+  html:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --ui-color-canvas: #15181b;
+    --ui-color-surface: #1f2428;
+    --ui-color-surface-subdued: #191e21;
+    --ui-color-surface-elevated: #262c31;
+
+    --ui-color-text: #f0ece5;
+    --ui-color-muted: #9aa39e;
+    --ui-color-border: #31383e;
+    --ui-color-border-strong: #444e56;
+
+    --ui-color-accent: #3cb68a;
+    --ui-color-accent-hover: #4cd4a2;
+    --ui-color-accent-soft: rgba(60, 182, 138, 0.15);
+
+    --ui-color-error: #f87171;
+    --ui-color-error-soft: rgba(248, 113, 113, 0.12);
+    --ui-color-error-border: rgba(248, 113, 113, 0.3);
+    --ui-color-success: #34d399;
+    --ui-color-success-soft: rgba(52, 211, 153, 0.12);
+    --ui-color-success-border: rgba(52, 211, 153, 0.3);
+    --ui-color-warning: #fbbf24;
+    --ui-color-warning-soft: rgba(251, 191, 36, 0.14);
+
+    --ui-color-x: #ea6c52;
+    --ui-color-x-soft: rgba(234, 108, 82, 0.18);
+    --ui-color-o: #38b2ac;
+    --ui-color-o-soft: rgba(56, 178, 172, 0.18);
+    --ui-color-last-move: #f59e0b;
+    --ui-color-last-move-glow: rgba(245, 158, 11, 0.4);
+
+    --ui-board-bg: #1c2125;
+    --ui-board-frame: #282f35;
+    --ui-board-grid: #333c43;
+    --ui-board-star: #6e7a83;
+    --ui-cell-hover: #272f35;
+
+    --ui-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.25);
+    --ui-shadow-card: 0 10px 30px rgba(0, 0, 0, 0.38);
+    --ui-shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.48);
+    --ui-shadow-board: 0 14px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+
+    --ui-focus: #38bdf8;
+    --ui-focus-soft: rgba(56, 189, 248, 0.25);
+  }
+}
+
+/* Global Typographic and Interactive Reset */
 :where(html, body, button, input, select, textarea) {
   font-family: var(--ui-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+body {
+  background-color: var(--ui-color-canvas);
+  color: var(--ui-color-text);
+  transition: background-color var(--ui-motion-base) var(--ui-motion-ease),
+              color var(--ui-motion-base) var(--ui-motion-ease);
+}
+
+/* Strict keyboard focus ring as verified in ux.spec.cjs */
 :where(a, button, select, input, textarea, [tabindex]):focus-visible {
-  outline: 3px solid var(--ui-focus);
-  outline-offset: 3px;
-  box-shadow: 0 0 0 4px var(--ui-focus-soft);
+  outline: 3px solid var(--ui-focus) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 4px var(--ui-focus-soft) !important;
 }
 
 :where(button, a, select) {
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
+/* Screen-reader utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Reduced Motion Override (strictly <= 0.001ms for ux.spec.cjs) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;
-    animation-duration: .01ms !important;
+    animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
+    transition-duration: 0.001ms !important;
   }
 }

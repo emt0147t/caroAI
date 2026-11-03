@@ -10,30 +10,75 @@ const { chromium } = require('@playwright/test');
 
   const browser = await chromium.launch({ headless: true });
   try {
-    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
-    await page.goto(baseUrl + '/', { waitUntil: 'networkidle' });
-    await page.screenshot({ path: path.join(outputDir, 'start-390x844.png'), fullPage: true });
+    // 1. Mobile 390x844 Light Screenshots (CI standard)
+    const mobilePage = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+    await mobilePage.goto(baseUrl + '/', { waitUntil: 'networkidle' });
+    await mobilePage.screenshot({ path: path.join(outputDir, 'start-390x844.png'), fullPage: true });
 
-    const created = await page.request.post(baseUrl + '/api/games', {
+    const created = await mobilePage.request.post(baseUrl + '/api/games', {
       data: { mode: 'HUMAN_VS_HUMAN' }
     });
     if (!created.ok()) throw new Error('Could not create screenshot game: HTTP ' + created.status());
     const game = await created.json();
     if (!game?.id) throw new Error('Backend did not return a game ID for screenshot capture.');
 
-    await page.goto(baseUrl + '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id), {
+    // Make 2 moves to demonstrate board marks and last-move
+    await mobilePage.request.post(baseUrl + '/api/games/' + encodeURIComponent(game.id) + '/moves', { data: { row: 7, col: 7 } });
+    await mobilePage.request.post(baseUrl + '/api/games/' + encodeURIComponent(game.id) + '/moves', { data: { row: 7, col: 8 } });
+
+    await mobilePage.goto(baseUrl + '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id), {
       waitUntil: 'networkidle'
     });
-    await page.locator('#board .cell').first().waitFor({ state: 'visible' });
-    await page.screenshot({ path: path.join(outputDir, 'game-390x844.png'), fullPage: true });
+    await mobilePage.locator('#board .cell').first().waitFor({ state: 'visible' });
+    await mobilePage.screenshot({ path: path.join(outputDir, 'game-390x844.png'), fullPage: true });
 
-    await page.goto(baseUrl + '/history.html', { waitUntil: 'networkidle' });
-    await page.waitForFunction(() => {
+    await mobilePage.goto(baseUrl + '/history.html', { waitUntil: 'networkidle' });
+    await mobilePage.waitForFunction(() => {
       const state = document.querySelector('#state');
       return state && !state.textContent.includes('Đang tải');
     });
-    await page.screenshot({ path: path.join(outputDir, 'history-390x844.png'), fullPage: true });
-    process.stdout.write('Captured start, game and history screenshots for ' + label + ' at 390x844.\n');
+    await mobilePage.screenshot({ path: path.join(outputDir, 'history-390x844.png'), fullPage: true });
+
+    // 2. Desktop 1280x800 Light Screenshots
+    const desktopPage = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
+    await desktopPage.goto(baseUrl + '/', { waitUntil: 'networkidle' });
+    await desktopPage.screenshot({ path: path.join(outputDir, 'start-1280x800.png'), fullPage: true });
+
+    await desktopPage.goto(baseUrl + '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id), {
+      waitUntil: 'networkidle'
+    });
+    await desktopPage.locator('#board .cell').first().waitFor({ state: 'visible' });
+    await desktopPage.screenshot({ path: path.join(outputDir, 'game-1280x800.png'), fullPage: true });
+
+    await desktopPage.goto(baseUrl + '/history.html', { waitUntil: 'networkidle' });
+    await desktopPage.waitForFunction(() => {
+      const state = document.querySelector('#state');
+      return state && !state.textContent.includes('Đang tải');
+    });
+    await desktopPage.screenshot({ path: path.join(outputDir, 'history-1280x800.png'), fullPage: true });
+
+    // 3. Desktop 1280x800 Dark Screenshots
+    await desktopPage.goto(baseUrl + '/', { waitUntil: 'networkidle' });
+    await desktopPage.evaluate(() => {
+      window.CaroAI.theme.apply('dark');
+      localStorage.setItem('caroai_theme', 'dark');
+    });
+    await desktopPage.screenshot({ path: path.join(outputDir, 'dark-start-1280x800.png'), fullPage: true });
+
+    await desktopPage.goto(baseUrl + '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id), {
+      waitUntil: 'networkidle'
+    });
+    await desktopPage.locator('#board .cell').first().waitFor({ state: 'visible' });
+    await desktopPage.screenshot({ path: path.join(outputDir, 'dark-game-1280x800.png'), fullPage: true });
+
+    await desktopPage.goto(baseUrl + '/history.html', { waitUntil: 'networkidle' });
+    await desktopPage.waitForFunction(() => {
+      const state = document.querySelector('#state');
+      return state && !state.textContent.includes('Đang tải');
+    });
+    await desktopPage.screenshot({ path: path.join(outputDir, 'dark-history-1280x800.png'), fullPage: true });
+
+    process.stdout.write('Captured start, game and history screenshots (mobile, desktop, and dark) for ' + label + '.\n');
   } finally {
     await browser.close();
   }

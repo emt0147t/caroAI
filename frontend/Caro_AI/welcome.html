@@ -3,35 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cờ Caro AI - Bắt đầu</title>
+  <title>CaroAI · Đấu trường Cờ Caro 15 × 15</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/tokens.css">
+  <script src="/theme-sound.js"></script>
   <style>
     :root {
       --bg: var(--ui-color-canvas);
       --card: var(--ui-color-surface);
+      --subdued: var(--ui-color-surface-subdued);
       --border: var(--ui-color-border);
+      --border-strong: var(--ui-color-border-strong);
       --ink: var(--ui-color-text);
       --sub: var(--ui-color-muted);
       --accent: var(--ui-color-accent);
+      --accent-hover: var(--ui-color-accent-hover);
       --pale: var(--ui-color-accent-soft);
       --error: var(--ui-color-error);
       --color-x: var(--ui-color-x);
       --color-o: var(--ui-color-o);
-      --card-shadow: 0 10px 30px rgba(44, 37, 35, 0.05);
-      --card-shadow-hover: 0 16px 36px rgba(44, 37, 35, 0.09);
+      --card-shadow: var(--ui-shadow-card);
+      --card-shadow-hover: var(--ui-shadow-hover);
     }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: var(--ui-font);
     }
+
     body {
       min-height: 100vh;
-      background: var(--bg);
+      background-color: var(--bg);
       color: var(--ink);
       overflow-x: hidden;
       line-height: 1.5;
@@ -56,119 +61,161 @@
       justify-content: space-between;
       gap: 16px;
       flex-wrap: wrap;
-      padding: 12px 20px;
+      padding: 14px 22px;
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--ui-radius-panel);
       box-shadow: var(--card-shadow);
+      transition: background var(--ui-motion-base), border-color var(--ui-motion-base);
     }
+
     .brand-wrap {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       text-decoration: none;
       color: inherit;
     }
+
     .brand-logo {
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       display: grid;
       place-items: center;
       border-radius: 12px;
       background: var(--ink);
-      color: #ffffff;
-      font-size: 1.35rem;
-      font-weight: 800;
+      color: var(--card);
       flex-shrink: 0;
+      border: 1px solid var(--border);
     }
+
     .brand-meta {
       display: flex;
       flex-direction: column;
     }
+
     .brand-name {
       font-size: 1.25rem;
       font-weight: 800;
-      letter-spacing: -0.3px;
+      letter-spacing: -0.4px;
       color: var(--ink);
       display: flex;
       align-items: center;
       gap: 8px;
     }
+
     .brand-badge {
       font-size: 0.72rem;
       font-weight: 700;
       padding: 2px 8px;
-      border-radius: 999px;
+      border-radius: var(--ui-radius-pill);
       background: var(--pale);
       color: var(--accent);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.4px;
     }
+
     .brand-tagline {
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       color: var(--sub);
       font-weight: 500;
     }
+
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 10px;
       flex-wrap: wrap;
     }
+
     .status-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
       padding: 6px 12px;
-      border-radius: 999px;
+      border-radius: var(--ui-radius-pill);
       font-size: 0.8rem;
       font-weight: 700;
       border: 1px solid var(--border);
-      background: #faf7f4;
+      background: var(--subdued);
       color: var(--sub);
+      transition: all var(--ui-motion-fast);
     }
+
     .status-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #94a3b8;
+      background: var(--sub);
     }
+
     .status-pill.status-online {
-      background: #ecfdf5;
-      border-color: #a7f3d0;
-      color: #065f46;
+      background: var(--ui-color-success-soft);
+      border-color: var(--ui-color-success-border);
+      color: var(--ui-color-success);
     }
+
     .status-pill.status-online .status-dot {
-      background: #10b981;
-      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+      background: var(--ui-color-success);
+      box-shadow: 0 0 0 2px rgba(2, 122, 72, 0.2);
     }
+
     .status-pill.status-offline {
-      background: #fef2f2;
-      border-color: #fecaca;
-      color: #991b1b;
+      background: var(--ui-color-error-soft);
+      border-color: var(--ui-color-error-border);
+      color: var(--ui-color-error);
     }
+
     .status-pill.status-offline .status-dot {
-      background: #ef4444;
+      background: var(--ui-color-error);
     }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .nav-link {
       color: var(--ink);
       text-decoration: none;
       font-size: 0.88rem;
       font-weight: 700;
-      padding: 8px 14px;
+      padding: 8px 12px;
       border-radius: var(--ui-radius-control);
       transition: background var(--ui-motion-fast), color var(--ui-motion-fast);
     }
+
     .nav-link:hover {
       background: var(--pale);
       color: var(--accent);
     }
+
     .nav-link.active {
       color: var(--accent);
       background: var(--pale);
     }
 
-    /* Main Card - First in DOM, Visually row 2 (order: 2) */
+    .header-ctrl-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--ui-radius-control);
+      border: 1px solid var(--border);
+      background: var(--subdued);
+      color: var(--ink);
+      cursor: pointer;
+      transition: background var(--ui-motion-fast), border-color var(--ui-motion-fast), color var(--ui-motion-fast);
+    }
+
+    .header-ctrl-btn:hover {
+      background: var(--pale);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Main Launcher Card - First in DOM, Visually row 2 (order: 2) */
     .card {
       width: 100%;
       background: var(--card);
@@ -176,16 +223,19 @@
       border-radius: var(--ui-radius-feature);
       padding: 36px;
       box-shadow: var(--card-shadow);
-      transition: box-shadow var(--ui-motion-fast);
+      transition: box-shadow var(--ui-motion-fast), background var(--ui-motion-base), border-color var(--ui-motion-base);
     }
+
     .card:hover {
       box-shadow: var(--card-shadow-hover);
     }
+
     .dashboard-launcher {
       order: 2;
       display: flex;
       flex-direction: column;
     }
+
     .launcher-badge {
       display: inline-flex;
       align-items: center;
@@ -195,22 +245,23 @@
       color: var(--accent);
       background: var(--pale);
       padding: 4px 12px;
-      border-radius: 999px;
+      border-radius: var(--ui-radius-pill);
       margin-bottom: 14px;
       align-self: flex-start;
       letter-spacing: 0.3px;
-      text-transform: uppercase;
     }
+
     h1 {
-      font-size: 2rem;
+      font-size: 2.1rem;
       font-weight: 800;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.6px;
       line-height: 1.25;
       color: var(--ink);
     }
+
     .subtitle {
       color: var(--sub);
-      font-size: 0.94rem;
+      font-size: 0.95rem;
       line-height: 1.6;
       margin: 10px 0 24px;
     }
@@ -219,6 +270,7 @@
     .group {
       margin: 20px 0;
     }
+
     .label {
       display: block;
       margin-bottom: 10px;
@@ -226,18 +278,19 @@
       font-size: 0.82rem;
       font-weight: 800;
       letter-spacing: 0.5px;
-      text-transform: uppercase;
     }
+
     .choices {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
+
     .choice {
       border: 1.5px solid var(--border);
       border-radius: 14px;
       padding: 16px 14px;
-      background: #faf7f4;
+      background: var(--subdued);
       color: var(--ink);
       font-weight: 700;
       cursor: pointer;
@@ -247,63 +300,75 @@
       gap: 6px;
       transition: border-color var(--ui-motion-fast), background var(--ui-motion-fast), transform var(--ui-motion-fast);
     }
+
     .choice:hover {
-      background: #f5f0eb;
-      border-color: #d8cec4;
+      background: var(--card);
+      border-color: var(--border-strong);
     }
+
     .choice[aria-pressed="true"] {
       border-color: var(--accent);
       background: var(--pale);
       color: var(--accent);
     }
+
     .choice-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 6px;
     }
+
     .choice-title {
       font-size: 1rem;
       font-weight: 800;
     }
+
     .choice-tag {
       font-size: 0.72rem;
       font-weight: 800;
-      padding: 2px 6px;
+      padding: 2px 8px;
       border-radius: 6px;
-      background: rgba(0, 0, 0, 0.06);
+      background: var(--card);
+      border: 1px solid var(--border);
       color: inherit;
     }
+
     .choice[aria-pressed="true"] .choice-tag {
-      background: rgba(43, 138, 110, 0.15);
-      color: var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
     }
+
     .choice-desc {
       font-size: 0.78rem;
       color: var(--sub);
       font-weight: 500;
       line-height: 1.4;
     }
+
     .choice[aria-pressed="true"] .choice-desc {
-      color: #216d56;
+      color: var(--ink);
     }
 
     /* Difficulty Group */
     select {
       width: 100%;
       padding: 14px;
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       border-radius: 12px;
-      background: #faf7f4;
+      background: var(--subdued);
       color: var(--ink);
       font-weight: 600;
       font-size: 0.95rem;
       appearance: auto;
-      transition: border-color var(--ui-motion-fast);
+      transition: border-color var(--ui-motion-fast), background var(--ui-motion-fast);
     }
+
     select:focus {
       border-color: var(--accent);
     }
+
     .difficulty-desc {
       font-size: 0.8rem;
       color: var(--sub);
@@ -314,12 +379,12 @@
     /* Start Button & Error Message */
     .start {
       width: 100%;
-      margin-top: 14px;
+      margin-top: 16px;
       padding: 16px;
       border: 0;
       border-radius: 14px;
       background: var(--ink);
-      color: #ffffff;
+      color: var(--card);
       font-size: 1.05rem;
       font-weight: 800;
       cursor: pointer;
@@ -327,18 +392,23 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: background var(--ui-motion-fast), transform var(--ui-motion-fast);
+      transition: background var(--ui-motion-fast), transform var(--ui-motion-fast), opacity var(--ui-motion-fast);
     }
+
     .start:hover:not(:disabled) {
-      background: #191413;
+      background: var(--accent);
+      color: #ffffff;
     }
+
     .start:active:not(:disabled) {
       transform: translateY(1px);
     }
+
     button:disabled, select:disabled {
-      opacity: 0.6;
+      opacity: 0.55;
       cursor: wait;
     }
+
     .message {
       margin-top: 14px;
       padding: 14px;
@@ -347,23 +417,27 @@
       color: var(--error);
       font-size: 0.9rem;
       line-height: 1.5;
-      border: 1px solid #fecaca;
+      border: 1px solid var(--ui-color-error-border);
     }
+
     .hidden {
       display: none !important;
     }
+
     .foot {
       text-align: center;
       color: var(--sub);
-      font-size: 0.82rem;
-      margin-top: 22px;
+      font-size: 0.84rem;
+      margin-top: 24px;
       line-height: 1.6;
     }
+
     .foot a {
       color: var(--accent);
       text-decoration: none;
       font-weight: 700;
     }
+
     .foot a:hover {
       text-decoration: underline;
     }
@@ -375,13 +449,16 @@
       flex-direction: column;
       gap: 20px;
     }
+
     .stats-card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--ui-radius-feature);
       padding: 30px;
       box-shadow: var(--card-shadow);
+      transition: background var(--ui-motion-base), border-color var(--ui-motion-base);
     }
+
     .stats-header {
       display: flex;
       align-items: center;
@@ -389,46 +466,53 @@
       gap: 12px;
       margin-bottom: 20px;
     }
+
     .stats-header h2 {
       font-size: 1.25rem;
       font-weight: 800;
       letter-spacing: -0.3px;
     }
+
     .stats-header a {
       font-size: 0.85rem;
       font-weight: 700;
       color: var(--accent);
       text-decoration: none;
     }
+
     .stats-header a:hover {
       text-decoration: underline;
     }
+
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
       margin-bottom: 24px;
     }
+
     .metric-box {
-      background: #faf7f4;
+      background: var(--subdued);
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 14px 12px;
       text-align: center;
     }
+
     .metric-value {
       font-size: 1.35rem;
       font-weight: 800;
       color: var(--ink);
       line-height: 1.2;
+      font-variant-numeric: tabular-nums;
     }
+
     .metric-label {
       font-size: 0.75rem;
       color: var(--sub);
       font-weight: 600;
       margin-top: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
+      letter-spacing: 0.3px;
     }
 
     /* Recent Matches Mini-List */
@@ -436,35 +520,40 @@
       font-size: 0.85rem;
       font-weight: 800;
       color: var(--sub);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.4px;
       margin-bottom: 12px;
     }
+
     .recent-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
+
     .recent-row {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto auto;
       gap: 12px;
       align-items: center;
       padding: 12px 14px;
-      background: #faf7f4;
+      background: var(--subdued);
       border: 1px solid var(--border);
       border-radius: 12px;
-      transition: background var(--ui-motion-fast);
+      transition: background var(--ui-motion-fast), border-color var(--ui-motion-fast);
     }
+
     .recent-row:hover {
-      background: #f5f0eb;
+      background: var(--card);
+      border-color: var(--border-strong);
     }
+
     .recent-info {
       display: flex;
       flex-direction: column;
       gap: 2px;
       min-width: 0;
     }
+
     .recent-mode {
       font-size: 0.88rem;
       font-weight: 800;
@@ -473,11 +562,14 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
     .recent-meta {
       font-size: 0.78rem;
       color: var(--sub);
       font-weight: 500;
+      font-variant-numeric: tabular-nums;
     }
+
     .result-tag {
       font-size: 0.75rem;
       font-weight: 800;
@@ -485,43 +577,51 @@
       border-radius: 6px;
       white-space: nowrap;
     }
+
     .result-tag.result-x_won {
-      background: #fee4e2;
+      background: var(--ui-color-x-soft);
       color: var(--color-x);
     }
+
     .result-tag.result-o_won {
-      background: #d1fae5;
+      background: var(--ui-color-o-soft);
       color: var(--color-o);
     }
+
     .result-tag.result-draw {
-      background: #e0f2fe;
-      color: #0369a1;
+      background: var(--ui-color-warning-soft);
+      color: var(--ui-color-warning);
     }
+
     .result-tag.result-in_progress {
-      background: #fef3c7;
-      color: #b45309;
+      background: var(--pale);
+      color: var(--accent);
     }
+
     .recent-open {
       font-size: 0.82rem;
       font-weight: 700;
       color: var(--accent);
       text-decoration: none;
-      padding: 6px 10px;
+      padding: 6px 12px;
       border-radius: 8px;
-      background: white;
+      background: var(--card);
       border: 1px solid var(--border);
       white-space: nowrap;
+      transition: background var(--ui-motion-fast), border-color var(--ui-motion-fast);
     }
+
     .recent-open:hover {
       background: var(--pale);
       border-color: var(--accent);
     }
+
     .recent-empty {
       padding: 18px;
       text-align: center;
       color: var(--sub);
       font-size: 0.88rem;
-      background: #faf7f4;
+      background: var(--subdued);
       border: 1px dashed var(--border);
       border-radius: 12px;
     }
@@ -533,6 +633,7 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 16px;
     }
+
     .feature-card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -541,28 +642,31 @@
       box-shadow: var(--card-shadow);
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
+      transition: background var(--ui-motion-base), border-color var(--ui-motion-base);
     }
-    .feature-icon {
-      width: 40px;
-      height: 40px;
+
+    .feature-icon-wrap {
+      width: 42px;
+      height: 42px;
       display: grid;
       place-items: center;
       border-radius: 10px;
       background: var(--pale);
       color: var(--accent);
-      font-size: 1.25rem;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
+
     .feature-title {
-      font-size: 1rem;
+      font-size: 1.02rem;
       font-weight: 800;
       color: var(--ink);
     }
+
     .feature-desc {
       font-size: 0.85rem;
       color: var(--sub);
-      line-height: 1.5;
+      line-height: 1.55;
     }
 
     /* Rules & How-to-play Section (order: 5) */
@@ -573,52 +677,61 @@
       border-radius: var(--ui-radius-feature);
       padding: 32px;
       box-shadow: var(--card-shadow);
+      transition: background var(--ui-motion-base), border-color var(--ui-motion-base);
     }
+
     .rules-header {
       margin-bottom: 20px;
     }
+
     .rules-header h2 {
       font-size: 1.35rem;
       font-weight: 800;
       letter-spacing: -0.3px;
     }
+
     .rules-header p {
       color: var(--sub);
       font-size: 0.9rem;
       margin-top: 4px;
     }
+
     .rules-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 16px;
     }
+
     .rule-item {
       display: flex;
       gap: 14px;
       align-items: flex-start;
-      padding: 16px;
-      background: #faf7f4;
+      padding: 18px;
+      background: var(--subdued);
       border-radius: 14px;
       border: 1px solid var(--border);
     }
+
     .rule-num {
       width: 28px;
       height: 28px;
       border-radius: 50%;
       background: var(--ink);
-      color: #ffffff;
+      color: var(--card);
       display: grid;
       place-items: center;
       font-size: 0.82rem;
       font-weight: 800;
       flex-shrink: 0;
     }
+
     .rule-content h3 {
       font-size: 0.95rem;
       font-weight: 800;
       color: var(--ink);
       margin-bottom: 4px;
     }
+
     .rule-content p {
       font-size: 0.82rem;
       color: var(--sub);
@@ -633,20 +746,23 @@
       justify-content: space-between;
       gap: 16px;
       flex-wrap: wrap;
-      padding-top: 12px;
+      padding-top: 14px;
       border-top: 1px solid var(--border);
       color: var(--sub);
-      font-size: 0.82rem;
+      font-size: 0.84rem;
     }
+
     .footer-links {
       display: flex;
       gap: 16px;
     }
+
     .footer-links a {
       color: var(--sub);
       text-decoration: none;
       font-weight: 600;
     }
+
     .footer-links a:hover {
       color: var(--accent);
       text-decoration: underline;
@@ -677,7 +793,7 @@
       }
     }
 
-    /* Mobile Responsive Adjustments (<= 480px and down to 320px) */
+    /* Mobile Responsive Adjustments (<= 768px down to 320px) */
     @media (max-width: 768px) {
       .dashboard-features {
         grid-template-columns: 1fr;
@@ -686,6 +802,7 @@
         grid-template-columns: 1fr;
       }
     }
+
     @media (max-width: 480px) {
       .dashboard-shell {
         padding: 16px 12px 36px;
@@ -725,9 +842,9 @@
 
     <!-- 1. Primary Game Launcher: FIRST in DOM to satisfy keyboard Tab order and ux.spec.cjs -->
     <main class="card dashboard-launcher" id="playCard">
-      <div class="launcher-badge">Bàn cờ 15 × 15 · Gomoku Engine</div>
+      <div class="launcher-badge">Bàn cờ 15 × 15 · Gomoku Tabletop</div>
       <h1>Cờ Caro AI</h1>
-      <p class="subtitle">Chọn cách chơi và bắt đầu ván mới. Trạng thái và luật chơi được xử lý bởi Backend.</p>
+      <p class="subtitle">Chọn chế độ và bắt đầu ván mới. Trạng thái, luật đấu và kết quả được bảo đảm bởi Backend.</p>
 
       <section class="group" aria-labelledby="modeLabel">
         <span id="modeLabel" class="label">Chế độ chơi</span>
@@ -737,14 +854,14 @@
               <span class="choice-title">Người vs Người</span>
               <span class="choice-tag">PvP</span>
             </div>
-            <span class="choice-desc">Hai người so tài trực tiếp trên cùng một thiết bị</span>
+            <span class="choice-desc">Hai kỳ thủ so tài trực tiếp trên cùng một thiết bị</span>
           </button>
           <button class="choice" type="button" data-mode="HUMAN_VS_AI" aria-pressed="false" aria-label="Người vs AI">
             <div class="choice-header">
               <span class="choice-title">Người vs AI</span>
               <span class="choice-tag">PvAI</span>
             </div>
-            <span class="choice-desc">Thử thách thuật toán tính toán nước đi Minimax</span>
+            <span class="choice-desc">Thử thách trí tuệ nhân tạo Minimax Alpha-Beta</span>
           </button>
         </div>
       </section>
@@ -768,10 +885,14 @@
     <!-- 2. Header Bar: Visually Top via CSS order: 1 -->
     <header class="dashboard-header">
       <a href="/" class="brand-wrap">
-        <div class="brand-logo" aria-hidden="true">#</div>
+        <div class="brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zM4 10h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 16h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z"/>
+          </svg>
+        </div>
         <div class="brand-meta">
-          <div class="brand-name">CaroAI <span class="brand-badge">v2.0</span></div>
-          <span class="brand-tagline">Đấu trường Gomoku trực tuyến</span>
+          <div class="brand-name">CaroAI <span class="brand-badge">A1 Refined</span></div>
+          <span class="brand-tagline">Đấu trường Gomoku Tabletop</span>
         </div>
       </a>
       <div class="header-actions">
@@ -779,6 +900,8 @@
           <span class="status-dot" aria-hidden="true"></span>
           <span id="statusText">Đang kiểm tra...</span>
         </div>
+        <button id="soundToggleBtn" class="header-ctrl-btn" type="button" aria-label="Bật/Tắt âm thanh"></button>
+        <button id="themeToggleBtn" class="header-ctrl-btn" type="button" aria-label="Chuyển đổi giao diện"></button>
         <nav class="header-nav" aria-label="Điều hướng chính">
           <a href="#playCard" class="nav-link active">Chơi ngay</a>
           <a href="history.html" class="nav-link">Lịch sử</a>
@@ -819,17 +942,33 @@
     <!-- 4. Feature Showcase Cards: order: 4 -->
     <section class="dashboard-features" aria-label="Đặc điểm nổi bật">
       <article class="feature-card">
-        <div class="feature-icon" aria-hidden="true">🎯</div>
+        <div class="feature-icon-wrap" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="6"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+          </svg>
+        </div>
         <h3 class="feature-title">Chuẩn Gomoku 15 × 15</h3>
         <p class="feature-desc">Bàn cờ 15 hàng 15 cột với 225 giao điểm chuẩn thi đấu. Tạo thành chuỗi 5 quân liên tiếp để chiến thắng.</p>
       </article>
       <article class="feature-card">
-        <div class="feature-icon" aria-hidden="true">⚡</div>
+        <div class="feature-icon-wrap" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </div>
         <h3 class="feature-title">Backend Quyết Định Tuyệt Đối</h3>
         <p class="feature-desc">Mọi nước đi, kiểm tra hợp lệ, phân định thắng/thua/hòa và bảo lưu trạng thái đều do FastAPI & PostgreSQL xác thực.</p>
       </article>
       <article class="feature-card">
-        <div class="feature-icon" aria-hidden="true">🧠</div>
+        <div class="feature-icon-wrap" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </div>
         <h3 class="feature-title">Động Cơ AI Minimax</h3>
         <p class="feature-desc">Tích hợp thuật toán Minimax kết hợp Alpha-Beta pruning và nhận diện mẫu hình chiến thuật công thủ thông minh.</p>
       </article>
