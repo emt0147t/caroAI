@@ -1,7 +1,7 @@
 name: Frontend Browser E2E
 on:
   push:
-    branches: ["feature/frontend-sprint3-e2e-history", "feature/ui-refresh-a1"]
+    branches: ["feature/frontend-sprint3-e2e-history"]
   pull_request:
     branches: [develop, main]
   workflow_dispatch:
