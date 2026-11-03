@@ -6,22 +6,23 @@ test('theme toggle switches theme, updates DOM attributes, and persists across r
   const themeBtn = page.locator('#themeToggleBtn');
   await expect(themeBtn).toBeVisible();
 
-  // Initially default or light
-  const initialTheme = await page.evaluate(() => document.documentElement.getAttribute('data-theme') || 'light');
+  // Determine initial effective theme dynamically from system preference / API
+  const initiallyDark = await page.evaluate(() => window.CaroAI.theme.isDark());
+  const expectedNextTheme = initiallyDark ? 'light' : 'dark';
   
   // Click theme toggle to switch
   await themeBtn.click();
   const nextTheme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
-  expect(nextTheme).toBe(initialTheme === 'dark' ? 'light' : 'dark');
+  expect(nextTheme).toBe(expectedNextTheme);
 
   // Verify persistence in localStorage
   const storedTheme = await page.evaluate(() => localStorage.getItem('caroai_theme'));
-  expect(storedTheme).toBe(nextTheme);
+  expect(storedTheme).toBe(expectedNextTheme);
 
   // Reload page and verify theme remains intact
   await page.reload();
   const reloadedTheme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
-  expect(reloadedTheme).toBe(nextTheme);
+  expect(reloadedTheme).toBe(expectedNextTheme);
 });
 
 test('theme persistence survives navigation between dashboard, gameplay, and history', async ({ page, request }) => {
