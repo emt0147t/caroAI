@@ -186,3 +186,48 @@ def test_run_trial_checks_expected_move_coordinates_as_tuples(
 
     assert result["legal_move"] is True
     assert result["expected_move_ok"] is expected_result
+
+
+
+def test_benchmark_matrix_includes_impossible_and_reports_tactical_rates(tmp_path):
+    fixtures = benchmark.build_fixtures()
+    assert set(DIFFICULTY_CONFIG) == {"EASY", "MEDIUM", "HARD", "IMPOSSIBLE"}
+    assert all("IMPOSSIBLE" in fixture["difficulty"] for fixture in fixtures)
+
+    records = []
+    for difficulty in DIFFICULTY_CONFIG:
+        for category, success in (
+            ("forced_win", True),
+            ("forced_block", False),
+        ):
+            records.append({
+                "fixture": f"synthetic_{category}",
+                "category": category,
+                "difficulty": difficulty,
+                "is_warmup": False,
+                "elapsed_ms": 1.0,
+                "error_type": "",
+                "output_shape_valid": True,
+                "legal_move": True,
+                "board_unchanged": True,
+                "expected_move_ok": success,
+            })
+
+    summaries = benchmark.build_summaries(records, fixtures)
+    assert [item["difficulty"] for item in summaries["per_difficulty"]] == list(DIFFICULTY_CONFIG)
+
+    environment = {
+        "source_sha": "a" * 40,
+        "command": "test",
+        "python_version": "test",
+        "platform": "test",
+        "machine": "test",
+        "cpu_name": "test",
+        "is_container": False,
+        "container_hint": "test",
+    }
+    report = benchmark.render_report(
+        environment, fixtures, records, summaries,
+        runs=1, warmup=0, output_dir=tmp_path,
+    )
+    assert "| IMPOSSIBLE | 1 | 100.000% | 1 | 0.000% |" in report
