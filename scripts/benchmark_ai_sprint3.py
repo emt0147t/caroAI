@@ -632,7 +632,7 @@ def render_report(
         f"- Machine: {environment['machine']}; CPU: {environment['cpu_name']}",
         f"- Container detected: {environment['is_container']} ({environment['container_hint']})",
         (
-            f"- Fixtures: {len(fixtures)}; difficulties: EASY/MEDIUM/HARD; "
+            f"- Fixtures: {len(fixtures)}; difficulties: {'/'.join(DIFFICULTY_CONFIG)}; "
             f"warm-up: {warmup}; measured trials per fixture/difficulty: {runs}"
         ),
         "",
