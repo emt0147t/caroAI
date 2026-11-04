@@ -152,6 +152,52 @@ def test_ai_move_happy_path(monkeypatch):
     assert data["game"]["move_count"] == 2
 
 
+def test_ai_move_impossible_difficulty_passes_through_to_engine(monkeypatch):
+    received = {}
+
+    def fake_ai_move(board, ai_player, difficulty):
+        received["ai_player"] = ai_player
+        received["difficulty"] = difficulty
+        received["board"] = board
+        return {
+            "row": 6,
+            "col": 8,
+            "score": 10,
+            "elapsed_ms": 2.0,
+        }
+
+    monkeypatch.setattr(
+        game_service_module,
+        "run_ai_engine",
+        fake_ai_move,
+    )
+
+    create_response = client.post(
+        "/api/games",
+        json={"mode": "HUMAN_VS_AI"},
+    )
+    game_id = create_response.json()["id"]
+
+    human_response = client.post(
+        f"/api/games/{game_id}/moves",
+        json={"row": 7, "col": 7},
+    )
+    assert human_response.status_code == 200
+
+    response = client.post(
+        f"/api/games/{game_id}/ai-move",
+        json={"difficulty": "impossible"},
+    )
+
+    assert response.status_code == 200
+    assert received["ai_player"] == 2
+    assert received["difficulty"] == "impossible"
+    assert received["board"][7][7] == 1
+    data = response.json()
+    assert data["move"]["player"] == "O"
+    assert data["game"]["move_count"] == 2
+    assert data["game"]["board"][6][8] == "O"
+
 def test_ai_move_rejects_wrong_mode():
     create_response = client.post(
         "/api/games",
@@ -219,7 +265,7 @@ def test_ai_move_rejects_illegal_ai_move(monkeypatch):
     assert "already occupied" in response.json()["detail"]
 
 
-@pytest.mark.parametrize("difficulty", ["Easy", "MEDIUM", "impossible"])
+@pytest.mark.parametrize("difficulty", ["Easy", "MEDIUM", "unknown"])
 def test_ai_move_rejects_invalid_difficulty(difficulty):
     create_response = client.post(
         "/api/games",
