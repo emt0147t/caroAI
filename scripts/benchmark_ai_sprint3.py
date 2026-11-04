@@ -97,7 +97,7 @@ def load_demo_fixtures() -> list[dict[str, Any]]:
             "expected_moves": [tuple(move) for move in item.get("expected_moves", [])],
             "is_demo": True,
             "require_no_immediate_win": bool(item.get("require_no_immediate_win", False)),
-            "difficulty": item.get("difficulty", ["EASY", "MEDIUM", "HARD"]),
+            "difficulty": item.get("difficulty", list(DIFFICULTY_CONFIG)),
         })
     return fixtures
 
@@ -207,7 +207,7 @@ def fixture_from_cells(
         "expected_moves": [],
         "is_demo": False,
         "require_no_immediate_win": False,
-        "difficulty": ["EASY", "MEDIUM", "HARD"],
+        "difficulty": list(DIFFICULTY_CONFIG),
     }
 
 
@@ -648,8 +648,8 @@ def render_report(
         ),
         (
             "- The p95 uses nearest-rank: sorted sample at rank ceil(0.95 × n). "
-            "With five trials, per-fixture p95 equals the maximum and is not a "
-            "high-confidence production percentile."
+            "Use at least 30 measured trials per fixture/difficulty; small samples "
+            "are exploratory and do not support a stable tail-latency estimate."
         ),
         (
             "- The by-difficulty p95 aggregates all fixture trials equally; it "
@@ -687,6 +687,20 @@ def render_report(
             f"| {'BELOW PROPOSAL' if item['proposed_slo_under_2000ms'] else 'NOT MET / NO DATA'} "
             f"| {item['slo_acceptance']} |"
         )
+
+    lines.extend([
+        "",
+        "## Tactical success rates",
+        "",
+        "| Difficulty | Forced-win samples | Win success | Forced-block samples | Block success |",
+        "|---|---:|---:|---:|---:|",
+    ])
+    for difficulty in DIFFICULTY_CONFIG:
+        win_rows = [row for row in records if not row["is_warmup"] and row["difficulty"] == difficulty and row["category"] == "forced_win" and row["expected_move_ok"] is not None]
+        block_rows = [row for row in records if not row["is_warmup"] and row["difficulty"] == difficulty and row["category"] == "forced_block" and row["expected_move_ok"] is not None]
+        win_rate = (sum(row["expected_move_ok"] is True for row in win_rows) / len(win_rows) * 100) if win_rows else None
+        block_rate = (sum(row["expected_move_ok"] is True for row in block_rows) / len(block_rows) * 100) if block_rows else None
+        lines.append(f"| {difficulty} | {len(win_rows)} | {format_ms(win_rate)}% | {len(block_rows)} | {format_ms(block_rate)}% |")
 
     lines.extend([
         "",
@@ -820,7 +834,7 @@ def parse_arguments() -> argparse.Namespace:
         "--runs",
         type=int,
         default=5,
-        help="Measured trials per fixture/difficulty (minimum 5)",
+        help="Measured trials per fixture/difficulty (minimum 30 recommended)",
     )
     parser.add_argument(
         "--warmup",
@@ -841,7 +855,7 @@ def parse_arguments() -> argparse.Namespace:
     )
     args = parser.parse_args()
     if args.runs < 5:
-        parser.error("--runs must be at least 5 for the Sprint 3 protocol")
+        parser.error("--runs must be at least 5; use 30 or more for a stable exploratory p95")
     if args.warmup < 1:
         parser.error("--warmup must be at least 1")
     if not args.output_dir.is_absolute():
