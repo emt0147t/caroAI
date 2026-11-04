@@ -171,7 +171,6 @@ def test_output_move_on_empty_cell(difficulty):
     assert b[r][c] == EMPTY, f"AI returned occupied cell ({r},{c}) for {difficulty}"
 
 
-
 def test_impossible_depth_and_candidate_limit_exceed_hard():
     """Impossible phải tìm sâu hơn và xét nhiều ứng viên hơn HARD."""
     assert DIFFICULTY_CONFIG["IMPOSSIBLE"]["depth"] > DIFFICULTY_CONFIG["HARD"]["depth"]
