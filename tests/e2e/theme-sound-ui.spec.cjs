@@ -88,13 +88,15 @@ async function installAudioTrace(page) {
     window.__caroaiAudioStarts = [];
     window.__caroaiAudioContexts = [];
 
-    const contextPrototype = window.AudioContext?.prototype;
-    if (contextPrototype?.resume) {
-      const nativeResume = contextPrototype.resume;
-      contextPrototype.resume = function (...args) {
-        if (!window.__caroaiAudioContexts.includes(this)) window.__caroaiAudioContexts.push(this);
-        return nativeResume.apply(this, args);
-      };
+    const NativeAudioContext = window.AudioContext;
+    if (NativeAudioContext) {
+      window.AudioContext = new Proxy(NativeAudioContext, {
+        construct(Target, args) {
+          const context = Reflect.construct(Target, args);
+          window.__caroaiAudioContexts.push(context);
+          return context;
+        }
+      });
     }
 
     const contextPrototypeForOscillators = window.AudioContext?.prototype;
