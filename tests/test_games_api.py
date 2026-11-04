@@ -198,6 +198,7 @@ def test_ai_move_impossible_difficulty_passes_through_to_engine(monkeypatch):
     assert data["game"]["move_count"] == 2
     assert data["game"]["board"][6][8] == "O"
 
+
 def test_ai_move_rejects_wrong_mode():
     create_response = client.post(
         "/api/games",
