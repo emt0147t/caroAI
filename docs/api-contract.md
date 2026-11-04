@@ -70,7 +70,7 @@ Request:
 {"difficulty":"medium"}
 ```
 
-Allowed values are `easy`, `medium`, and `hard`. Unsupported values or invalid request data return HTTP `422`.
+Allowed values are `easy`, `medium`, `hard`, and `impossible`. Unsupported values or invalid request data return HTTP `422`. Difficulty is request-scoped rather than persisted with the game: the client includes the selected value in each AI-move request, and may change it between turns. No database migration is needed. `impossible` uses the higher-budget Minimax setting (depth 4 / candidate limit 20); it is a stronger heuristic opponent, not a mathematical guarantee of perfect play or an unbeatable AI.
 
 Successful response: HTTP `200`, using the same `MakeMoveResponse` schema as a human move. Schema excerpt (the actual `game.board` field is a 15 × 15 array and is omitted here for readability):
 
