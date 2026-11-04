@@ -82,73 +82,154 @@ test('sound is disabled by default and can be toggled with persistence', async (
   await expect(page.locator('#soundToggleBtn')).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('terminal sound APIs and draw/defeat cues are available and functional', async ({ page, request }) => {
-  await page.goto('/');
+async function installAudioTrace(page) {
+  await page.addInitScript(() => {
+    localStorage.removeItem('caroai_sound_enabled');
+    window.__caroaiAudioStarts = [];
+    window.__caroaiAudioContexts = [];
 
-  // Verify sound API exports
-  const soundAPIs = await page.evaluate(() => ({
-    hasPlayMove: typeof window.CaroAI?.sound?.playMove === 'function',
-    hasPlayVictory: typeof window.CaroAI?.sound?.playVictory === 'function',
-    hasPlayDefeat: typeof window.CaroAI?.sound?.playDefeat === 'function',
-    hasPlayDraw: typeof window.CaroAI?.sound?.playDraw === 'function'
-  }));
-  expect(soundAPIs.hasPlayMove).toBe(true);
-  expect(soundAPIs.hasPlayVictory).toBe(true);
-  expect(soundAPIs.hasPlayDefeat).toBe(true);
-  expect(soundAPIs.hasPlayDraw).toBe(true);
+    const contextPrototype = window.AudioContext?.prototype;
+    if (contextPrototype?.resume) {
+      const nativeResume = contextPrototype.resume;
+      contextPrototype.resume = function (...args) {
+        if (!window.__caroaiAudioContexts.includes(this)) window.__caroaiAudioContexts.push(this);
+        return nativeResume.apply(this, args);
+      };
+    }
 
-  // Enable sound
-  await page.evaluate(() => localStorage.setItem('caroai_sound_enabled', 'true'));
-
-  // Create game and spy on sound calls
-  const create = await request.post('/api/games', { data: { mode: 'HUMAN_VS_HUMAN' } });
-  const game = await create.json();
-  await page.goto('/trong_tran/index.html?game_id=' + encodeURIComponent(game.id));
-
-  // Install spy
-  await page.evaluate(() => {
-    window.__soundCalls = [];
-    const origMove = window.CaroAI.sound.playMove;
-    const origDraw = window.CaroAI.sound.playDraw;
-    const origVictory = window.CaroAI.sound.playVictory;
-    window.CaroAI.sound.playMove = () => { window.__soundCalls.push('move'); origMove(); };
-    window.CaroAI.sound.playDraw = () => { window.__soundCalls.push('draw'); origDraw(); };
-    window.CaroAI.sound.playVictory = () => { window.__soundCalls.push('victory'); origVictory(); };
+    const sourcePrototype = window.AudioScheduledSourceNode?.prototype;
+    if (sourcePrototype?.start) {
+      const nativeStart = sourcePrototype.start;
+      sourcePrototype.start = function (...args) {
+        if (this instanceof window.OscillatorNode) {
+          window.__caroaiAudioStarts.push({ frequency: this.frequency.value, contextState: this.context.state });
+        }
+        return nativeStart.apply(this, args);
+      };
+    }
   });
+}
 
-  // Make move on cell (0,0)
-  await page.locator('#board .cell').first().click();
-  await page.waitForTimeout(500);
+async function enableSoundFromUserGesture(page) {
+  await page.locator('#soundToggleBtn').click();
+  await expect(page.locator('#soundToggleBtn')).toHaveAttribute('aria-pressed', 'true');
+  await page.evaluate(() => { window.__caroaiAudioStarts = []; });
+}
 
-  const calls = await page.evaluate(() => window.__soundCalls);
-  expect(calls).toContain('move');
+async function expectTerminalAudio(page, count) {
+  await expect.poll(() => page.evaluate(() => window.__caroaiAudioStarts.length)).toBe(count);
+  const info = await page.evaluate(() => ({
+    starts: window.__caroaiAudioStarts,
+    contexts: window.__caroaiAudioContexts.map(context => context.state)
+  }));
+  expect(info.contexts.length).toBeGreaterThan(0);
+  expect(info.contexts.every(state => state === 'running')).toBe(true);
+  return info.starts.map(event => event.frequency);
+}
+
+test('winning move plays the victory cue through Web Audio', async ({ page, request }) => {
+  const create = await request.post('/api/games', { data: { mode: 'HUMAN_VS_HUMAN' } });
+  expect(create.status()).toBe(201);
+  const game = await create.json();
+  for (const [row, col] of [[7,0],[8,0],[7,1],[8,1],[7,2],[8,2],[7,3],[8,3]]) {
+    const move = await request.post('/api/games/' + game.id + '/moves', { data: { row, col } });
+    expect(move.ok()).toBeTruthy();
+  }
+
+  await installAudioTrace(page);
+  await page.goto('/trong_tran/index.html?game_id=' + encodeURIComponent(game.id));
+  await enableSoundFromUserGesture(page);
+  await page.getByRole('button', { name: 'Đánh hàng 8, cột 5' }).click();
+  await expect(page.locator('#resultTitle')).toHaveText('X thắng!');
+  const frequencies = await expectTerminalAudio(page, 3);
+  expect(frequencies[0]).toBeLessThan(frequencies[1]);
+  expect(frequencies[1]).toBeLessThan(frequencies[2]);
 });
 
-test('mobile board cells maintain WCAG 2.2 minimum 24px hit area and support arrow navigation', async ({ page, request }) => {
-  const create = await request.post('/api/games', { data: { mode: 'HUMAN_VS_HUMAN' } });
+test('AI win plays the defeat cue for the human player', async ({ page, request }) => {
+  const create = await request.post('/api/games', { data: { mode: 'HUMAN_VS_AI' } });
+  expect(create.status()).toBe(201);
   const game = await create.json();
 
-  // Test at narrow 320px viewport
+  await installAudioTrace(page);
+  await page.goto('/trong_tran/index.html?game_id=' + encodeURIComponent(game.id));
+  await enableSoundFromUserGesture(page);
+  await page.route('**/api/games/*/ai-move', async route => {
+    const terminalBoard = game.board.map(row => row.slice());
+    terminalBoard[7][7] = 'X';
+    terminalBoard[7][8] = 'O';
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        move: { row: 7, col: 8, player: 'O', move_number: 2 },
+        game: { ...game, status: 'O_WON', current_player: 'X', move_count: 2, winner: 'O', board: terminalBoard }
+      })
+    });
+  });
+  await page.getByRole('button', { name: 'Đánh hàng 8, cột 8' }).click();
+  await expect(page.locator('#resultTitle')).toHaveText('O thắng!');
+  const frequencies = await expectTerminalAudio(page, 3);
+  expect(frequencies[0]).toBeGreaterThan(frequencies[1]);
+  expect(frequencies[1]).toBeGreaterThan(frequencies[2]);
+});
+
+test('full board plays the draw cue through Web Audio', async ({ page, request }) => {
+  const create = await request.post('/api/games', { data: { mode: 'HUMAN_VS_HUMAN' } });
+  expect(create.status()).toBe(201);
+  const game = await create.json();
+  const cells = { X: [], O: [] };
+  for (let row = 0; row < 15; row++) {
+    for (let col = 0; col < 15; col++) {
+      cells[(row + Math.floor(col / 2)) % 2 === 0 ? 'X' : 'O'].push([row, col]);
+    }
+  }
+  for (let ply = 0; ply < 224; ply++) {
+    const player = ply % 2 === 0 ? 'X' : 'O';
+    const [row, col] = cells[player].shift();
+    const move = await request.post('/api/games/' + game.id + '/moves', { data: { row, col } });
+    expect(move.ok(), 'backend move ' + (ply + 1)).toBeTruthy();
+  }
+
+  await installAudioTrace(page);
+  await page.goto('/trong_tran/index.html?game_id=' + encodeURIComponent(game.id));
+  await enableSoundFromUserGesture(page);
+  await page.locator('#board .cell:not(:disabled)').click();
+  await expect(page.locator('#resultTitle')).toHaveText('Hòa!');
+  const frequencies = await expectTerminalAudio(page, 2);
+  expect(frequencies[0]).toBeGreaterThan(frequencies[1]);
+});
+
+test('mobile board exposes an ARIA grid and skips occupied cells with arrow keys', async ({ page, request }) => {
+  const create = await request.post('/api/games', { data: { mode: 'HUMAN_VS_HUMAN' } });
+  expect(create.status()).toBe(201);
+  const game = await create.json();
+
+  for (const [row, col] of [[14,14],[0,1],[14,13],[1,2],[14,12],[1,0]]) {
+    const move = await request.post('/api/games/' + game.id + '/moves', { data: { row, col } });
+    expect(move.ok()).toBeTruthy();
+  }
+
   await page.setViewportSize({ width: 320, height: 600 });
   await page.goto('/trong_tran/index.html?game_id=' + encodeURIComponent(game.id));
+  const grid = page.getByRole('grid', { name: 'Bàn cờ Caro 15 x 15' });
+  await expect(grid).toBeVisible();
+  await expect(grid.getByRole('row')).toHaveCount(15);
+  await expect(grid.getByRole('gridcell')).toHaveCount(225);
 
   const firstCell = page.locator('#board .cell').first();
   await expect(firstCell).toBeVisible();
-
-  // Verify cell size is >= 24px (WCAG 2.2 SC 2.5.8 Target Size Minimum)
   const box = await firstCell.boundingBox();
   expect(box.width).toBeGreaterThanOrEqual(23.9);
   expect(box.height).toBeGreaterThanOrEqual(23.9);
+  await expect(page.locator('#board .cell[tabindex="0"]')).toHaveCount(1);
 
-  // Verify keyboard arrow navigation
   await firstCell.focus();
   await page.keyboard.press('ArrowRight');
-  const secondCellFocused = await page.locator('#board .cell').nth(1).evaluate(el => document.activeElement === el);
-  expect(secondCellFocused).toBe(true);
-
+  await expect(page.locator('#board .cell[data-row="0"][data-col="2"]')).toBeFocused();
   await page.keyboard.press('ArrowDown');
-  const cellRow1Col1Focused = await page.locator('#board .cell').nth(16).evaluate(el => document.activeElement === el);
-  expect(cellRow1Col1Focused).toBe(true);
+  await expect(page.locator('#board .cell[data-row="2"][data-col="2"]')).toBeFocused();
+  await expect(page.locator('#board .cell[tabindex="0"]')).toHaveCount(1);
 });
 
 test('responsive checks pass across full viewport matrix (320, 360, 390, 768, 1024, 1280, 1440)', async ({ page, request }) => {
