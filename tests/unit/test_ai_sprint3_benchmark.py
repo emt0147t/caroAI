@@ -188,7 +188,6 @@ def test_run_trial_checks_expected_move_coordinates_as_tuples(
     assert result["expected_move_ok"] is expected_result
 
 
-
 def test_benchmark_matrix_includes_impossible_and_reports_tactical_rates(tmp_path):
     fixtures = benchmark.build_fixtures()
     assert set(DIFFICULTY_CONFIG) == {"EASY", "MEDIUM", "HARD", "IMPOSSIBLE"}
