@@ -36,7 +36,7 @@
         {"row": 7, "col": 7, "player": 1}
       ],
       "expected_moves": [[0, 1]],
-      "difficulty": ["EASY", "MEDIUM", "HARD"]
+      "difficulty": ["EASY", "MEDIUM", "HARD", "IMPOSSIBLE"]
     },
     {
       "name": "demo_midgame_search",
