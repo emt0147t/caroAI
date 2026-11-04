@@ -81,8 +81,15 @@ jobs:
       - name: Capture candidate screenshots
         env:
           CAROAI_BASE_URL: http://127.0.0.1:8080
-          EVIDENCE_LABEL: after
+          EVIDENCE_LABEL: candidate
         run: node tests/e2e/capture-ui-evidence.cjs
+      - name: Run visual regression comparison
+        env:
+          BASELINE_DIR: evidence/before
+          CANDIDATE_DIR: evidence/candidate
+          DIFF_DIR: evidence/diff
+          VISUAL_DIFF_THRESHOLD: "0.02"
+        run: npm run test:visual
       - name: Run browser E2E
         run: npm run test:e2e
         env:

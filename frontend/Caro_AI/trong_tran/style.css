@@ -373,8 +373,11 @@ button:disabled, select:disabled {
   border: 1.5px solid var(--border-color);
   box-shadow: var(--ui-shadow-board);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
   display: flex;
-  justify-content: center;
+  justify-content: safe center;
 }
 
 .caro-board {
@@ -399,6 +402,8 @@ button:disabled, select:disabled {
   position: relative;
   width: 34px;
   height: 34px;
+  min-width: 24px;
+  min-height: 24px;
   background: var(--board-bg);
   border: none;
   display: flex;
@@ -410,6 +415,12 @@ button:disabled, select:disabled {
   cursor: pointer;
   touch-action: manipulation;
   transition: background-color var(--ui-motion-fast);
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--ui-color-accent);
+  outline-offset: -2px;
+  z-index: 2;
 }
 
 .cell:hover:not(:disabled) {
@@ -501,20 +512,21 @@ button:disabled, select:disabled {
   }
 
   .board-container {
-    padding: 8px 4px;
+    padding: 10px 8px;
     border-radius: 12px;
+    justify-content: safe center;
   }
 
-  /* Responsive grid sizing down to 320px width without horizontal overflow */
+  /* Responsive grid sizing: enforce minimum 24px cell touch target (WCAG 2.2 SC 2.5.8) */
   .caro-board {
-    grid-template-columns: repeat(15, min(calc((100vw - 44px) / 15), 32px));
-    grid-template-rows: repeat(15, min(calc((100vw - 44px) / 15), 32px));
+    grid-template-columns: repeat(15, max(min(calc((100vw - 44px) / 15), 32px), 24px));
+    grid-template-rows: repeat(15, max(min(calc((100vw - 44px) / 15), 32px), 24px));
   }
 
   .cell {
-    width: min(calc((100vw - 44px) / 15), 32px);
-    height: min(calc((100vw - 44px) / 15), 32px);
-    font-size: clamp(0.75rem, 3.2vw, 1.15rem);
+    width: max(min(calc((100vw - 44px) / 15), 32px), 24px);
+    height: max(min(calc((100vw - 44px) / 15), 32px), 24px);
+    font-size: clamp(0.85rem, 3.4vw, 1.15rem);
   }
 }
 

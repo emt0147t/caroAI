@@ -131,6 +131,50 @@
     } catch (_) {}
   }
 
+  function playDefeatSound() {
+    if (!isSoundEnabled()) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      [349.23, 329.63, 293.66].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const t = now + idx * 0.1;
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.08, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.2);
+      });
+    } catch (_) {}
+  }
+
+  function playDrawSound() {
+    if (!isSoundEnabled()) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      [440, 392].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const t = now + idx * 0.12;
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.08, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.18);
+      });
+    } catch (_) {}
+  }
+
   window.CaroAI = window.CaroAI || {};
   window.CaroAI.theme = {
     apply: applyTheme,
@@ -143,7 +187,9 @@
     toggle: toggleSound,
     updateUI: updateSoundToggleUI,
     playMove: playMoveSound,
-    playVictory: playVictorySound
+    playVictory: playVictorySound,
+    playDefeat: playDefeatSound,
+    playDraw: playDrawSound
   };
 
   // Immediate theme application to eliminate flash of wrong theme
