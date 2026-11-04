@@ -2,7 +2,7 @@ const N = 15;
 const API = String(window.CAROAI_API_BASE_URL || "").replace(/\/$/, "");
 const qs = new URLSearchParams(location.search);
 const s = { id: qs.get("game_id"), game: null, busy: false, lastMove: null,
-  difficulty: ["easy","medium","hard"].includes(qs.get("difficulty")) ? qs.get("difficulty") : "medium",
+  difficulty: ["easy","medium","hard","impossible"].includes(qs.get("difficulty")) ? qs.get("difficulty") : "medium",
   retry: null };
 const $ = id => document.getElementById(id);
 const board = $("board"), current = $("currentPlayer"), status = $("gameStatus"),
@@ -131,7 +131,7 @@ async function aiMove() {
   } finally { setBusy(false); render(); }
 }
 mode.addEventListener("change", () => difficultyGroup?.classList.toggle("hidden", mode.value !== "HUMAN_VS_AI"));
-difficulty?.addEventListener("change", () => { if (["easy","medium","hard"].includes(difficulty.value)) s.difficulty = difficulty.value; updateUrl(); });
+difficulty?.addEventListener("change", () => { if (["easy","medium","hard","impossible"].includes(difficulty.value)) s.difficulty = difficulty.value; updateUrl(); });
 newBtn.addEventListener("click", () => createGame(mode.value));
 resultNewGame.addEventListener("click", () => createGame(mode.value));
 retryBtn.addEventListener("click", async () => {
