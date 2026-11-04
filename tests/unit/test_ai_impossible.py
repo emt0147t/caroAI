@@ -64,6 +64,7 @@ def test_impossible_blocks_an_opponent_immediate_win():
     assert board[0][0] == PLAYER_X
     assert all(board[7][col] == PLAYER_O for col in range(3, 7))
 
+
 def test_impossible_midgame_search_returns_legal_move_and_preserves_board():
     """Exercise the real depth-4 search on a non-terminal midgame position."""
     import copy
