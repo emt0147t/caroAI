@@ -97,12 +97,30 @@ async function installAudioTrace(page) {
       };
     }
 
+    const contextPrototypeForOscillators = window.AudioContext?.prototype;
+    if (contextPrototypeForOscillators?.createOscillator) {
+      const nativeCreateOscillator = contextPrototypeForOscillators.createOscillator;
+      contextPrototypeForOscillators.createOscillator = function (...args) {
+        const oscillator = nativeCreateOscillator.apply(this, args);
+        const frequency = oscillator.frequency;
+        const nativeSetValueAtTime = frequency.setValueAtTime.bind(frequency);
+        frequency.setValueAtTime = (value, time) => {
+          oscillator.__caroaiScheduledFrequency = value;
+          return nativeSetValueAtTime(value, time);
+        };
+        return oscillator;
+      };
+    }
+
     const sourcePrototype = window.AudioScheduledSourceNode?.prototype;
     if (sourcePrototype?.start) {
       const nativeStart = sourcePrototype.start;
       sourcePrototype.start = function (...args) {
         if (this instanceof window.OscillatorNode) {
-          window.__caroaiAudioStarts.push({ frequency: this.frequency.value, contextState: this.context.state });
+          window.__caroaiAudioStarts.push({
+            frequency: this.__caroaiScheduledFrequency ?? this.frequency.value,
+            contextState: this.context.state
+          });
         }
         return nativeStart.apply(this, args);
       };
