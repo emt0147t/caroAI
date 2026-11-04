@@ -696,11 +696,32 @@ def render_report(
         "|---|---:|---:|---:|---:|",
     ])
     for difficulty in DIFFICULTY_CONFIG:
-        win_rows = [row for row in records if not row["is_warmup"] and row["difficulty"] == difficulty and row["category"] == "forced_win" and row["expected_move_ok"] is not None]
-        block_rows = [row for row in records if not row["is_warmup"] and row["difficulty"] == difficulty and row["category"] == "forced_block" and row["expected_move_ok"] is not None]
-        win_rate = (sum(row["expected_move_ok"] is True for row in win_rows) / len(win_rows) * 100) if win_rows else None
-        block_rate = (sum(row["expected_move_ok"] is True for row in block_rows) / len(block_rows) * 100) if block_rows else None
-        lines.append(f"| {difficulty} | {len(win_rows)} | {format_ms(win_rate)}% | {len(block_rows)} | {format_ms(block_rate)}% |")
+        win_rows = [
+            row for row in records
+            if not row["is_warmup"]
+            and row["difficulty"] == difficulty
+            and row["category"] == "forced_win"
+            and row["expected_move_ok"] is not None
+        ]
+        block_rows = [
+            row for row in records
+            if not row["is_warmup"]
+            and row["difficulty"] == difficulty
+            and row["category"] == "forced_block"
+            and row["expected_move_ok"] is not None
+        ]
+        win_rate = (
+            sum(row["expected_move_ok"] is True for row in win_rows)
+            / len(win_rows) * 100
+        ) if win_rows else None
+        block_rate = (
+            sum(row["expected_move_ok"] is True for row in block_rows)
+            / len(block_rows) * 100
+        ) if block_rows else None
+        lines.append(
+            f"| {difficulty} | {len(win_rows)} | {format_ms(win_rate)}% "
+            f"| {len(block_rows)} | {format_ms(block_rate)}% |"
+        )
 
     lines.extend([
         "",
@@ -833,8 +854,8 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--runs",
         type=int,
-        default=5,
-        help="Measured trials per fixture/difficulty (minimum 30 recommended)",
+        default=30,
+        help="Measured trials per fixture/difficulty (minimum 5; 30 recommended)",
     )
     parser.add_argument(
         "--warmup",
