@@ -98,8 +98,8 @@ def test_ai_service_rejects_invalid_difficulty(monkeypatch):
 
     monkeypatch.setattr(game_service_module, "run_ai_engine", fail_if_called)
 
-    with pytest.raises(InvalidAIMoveError, match="easy, medium, hard"):
-        service.make_ai_move(game_id, "impossible")
+    with pytest.raises(InvalidAIMoveError, match="easy, medium, hard, impossible"):
+        service.make_ai_move(game_id, "unknown")
 
 
 def test_ai_service_requires_human_vs_ai_mode():
