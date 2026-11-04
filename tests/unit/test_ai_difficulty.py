@@ -8,6 +8,7 @@ Từ engine.py (source thực tế):
         "EASY":   {"depth": 1, "candidate_limit": 6},
         "MEDIUM": {"depth": 2, "candidate_limit": 10},
         "HARD":   {"depth": 3, "candidate_limit": 14},
+        "IMPOSSIBLE": {"depth": 4, "candidate_limit": 20},
     }
     diff_key = difficulty.upper()
     config = DIFFICULTY_CONFIG.get(diff_key, DIFFICULTY_CONFIG["MEDIUM"])
@@ -34,7 +35,7 @@ def base_board():
     return b
 
 
-# ── E.1  DIFFICULTY_CONFIG chứa đúng 3 key hợp lệ ───────────────────────────
+# ── E.1  DIFFICULTY_CONFIG chứa đúng 4 key hợp lệ ───────────────────────────
 
 def test_difficulty_config_has_easy():
     assert "EASY" in DIFFICULTY_CONFIG
@@ -50,7 +51,7 @@ def test_difficulty_config_has_hard():
 
 def test_difficulty_config_no_extra_keys():
     """Contract chỉ định nghĩa 3 mức độ."""
-    assert set(DIFFICULTY_CONFIG.keys()) == {"EASY", "MEDIUM", "HARD"}
+    assert set(DIFFICULTY_CONFIG.keys()) == {"EASY", "MEDIUM", "HARD", "IMPOSSIBLE"}
 
 
 # ── E.2  Các key config bắt buộc ─────────────────────────────────────────────
@@ -168,3 +169,10 @@ def test_output_move_on_empty_cell(difficulty):
     result = get_ai_move(b, ai_player=PLAYER_X, difficulty=difficulty)
     r, c = result["row"], result["col"]
     assert b[r][c] == EMPTY, f"AI returned occupied cell ({r},{c}) for {difficulty}"
+
+
+
+def test_impossible_depth_and_candidate_limit_exceed_hard():
+    """Impossible phải tìm sâu hơn và xét nhiều ứng viên hơn HARD."""
+    assert DIFFICULTY_CONFIG["IMPOSSIBLE"]["depth"] > DIFFICULTY_CONFIG["HARD"]["depth"]
+    assert DIFFICULTY_CONFIG["IMPOSSIBLE"]["candidate_limit"] > DIFFICULTY_CONFIG["HARD"]["candidate_limit"]
