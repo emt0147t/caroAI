@@ -63,3 +63,29 @@ def test_impossible_blocks_an_opponent_immediate_win():
     assert (result["row"], result["col"]) in {(7, 2), (7, 7)}
     assert board[0][0] == PLAYER_X
     assert all(board[7][col] == PLAYER_O for col in range(3, 7))
+
+def test_impossible_midgame_search_returns_legal_move_and_preserves_board():
+    """Exercise the real depth-4 search on a non-terminal midgame position."""
+    import copy
+
+    board = empty_board()
+    positions = [
+        (7, 7, PLAYER_X), (7, 8, PLAYER_O),
+        (6, 7, PLAYER_X), (8, 7, PLAYER_O),
+        (6, 6, PLAYER_X), (8, 8, PLAYER_O),
+        (7, 6, PLAYER_O), (6, 8, PLAYER_X),
+    ]
+    for row, col, player in positions:
+        board[row][col] = player
+    original = copy.deepcopy(board)
+
+    result = engine.get_ai_move(board, ai_player=PLAYER_X, difficulty="impossible")
+
+    row, col = result["row"], result["col"]
+    assert 0 <= row < BOARD_SIZE
+    assert 0 <= col < BOARD_SIZE
+    assert board[row][col] == EMPTY
+    assert board == original, "Impossible search must not mutate the input board"
+    assert result["elapsed_ms"] < 15000, (
+        f"Impossible search took {result['elapsed_ms']} ms on the fixed midgame fixture"
+    )
