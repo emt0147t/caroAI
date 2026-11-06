@@ -2,7 +2,7 @@
 from copy import deepcopy
 
 from app.ai.adapter import board_to_ai
-from app.observability import record_ai_search
+from app.observability import record_ai_admission_rejection, record_ai_search
 from app.ai.admission import (
     AIAdmissionRejectedError,
     ImpossibleAdmissionGuard,
@@ -138,8 +138,12 @@ class GameService:
         """Search outside the write lock, then revalidate and atomically persist."""
         try:
             if difficulty == "impossible":
-                with self._impossible_guard.acquire():
-                    return self._make_ai_move_with_snapshot(game_id, difficulty)
+                try:
+                    with self._impossible_guard.acquire():
+                        return self._make_ai_move_with_snapshot(game_id, difficulty)
+                except AIAdmissionRejectedError:
+                    record_ai_admission_rejection()
+                    raise
             return self._make_ai_move_with_snapshot(game_id, difficulty)
         except RepositoryGameNotFoundError as exc:
             raise GameNotFoundError(str(exc)) from exc
