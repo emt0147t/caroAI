@@ -72,3 +72,19 @@ def test_mandatory_root_win_shortcut_is_not_lost_to_zero_budget():
     assert (result["row"], result["col"]) in {(7, 2), (7, 7)}
     assert result["search_stats"]["timed_out"] is False
     assert result["search_stats"]["shortcut"] == "immediate_win"
+
+
+
+def test_mandatory_root_forced_block_is_not_lost_to_zero_budget():
+    board = empty_board()
+    for col in range(3, 7):
+        board[7][col] = 1
+    board[0][0] = 2
+
+    result = get_ai_move(
+        board, ai_player=2, difficulty="impossible", time_budget_ms=0
+    )
+
+    assert (result["row"], result["col"]) in {(7, 2), (7, 7)}
+    assert result["search_stats"]["timed_out"] is False
+    assert result["search_stats"]["shortcut"] == "forced_block"
