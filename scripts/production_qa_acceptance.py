@@ -109,9 +109,16 @@ def play_pvp_win(base_url: str, run_id: str, game_id: str) -> None:
         or game.get("move_count") != 9
     ):
         raise AcceptanceError("PvP did not persist the expected X_WON terminal state")
+    return {
+        "mode": "HUMAN_VS_HUMAN",
+        "status": "X_WON",
+        "winner": "X",
+        "move_count": 9,
+        "result": "X_WON",
+    }
 
 
-def play_pvai_turn(base_url: str, run_id: str, game_id: str) -> None:
+def play_pvai_turn(base_url: str, run_id: str, game_id: str) -> dict:
     _status, human = request_json(
         base_url,
         "POST",
@@ -133,19 +140,43 @@ def play_pvai_turn(base_url: str, run_id: str, game_id: str) -> None:
     state = ai.get("game", {})
     if move.get("player") != "O" or state.get("move_count") != 2:
         raise AcceptanceError("PvAI response did not persist one legal AI move")
-    if not (0 <= int(move.get("row", -1)) < 15 and 0 <= int(move.get("col", -1)) < 15):
-        raise AcceptanceError("PvAI returned coordinates outside the board")
+    row = move.get("row")
+    col = move.get("col")
+    board = state.get("board")
+    if not (
+        isinstance(row, int)
+        and isinstance(col, int)
+        and 0 <= row < 15
+        and 0 <= col < 15
+        and isinstance(board, list)
+        and len(board) == 15
+        and board[row][col] == "O"
+    ):
+        raise AcceptanceError("PvAI move coordinates do not match the persisted O board cell")
+    return {
+        "mode": "HUMAN_VS_AI",
+        "status": "IN_PROGRESS",
+        "current_player": "X",
+        "move_count": 2,
+        "result": None,
+    }
 
 
 def verify_fresh_reads_and_history(
-    base_url: str, run_id: str, game_ids: list[str]
+    base_url: str, run_id: str, expected_states: dict[str, dict]
 ) -> None:
-    for game_id in game_ids:
+    for game_id, expected in expected_states.items():
         _status, detail = request_json(
             base_url, "GET", f"/api/games/{game_id}", run_id=run_id
         )
         if detail.get("id") != game_id:
             raise AcceptanceError("Fresh game-detail read returned a different game")
+        for field in ("mode", "status", "winner", "current_player", "move_count"):
+            if field in expected and detail.get(field) != expected[field]:
+                raise AcceptanceError(
+                    f"Fresh game read for {game_id} has unexpected {field}: "
+                    f"{detail.get(field)!r}"
+                )
 
     _status, history = request_json(
         base_url,
@@ -153,10 +184,23 @@ def verify_fresh_reads_and_history(
         "/api/history?limit=100&offset=0",
         run_id=run_id,
     )
-    history_ids = {item.get("id") for item in history.get("items", [])}
-    missing = set(game_ids) - history_ids
-    if missing:
-        raise AcceptanceError("QA games were not visible in the persisted history read")
+    records = {
+        item.get("id"): item
+        for item in history.get("items", [])
+        if isinstance(item, dict)
+    }
+    for game_id, expected in expected_states.items():
+        item = records.get(game_id)
+        if item is None:
+            raise AcceptanceError(
+                f"QA game {game_id} was not visible in the persisted history read"
+            )
+        for field in ("mode", "status", "result", "move_count"):
+            if field in expected and item.get(field) != expected[field]:
+                raise AcceptanceError(
+                    f"History record for {game_id} has unexpected {field}: "
+                    f"{item.get(field)!r}"
+                )
 
 
 def cleanup_and_verify(base_url: str, run_id: str, game_ids: list[str]) -> None:
@@ -206,9 +250,13 @@ def main() -> int:
         pvai_id = create_qa_game(base_url, run_id, "HUMAN_VS_AI")
         game_ids.append(pvai_id)
 
-        play_pvp_win(base_url, run_id, pvp_id)
-        play_pvai_turn(base_url, run_id, pvai_id)
-        verify_fresh_reads_and_history(base_url, run_id, game_ids)
+        pvp_expected = play_pvp_win(base_url, run_id, pvp_id)
+        pvai_expected = play_pvai_turn(base_url, run_id, pvai_id)
+        verify_fresh_reads_and_history(
+            base_url,
+            run_id,
+            {pvp_id: pvp_expected, pvai_id: pvai_expected},
+        )
         print("Production gameplay acceptance passed: PvP win, PvAI move, fresh reads and history.")
     except Exception as exc:
         primary_error = exc
