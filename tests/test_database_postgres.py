@@ -187,7 +187,6 @@ def test_constraint_failure_rolls_back_game_and_prior_move(postgres_engine):
         ) == 0
 
 
-
 def test_qa_cleanup_is_run_scoped_and_removes_postgres_dependents(
     postgres_engine,
 ):
