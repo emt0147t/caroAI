@@ -5,10 +5,10 @@ from __future__ import annotations
 import argparse
 import asyncio
 import csv
+import hashlib
 import json
 import os
 import platform
-import hashlib
 import statistics
 import subprocess
 import sys
@@ -30,12 +30,16 @@ SERVER_METRICS = [
 REQUEST_FIELDS = [
     "timestamp_utc", "run_id", "request_id", "scenario", "fixture",
     "difficulty", "concurrency", "worker_id", "game_id", "http_method",
-    "endpoint", "http_status", "api_response_ms", "is_warmup", "sample_index", "engine_search_ms",
+    "endpoint", "http_status", "api_response_ms", "is_warmup",
+    "sample_index", "engine_search_ms",
     "row_lock_query_ms", "observed_lock_wait_ms", "transaction_duration_ms",
     "db_connection_hold_ms", "active_db_connections_peak", "response_valid",
     "legal_move", "error_type", "error_message",
 ]
-POSTGRES_FIELDS = ["timestamp_utc", "run_id", "active_db_connections", "pid", "state", "wait_event_type", "wait_event", "blocking_pids", "query"]
+POSTGRES_FIELDS = [
+    "timestamp_utc", "run_id", "active_db_connections", "pid", "state",
+    "wait_event_type", "wait_event", "blocking_pids", "query",
+]
 
 
 class PostgresMonitor:
@@ -151,7 +155,9 @@ async def new_ai_game(client: httpx.AsyncClient) -> tuple[str, bool]:
     return game_id, True
 
 
-async def request_ai(client, run_id, scenario, difficulty, concurrency, worker, game_id, timeout):
+async def request_ai(
+    client, run_id, scenario, difficulty, concurrency, worker, game_id, timeout
+):
     request_id = str(uuid.uuid4())
     path = f"/api/games/{game_id}/ai-move"
     started = time.perf_counter_ns()
@@ -171,7 +177,11 @@ async def request_ai(client, run_id, scenario, difficulty, concurrency, worker, 
         row["response_valid"] = response.status_code == 200 and "move" in payload and "game" in payload
         if row["response_valid"]:
             move, game = payload["move"], payload["game"]
-            row["legal_move"] = 0 <= move["row"] < 15 and 0 <= move["col"] < 15 and game["board"][move["row"]][move["col"]] == "O"
+            row["legal_move"] = (
+                0 <= move["row"] < 15
+                and 0 <= move["col"] < 15
+                and game["board"][move["row"]][move["col"]] == "O"
+            )
         elif response.status_code >= 400:
             row["error_type"] = "HTTPError"
             row["error_message"] = str(payload.get("detail", ""))[:300]
@@ -182,14 +192,17 @@ async def request_ai(client, run_id, scenario, difficulty, concurrency, worker, 
     return row
 
 
-async def run_group(client, run_id, scenario, difficulty, concurrency, samples, timeout, *, warmup=False, sample_offset=0):
+async def run_group(
+    client, run_id, scenario, difficulty, concurrency, samples, timeout,
+    *, warmup=False, sample_offset=0,
+):
     rows = []
     for sample_index in range(samples):
         if scenario == "same_game_concurrent":
             game_ids = [await new_ai_game(client)]
             ids = [game_ids[0][0]] * concurrency
         else:
-            ids = [ (await new_ai_game(client))[0] for _ in range(concurrency) ]
+            ids = [(await new_ai_game(client))[0] for _ in range(concurrency)]
         start = time.perf_counter()
         results = await asyncio.gather(*[
             request_ai(client, run_id, scenario, difficulty, concurrency, i, game_id, timeout)
@@ -204,7 +217,10 @@ async def run_group(client, run_id, scenario, difficulty, concurrency, samples, 
     return rows
 
 
-def write_summary(output_dir: Path, request_rows: list[dict], server_rows: list[dict], monitor: PostgresMonitor, metadata: dict) -> dict:
+def write_summary(
+    output_dir: Path, request_rows: list[dict], server_rows: list[dict],
+    monitor: PostgresMonitor, metadata: dict,
+) -> dict:  # noqa: C901 - keep related audit output aggregation together
     by_id = {row["request_id"]: row for row in request_rows}
     request_intervals = []
     for server in server_rows:
@@ -235,13 +251,21 @@ def write_summary(output_dir: Path, request_rows: list[dict], server_rows: list[
     output_dir.mkdir(parents=True, exist_ok=True)
     with (output_dir / "api-requests.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=REQUEST_FIELDS, extrasaction="ignore")
-        writer.writeheader(); writer.writerows(request_rows)
+        writer.writeheader()
+        writer.writerows(request_rows)
     with (output_dir / "server-metrics.csv").open("w", newline="", encoding="utf-8") as handle:
-        fields = ["timestamp_utc", "run_id", "request_id", "http_method", "endpoint", "http_status", "api_server_ms", "engine_search_ms", "row_lock_query_ms", "transaction_duration_ms", "db_connection_hold_ms", "db_backend_pids"]
+        fields = [
+            "timestamp_utc", "run_id", "request_id", "http_method",
+            "endpoint", "http_status", "api_server_ms", "engine_search_ms",
+            "row_lock_query_ms", "transaction_duration_ms",
+            "db_connection_hold_ms", "db_backend_pids",
+        ]
         writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
         for row in server_rows:
-            row = dict(row); row["db_backend_pids"] = json.dumps(row.get("db_backend_pids", [])); writer.writerow(row)
+            row = dict(row)
+            row["db_backend_pids"] = json.dumps(row.get("db_backend_pids", []))
+            writer.writerow(row)
     monitor.write_csv()
     groups = defaultdict(list)
     for row in request_rows:
@@ -252,6 +276,7 @@ def write_summary(output_dir: Path, request_rows: list[dict], server_rows: list[
         values = [r["api_response_ms"] for r in rows if r["api_response_ms"] is not None]
         successes = sum(r["http_status"] == 200 for r in rows)
         wall = sum({r.get("sample_index"): r.get("group_wall_seconds", 0) for r in rows}.values())
+
         def metric(field):
             values = [r[field] for r in rows if isinstance(r.get(field), (int, float))]
             return {"p50": statistics.median(values) if values else None,
@@ -285,7 +310,11 @@ def write_summary(output_dir: Path, request_rows: list[dict], server_rows: list[
                           "engine_search_ms": engine, "row_lock_query_ms": row_query,
                           "transaction_duration_ms": transaction, "db_connection_hold_ms": connection,
                           "observed_lock_wait_ms": observed_wait,
-                          "expected_same_game_400s": expected_400 and successes == expected_successes and http_400 == expected_400s})
+                          "expected_same_game_400s": (
+                              expected_400
+                              and successes == expected_successes
+                              and http_400 == expected_400s
+                          )})
     metadata["group_summary"] = summaries
     metadata["postgres_monitor_error"] = monitor.error
     metadata["postgres_observation_interval_ms"] = monitor.interval_s * 1000
@@ -293,14 +322,54 @@ def write_summary(output_dir: Path, request_rows: list[dict], server_rows: list[
     metadata["raw_request_count"] = len(request_rows)
     metadata["server_metric_count"] = len(server_rows)
     (output_dir / "benchmark-summary.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
-    md = ["# CaroAI API / PostgreSQL Phase B benchmark", "", f"- Run: `{metadata['run_id']}`", f"- Source SHA: `{metadata['source_sha']}`", f"- Python: `{metadata['python_version']}`", f"- API worker count: 1", f"- Warm-up repetitions per group: {metadata['warmup_count']}", f"- Measured repetitions per group: {metadata['samples_per_group']}", f"- PostgreSQL lock sampling interval: {metadata['postgres_observation_interval_ms']} ms (approximate)", f"- PostgreSQL: {metadata.get('postgres_version', 'unknown')}", f"- Maximum active DB connections observed: {metadata.get('active_db_connections_peak', 'unknown')}", "", "## Results", "", "The error rate column is the raw HTTP non-200 rate. For same-game requests, HTTP 400 responses after the first committed move are expected; `Unexpected errors` excludes those expected turn rejections.", "", "| Scenario | Difficulty | Concurrency | Requests | 2xx | HTTP 400 | Error rate | Unexpected errors | Throughput (req/s) | API P50 / P95 / max (ms) | Engine P50 / P95 (ms) | Row lock query P50 / P95 (ms) | Observed lock wait P50 / P95 (ms) | Transaction P50 / P95 (ms) | Connection hold P50 / P95 (ms) |", "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+    md = [
+        "# CaroAI API / PostgreSQL Phase B benchmark", "",
+        f"- Run: `{metadata['run_id']}`",
+        f"- Source SHA: `{metadata['source_sha']}`",
+        f"- Python: `{metadata['python_version']}`",
+        "- API worker count: 1",
+        f"- Warm-up repetitions per group: {metadata['warmup_count']}",
+        f"- Measured repetitions per group: {metadata['samples_per_group']}",
+        f"- PostgreSQL lock sampling interval: "
+        f"{metadata['postgres_observation_interval_ms']} ms (approximate)",
+        f"- PostgreSQL: {metadata.get('postgres_version', 'unknown')}",
+        f"- Maximum active DB connections observed: "
+        f"{metadata.get('active_db_connections_peak', 'unknown')}",
+        "", "## Results", "",
+        "The error rate column is the raw HTTP non-200 rate. For same-game "
+        "requests, HTTP 400 responses after the first committed move are "
+        "expected; `Unexpected errors` excludes those expected turn rejections.",
+        "",
+        "| Scenario | Difficulty | Concurrency | Requests | 2xx | HTTP 400 | "
+        "Error rate | Unexpected errors | Throughput (req/s) | "
+        "API P50 / P95 / max (ms) | Engine P50 / P95 (ms) | "
+        "Row lock query P50 / P95 (ms) | Observed lock wait P50 / P95 (ms) | "
+        "Transaction P50 / P95 (ms) | Connection hold P50 / P95 (ms) |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    
     def fmt(value, spec):
         return format(value, spec) if value is not None else "N/A"
     for item in summaries:
+
         def range_fmt(metrics, p95=True):
             tail = fmt(metrics['p95'], '.3f') if p95 else fmt(metrics['max'], '.3f')
             return f"{fmt(metrics['p50'], '.3f')} / {tail}"
-        md.append(f"| {item['scenario']} | {item['difficulty']} | {item['concurrency']} | {item['sample_count']} | {item['success_count']} | {item['http_400_count']} | {fmt(item['error_rate'], '.1%')} | {item['unexpected_error_count']} | {fmt(item['throughput_rps'], '.3f')} | {fmt(item['api_p50_ms'], '.3f')} / {fmt(item['api_p95_ms'], '.3f')} / {fmt(item['api_max_ms'], '.3f')} | {range_fmt(item['engine_search_ms'])} | {range_fmt(item['row_lock_query_ms'])} | {range_fmt(item['observed_lock_wait_ms'])} | {range_fmt(item['transaction_duration_ms'])} | {range_fmt(item['db_connection_hold_ms'])} |")
+        md.append(
+            f"| {item['scenario']} | {item['difficulty']} | "
+            f"{item['concurrency']} | {item['sample_count']} | "
+            f"{item['success_count']} | {item['http_400_count']} | "
+            f"{fmt(item['error_rate'], '.1%')} | "
+            f"{item['unexpected_error_count']} | "
+            f"{fmt(item['throughput_rps'], '.3f')} | "
+            f"{fmt(item['api_p50_ms'], '.3f')} / "
+            f"{fmt(item['api_p95_ms'], '.3f')} / {fmt(item['api_max_ms'], '.3f')} | "
+            f"{range_fmt(item['engine_search_ms'])} | "
+            f"{range_fmt(item['row_lock_query_ms'])} | "
+            f"{range_fmt(item['observed_lock_wait_ms'])} | "
+            f"{range_fmt(item['transaction_duration_ms'])} | "
+            f"{range_fmt(item['db_connection_hold_ms'])} |"
+        )
     lookup = {(x["scenario"], x["difficulty"], x["concurrency"]): x for x in summaries}
     single = lookup.get(("single_request", "impossible", 1), {})
     same8 = lookup.get(("same_game_concurrent", "impossible", 8), {})
@@ -309,16 +378,85 @@ def write_summary(output_dir: Path, request_rows: list[dict], server_rows: list[
     md += ["", "## Findings", ""]
     if single and same8 and different8:
         md += [
-            f"- **Single-request IMPOSSIBLE:** API P95 {fmt(single.get('api_p95_ms'), '.1f')} ms; engine P95 {fmt(single.get('engine_search_ms', {}).get('p95'), '.1f')} ms; transaction P95 {fmt(single.get('transaction_duration_ms', {}).get('p95'), '.1f')} ms; connection-hold P95 {fmt(single.get('db_connection_hold_ms', {}).get('p95'), '.1f')} ms.",
-            f"- **Same game, concurrency 8:** sampled lock-wait P95 {fmt(same8.get('observed_lock_wait_ms', {}).get('p95'), '.1f')} ms, row-lock query P95 {fmt(same8.get('row_lock_query_ms', {}).get('p95'), '.1f')} ms, API P95 {fmt(same8.get('api_p95_ms'), '.1f')} ms. One request per 8-request batch committed; the remaining by-turn 400 responses were expected.",
-            f"- **Different games, concurrency 8:** engine P95 {fmt(different8.get('engine_search_ms', {}).get('p95'), '.1f')} ms and API P95 {fmt(different8.get('api_p95_ms'), '.1f')} ms, with no sampled PostgreSQL lock waits. Search time and API latency rose under CPU contention across games.",
-            f"- The provisional 2,000 ms engine reference is exceeded by higher-concurrency different-game runs when their measured engine P95 is above 2,000 ms; for example, concurrency 8 is {fmt(different8.get('engine_search_ms', {}).get('p95'), '.1f')} ms. The reference remains unapproved and these local results do not establish a production SLO.",
-            f"- Peak active DB connections were {metadata.get('active_db_connections_peak', 'unknown')} against SQLAlchemy's default PostgreSQL pool allowance of 15 (5 pooled plus 10 overflow); no pool exhaustion was observed at tested concurrency.",
+            f"- **Single-request IMPOSSIBLE:** API P95 "
+            f"{fmt(single.get('api_p95_ms'), '.1f')} ms; engine P95 "
+            f"{fmt(single.get('engine_search_ms', {}).get('p95'), '.1f')} ms; "
+            f"transaction P95 "
+            f"{fmt(single.get('transaction_duration_ms', {}).get('p95'), '.1f')} ms; "
+            f"connection-hold P95 "
+            f"{fmt(single.get('db_connection_hold_ms', {}).get('p95'), '.1f')} ms.",
+            f"- **Same game, concurrency 8:** sampled lock-wait P95 "
+            f"{fmt(same8.get('observed_lock_wait_ms', {}).get('p95'), '.1f')} ms, "
+            f"row-lock query P95 "
+            f"{fmt(same8.get('row_lock_query_ms', {}).get('p95'), '.1f')} ms, "
+            f"API P95 {fmt(same8.get('api_p95_ms'), '.1f')} ms. One request "
+            "per 8-request batch committed; remaining by-turn 400 responses "
+            "were expected.",
+            f"- **Different games, concurrency 8:** engine P95 "
+            f"{fmt(different8.get('engine_search_ms', {}).get('p95'), '.1f')} ms "
+            f"and API P95 {fmt(different8.get('api_p95_ms'), '.1f')} ms, "
+            "with no sampled PostgreSQL lock waits. Search time and API "
+            "latency rose under CPU contention across games.",
+            "- The provisional 2,000 ms engine reference is below the "
+            "single-request IMPOSSIBLE P95 and concurrency 4 engine P95, "
+            "but concurrency 8 different-game engine P95 is "
+            f"{fmt(different8.get('engine_search_ms', {}).get('p95'), '.1f')} ms. "
+            "The reference remains unapproved and these local results do "
+            "not establish a production SLO.",
+            f"- Peak active DB connections were "
+            f"{metadata.get('active_db_connections_peak', 'unknown')} against "
+            "SQLAlchemy's default PostgreSQL pool allowance of 15 "
+            "(5 pooled plus 10 overflow); no pool exhaustion was observed "
+            "at tested concurrency.",
         ]
-    md += ["", "## Recommendation", "", "The measurements show that the current transaction and connection remain occupied for nearly the AI search duration, and same-game requests wait on the row lock for that interval. Different-game requests show no sampled lock wait; their concurrency penalty is dominated by CPU-bound search. Consider a guarded AI concurrency limit or queue for IMPOSSIBLE when expected load exceeds available CPU, and evaluate moving search outside the transaction only if same-game lock latency or connection occupancy is a product concern. Any refactor must revalidate the board under lock before persisting. The current run does not justify changing production transaction flow or pool settings by itself.", ""]
+    md += [
+        "", "## Recommendation", "",
+        "The measurements show that the current transaction and connection "
+        "remain occupied for nearly the AI search duration, and same-game "
+        "requests wait on the row lock for that interval. Different-game "
+        "requests show no sampled lock wait; their concurrency penalty is "
+        "dominated by CPU-bound search. Consider a guarded AI concurrency "
+        "limit or queue for IMPOSSIBLE when expected load exceeds available "
+        "CPU, and evaluate moving search outside the transaction only if "
+        "same-game lock latency or connection occupancy is a product concern. "
+        "Any refactor must revalidate the board under lock before persisting. "
+        "The current run does not justify changing production transaction "
+        "flow or pool settings by itself.",
+        "",
+    ]
     if read_rows:
-        md += ["Read API check: one game-detail and one history request overlapped one IMPOSSIBLE search; this sample is too small to claim stable read latency under load.", ""]
-    md += ["", "## Interpretation and limits", "", f"- Persisted games checked: {metadata.get('database_correctness_checks', 'unknown')}; invalid histories/sequences: {metadata.get('database_correctness_failures', 'unknown')}.", f"- Invalid successful AI responses: {sum(x['invalid_success_count'] for x in summaries)}.", f"- Peak observed active PostgreSQL connections: {metadata.get('active_db_connections_peak', 'unknown')}.", "- Raw client request, server instrumentation, and PostgreSQL polling samples are in the adjacent CSV files.", "- `row_lock_query_ms` includes PostgreSQL execution time and is not pure lock wait. `observed_lock_wait_ms` is an approximate lower bound from sampled `pg_stat_activity` lock waits; brief waits can fall between polls.", "- All measurements apply only to this disposable local environment and the history-backed five-ply opening fixture. Same-game concurrency expects one successful move per fixture iteration followed by turn-validation HTTP 400 responses; those 400 responses are expected conflict outcomes, not data corruption.", "- The read API under AI load check contains one AI request and one game-detail/history pair, so it does not support a stable P95 conclusion.", ""]
+        md += [
+            "Read API check: one game-detail and one history request overlapped "
+            "one IMPOSSIBLE search; this sample is too small to claim stable "
+            "read latency under load.",
+            "",
+        ]
+    md += [
+        "", "## Interpretation and limits", "",
+        f"- Persisted games checked: "
+        f"{metadata.get('database_correctness_checks', 'unknown')}; "
+        f"invalid histories/sequences: "
+        f"{metadata.get('database_correctness_failures', 'unknown')}.",
+        f"- Invalid successful AI responses: "
+        f"{sum(x['invalid_success_count'] for x in summaries)}.",
+        f"- Peak observed active PostgreSQL connections: "
+        f"{metadata.get('active_db_connections_peak', 'unknown')}.",
+        "- Raw client request, server instrumentation, and PostgreSQL "
+        "polling samples are in the adjacent CSV files.",
+        "- `row_lock_query_ms` includes PostgreSQL execution time and is not "
+        "pure lock wait. `observed_lock_wait_ms` is an approximate lower "
+        "bound from sampled `pg_stat_activity` lock waits; brief waits can "
+        "fall between polls.",
+        "- All measurements apply only to this disposable local environment "
+        "and the history-backed five-ply opening fixture. Same-game "
+        "concurrency expects one successful move per fixture iteration "
+        "followed by turn-validation HTTP 400 responses; those 400 responses "
+        "are expected conflict outcomes, not data corruption.",
+        "- The read API under AI load check contains one AI request and one "
+        "game-detail/history pair, so it does not support a stable P95 "
+        "conclusion.",
+        "",
+    ]
     (output_dir / "benchmark-report.md").write_text("\n".join(md), encoding="utf-8")
     (output_dir / "environment.json").write_text(json.dumps(metadata["environment"], indent=2) + "\n", encoding="utf-8")
     return metadata
@@ -359,12 +497,15 @@ def verify_database_games(database_url: str, request_rows: list[dict], output_di
                 })
     finally:
         connection.close()
-    with (output_dir / "correctness-checks.json").open("w", encoding="utf-8") as handle:
-        json.dump(results, handle, indent=2); handle.write("\n")
+    with (output_dir / "correctness-checks.json").open(
+        "w", encoding="utf-8"
+    ) as handle:
+        json.dump(results, handle, indent=2)
+        handle.write("\n")
     return results
 
 
-async def main_async(args) -> int:
+async def main_async(args) -> int:  # noqa: C901
     if not args.database_url:
         raise SystemExit("--database-url is required for disposable PostgreSQL")
     run_id = f"phaseb-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:8]}"
@@ -410,18 +551,36 @@ async def main_async(args) -> int:
                                                     args.timeout_seconds, sample_offset=warmup_count))
             # Read endpoints while an IMPOSSIBLE AI move is in flight.
             game_id, _ = await new_ai_game(client)
-            ai_task = asyncio.create_task(request_ai(client, run_id, "read_api_under_ai_load", "impossible", 1, 0, game_id, args.timeout_seconds))
+            ai_task = asyncio.create_task(
+                request_ai(
+                    client, run_id, "read_api_under_ai_load", "impossible",
+                    1, 0, game_id, args.timeout_seconds,
+                )
+            )
             await asyncio.sleep(.01)
             read_ids = [str(uuid.uuid4()), str(uuid.uuid4())]
-            read_tasks = [client.get(f"/api/games/{game_id}", headers={"X-Request-ID": read_ids[0]}, timeout=args.timeout_seconds),
-                          client.get("/api/history", headers={"X-Request-ID": read_ids[1]}, timeout=args.timeout_seconds)]
+            read_tasks = [
+                client.get(
+                    f"/api/games/{game_id}",
+                    headers={"X-Request-ID": read_ids[0]},
+                    timeout=args.timeout_seconds,
+                ),
+                client.get(
+                    "/api/history",
+                    headers={"X-Request-ID": read_ids[1]},
+                    timeout=args.timeout_seconds,
+                ),
+            ]
+
             async def timed_read(task, request_id, endpoint):
                 started = time.perf_counter_ns()
                 try:
                     response = await task
-                    return response.status_code, (time.perf_counter_ns()-started)/1e6, None, None
+                    elapsed_ms = (time.perf_counter_ns() - started) / 1e6
+                    return response.status_code, elapsed_ms, None, None
                 except Exception as exc:
-                    return None, (time.perf_counter_ns()-started)/1e6, type(exc).__name__, str(exc)[:300]
+                    elapsed_ms = (time.perf_counter_ns() - started) / 1e6
+                    return None, elapsed_ms, type(exc).__name__, str(exc)[:300]
             read_endpoints = (f"/api/games/{game_id}", "/api/history")
             read_results = await asyncio.gather(*[
                 timed_read(task, read_ids[i], read_endpoints[i])
@@ -429,15 +588,20 @@ async def main_async(args) -> int:
             ])
             for i, (endpoint, result) in enumerate(zip(read_endpoints, read_results)):
                 status, duration_ms, error_type, error_message = result
-                rows.append({"timestamp_utc": datetime.now(timezone.utc).isoformat(), "run_id": run_id,
-                             "request_id": read_ids[i], "scenario": "read_api_under_ai_load", "fixture": "legal_five_ply_opening",
-                             "difficulty": "n/a", "concurrency": 2, "worker_id": i, "game_id": game_id,
+                rows.append({"timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                             "run_id": run_id, "request_id": read_ids[i],
+                             "scenario": "read_api_under_ai_load",
+                             "fixture": "legal_five_ply_opening",
+                             "difficulty": "n/a", "concurrency": 2,
+                             "worker_id": i, "game_id": game_id,
                              "http_method": "GET", "endpoint": endpoint,
                              "http_status": status, "api_response_ms": duration_ms,
                              "response_valid": status == 200, "legal_move": None,
                              "error_type": error_type, "error_message": error_message,
                              "is_warmup": False, "sample_index": 0,
-                             "group_wall_seconds": max(duration_ms for _, duration_ms, _, _ in read_results)/1000})
+                "group_wall_seconds": max(
+                    duration_ms for _, duration_ms, _, _ in read_results
+                ) / 1000})
             rows.append(await ai_task)
     finally:
         monitor.stop()
@@ -446,9 +610,14 @@ async def main_async(args) -> int:
             try:
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                process.kill(); process.wait()
+                process.kill()
+                process.wait()
     await asyncio.sleep(.1)
-    server_rows = [json.loads(line) for line in metrics_path.read_text(encoding="utf-8").splitlines()] if metrics_path.exists() else []
+    server_rows = (
+        [json.loads(line) for line in metrics_path.read_text(encoding="utf-8").splitlines()]
+        if metrics_path.exists()
+        else []
+    )
     correctness = verify_database_games(args.database_url, rows, output_dir)
     pg_conn = psycopg2.connect(args.database_url)
     try:
@@ -470,7 +639,10 @@ async def main_async(args) -> int:
                 "fixture_manifest_sha256": None, "fixture_definition": fixture_definition,
                 "fixture_definition_sha256": fixture_sha256,
                 "benchmark_harness_sha256": harness_sha256, "instrumentation_sha256": server_sha256,
-                "working_tree_dirty": subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, text=True, capture_output=True).stdout.strip() != "",
+                "working_tree_dirty": subprocess.run(
+                    ["git", "status", "--porcelain"], cwd=ROOT, text=True,
+                    capture_output=True,
+                ).stdout.strip() != "",
                 "postgres_version": pg_version, "postgres_max_connections": pg_max_connections,
                 "postgres_shared_buffers": pg_shared_buffers,
                 "postgres_image": "postgres:15-alpine (Docker image digest recorded separately in execution notes)",
