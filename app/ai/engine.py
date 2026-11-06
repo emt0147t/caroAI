@@ -3,14 +3,28 @@ from typing import Any, Dict, List
 
 from app.ai.evaluator import BOARD_SIZE, EMPTY
 from app.ai.minimax import find_best_move
+from app.ai.strategic_search import find_strategic_move
+
 
 DIFFICULTY_CONFIG = {
     "EASY": {"depth": 1, "candidate_limit": 6},
     "MEDIUM": {"depth": 2, "candidate_limit": 10},
-    "HARD": {"depth": 3, "candidate_limit": 14},
-    # High-budget mode: one extra search ply and a wider candidate set.
-    # This is a very strong heuristic opponent, not a proof of perfect play.
-    "IMPOSSIBLE": {"depth": 4, "candidate_limit": 20},
+    # Harder levels use iterative deepening, a transposition table, tactical
+    # threat scoring, and strict time/node budgets.
+    "HARD": {
+        "depth": 5,
+        "candidate_limit": 8,
+        "time_budget_ms": 250,
+        "node_budget": 16000,
+        "diversify": True,
+    },
+    "IMPOSSIBLE": {
+        "depth": 8,
+        "candidate_limit": 10,
+        "time_budget_ms": 700,
+        "node_budget": 40000,
+        "diversify": True,
+    },
 }
 
 
@@ -39,9 +53,9 @@ def get_ai_move(
     """
     Entry point chính của AI Engine để Backend FastAPI gọi tới.
 
-    Difficulty giữ nguyên contract Sprint 2: case-insensitive và fallback MEDIUM
-    khi giá trị dạng chuỗi không nằm trong cấu hình. Không có candidate hợp lệ
-    hoặc search trả output bất hợp lệ sẽ raise ValueError thay vì giả trả nước đi.
+    EASY/MEDIUM giữ nguyên Minimax hiện tại. HARD/IMPOSSIBLE dùng bộ tìm kiếm
+    chiến thuật có iterative deepening, transposition table và hard time budget.
+    Difficulty không phân biệt hoa/thường; giá trị lạ vẫn fallback về MEDIUM.
     """
     if not isinstance(difficulty, str):
         raise ValueError("AI difficulty must be a string")
@@ -50,12 +64,24 @@ def get_ai_move(
     config = DIFFICULTY_CONFIG.get(diff_key, DIFFICULTY_CONFIG["MEDIUM"])
 
     start_time = time.perf_counter()
-    (row, col), score = find_best_move(
-        board=board,
-        ai_player=ai_player,
-        depth=config["depth"],
-        candidate_limit=config["candidate_limit"],
-    )
+    if diff_key in {"HARD", "IMPOSSIBLE"}:
+        (row, col), score, _stats = find_strategic_move(
+            board=board,
+            ai_player=ai_player,
+            max_depth=config["depth"],
+            candidate_limit=config["candidate_limit"],
+            time_budget_ms=config["time_budget_ms"],
+            node_budget=config["node_budget"],
+            diversify=config["diversify"],
+        )
+    else:
+        (row, col), score = find_best_move(
+            board=board,
+            ai_player=ai_player,
+            depth=config["depth"],
+            candidate_limit=config["candidate_limit"],
+        )
+
     _validate_engine_move(board, row, col, score)
     elapsed_ms = (time.perf_counter() - start_time) * 1000.0
 
