@@ -34,6 +34,8 @@ The detailed checks later in this document were originally captured on November 
 
 The release workflow completed successfully and Render confirmed the exact commit-SHA image as live. The release smoke checks returned HTTP 200 for `/health`, `/ready`, `/`, `/history.html`, `/api/history`, and `/tokens.css`. These are endpoint/readiness checks, not a full interactive production gameplay acceptance.
 
+A subsequent Render provider-metrics query returned recent service CPU samples around 0.0021 raw CPU units and memory samples around 70–75 MB. HTTP request-count, HTTP latency, and instance-count series were empty in that query window. These sparse samples are not a load test and do not establish a traffic baseline or SLO.
+
 ### Current baseline and release caveats
 
 - Production auto-deploy remains disabled. Continue to use the manual exact-SHA release workflow; do not use a generic Render redeploy while the service's configured `imagePath` remains the historical bootstrap tag.
@@ -230,7 +232,7 @@ Configuration entered in repository settings (**Settings** → **Environments** 
 | **`RENDER_SERVICE_ID`** | Secret | Entered by owner (pending release job validation) | Service identifier (`srv-dbkd2dflk1mc73fd2ukg`) from Render Web Service. |
 | **`CAROAI_PUBLIC_URL`** | Variable | **UNCONFIRMED — PENDING OWNER VERIFICATION** | Public HTTPS URL (do not claim configured or infer from Environment secrets). |
 
-*Status note: The five production secrets (`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `RENDER_DEPLOY_HOOK`, `RENDER_API_KEY`, `RENDER_SERVICE_ID`) were entered by the repository owner under GitHub Settings → Environments → `production`, but because release jobs are skipped during CI runs, these secrets have not yet been validated by an executing release job. Meanwhile, `CAROAI_PUBLIC_URL` is UNCONFIRMED — PENDING OWNER VERIFICATION; its configuration in GitHub Settings has not been independently confirmed and must not be inferred from the presence of the secrets.*
+*Status note: The five production secrets (`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `RENDER_DEPLOY_HOOK`, `RENDER_API_KEY`, `RENDER_SERVICE_ID`) were entered by the repository owner under GitHub Settings → Environments → `production`, but because release jobs are skipped during CI runs, these secrets have not yet been validated by an executing release job. `CAROAI_PUBLIC_URL` was also operationally validated by the same successful release job: the workflow required a non-empty value and validated its HTTPS origin format before publishing.*
 
 ### 7.1 Environment Protection & Approval Gate Review
 - **Environment Approval Gate:** While `.github/workflows/ci-cd.yml` references `environment: name: production`, GitHub Actions does not enforce manual approvals unless configured by the repository owner. Required Reviewers setting: **Unconfirmed / awaiting verification** under **Settings → Environments → `production`** (do not claim configured unless independently confirmed).
