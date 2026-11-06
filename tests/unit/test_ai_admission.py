@@ -31,3 +31,13 @@ def test_zero_limit_disables_admission_guard():
     with guard.acquire():
         with guard.acquire():
             assert True
+
+
+
+def test_impossible_guard_respects_bounded_queue_wait():
+    guard = ImpossibleAdmissionGuard(max_concurrency=1, queue_wait_ms=1)
+
+    with guard.acquire():
+        with pytest.raises(AIAdmissionRejectedError):
+            with guard.acquire():
+                pass
