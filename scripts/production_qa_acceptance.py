@@ -84,7 +84,7 @@ def create_qa_game(base_url: str, run_id: str, mode: str) -> str:
     return game_id
 
 
-def play_pvp_win(base_url: str, run_id: str, game_id: str) -> None:
+def play_pvp_win(base_url: str, run_id: str, game_id: str) -> dict[str, object]:
     # X completes a horizontal five; O replies in a separate row.
     moves = [
         (0, 0), (1, 0),
