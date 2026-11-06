@@ -63,7 +63,7 @@ def test_single_immediate_threat_is_forced_to_be_blocked():
 
     assert move == (7, 7)
     assert board[7][7] == EMPTY
-    assert stats["depth"] >= 1
+    assert stats["depth"] == 0  # Forced block found before iterative search.
 
 
 def test_search_returns_a_legal_move_under_a_tiny_budget():
