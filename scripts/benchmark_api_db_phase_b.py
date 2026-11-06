@@ -33,7 +33,8 @@ REQUEST_FIELDS = [
     "endpoint", "http_status", "api_response_ms", "is_warmup",
     "sample_index", "engine_search_ms",
     "row_lock_query_ms", "observed_lock_wait_ms", "transaction_duration_ms",
-    "db_connection_hold_ms", "active_db_connections_peak", "response_valid",
+    "transaction_count", "db_connection_hold_ms", "active_db_connections_peak",
+    "response_valid",
     "legal_move", "error_type", "error_message",
 ]
 POSTGRES_FIELDS = [
@@ -310,24 +311,37 @@ def write_summary(  # noqa: C901
             (r.get("response_valid") is False or r.get("legal_move") is False)
             for r in rows
         )
-        summaries.append({"scenario": scenario, "difficulty": difficulty, "concurrency": concurrency,
-                          "sample_count": len(rows), "success_count": successes,
-                          "http_400_count": http_400,
-                          "error_rate": (len(rows)-successes)/len(rows) if rows else None,
-                          "unexpected_error_count": unexpected,
-                          "unexpected_error_rate": (unexpected/len(rows)) if rows else None,
-                          "invalid_success_count": invalid_successes,
-                          "throughput_rps": len(rows)/wall if wall else None,
-                          "api_p50_ms": statistics.median(values) if values else None,
-                          "api_p95_ms": percentile(values, .95), "api_max_ms": max(values) if values else None,
-                          "engine_search_ms": engine, "row_lock_query_ms": row_query,
-                          "transaction_duration_ms": transaction, "db_connection_hold_ms": connection,
-                          "observed_lock_wait_ms": observed_wait,
-                          "expected_same_game_400s": (
-                              expected_400
-                              and successes == expected_successes
-                              and http_400 == expected_400s
-                          )})
+        summaries.append({
+            "scenario": scenario,
+            "difficulty": difficulty,
+            "concurrency": concurrency,
+            "sample_count": len(rows),
+            "success_count": successes,
+            "http_400_count": http_400,
+            "http_409_count": sum(r.get("http_status") == 409 for r in rows),
+            "expected_conflict_count": expected_conflict_count,
+            "error_rate": (len(rows) - successes) / len(rows) if rows else None,
+            "unexpected_error_count": unexpected,
+            "unexpected_error_rate": (
+                unexpected / len(rows) if rows else None
+            ),
+            "invalid_success_count": invalid_successes,
+            "throughput_rps": len(rows) / wall if wall else None,
+            "api_p50_ms": statistics.median(values) if values else None,
+            "api_p95_ms": percentile(values, .95),
+            "api_max_ms": max(values) if values else None,
+            "engine_search_ms": engine,
+            "row_lock_query_ms": row_query,
+            "transaction_duration_ms": transaction,
+            "db_connection_hold_ms": connection,
+            "observed_lock_wait_ms": observed_wait,
+            "expected_same_game_conflicts": (
+                same_game
+                and successes == expected_successes
+                and expected_conflict_count == expected_conflicts
+                and unexpected == 0
+            ),
+        })
     metadata["group_summary"] = summaries
     metadata["postgres_monitor_error"] = monitor.error
     metadata["postgres_observation_interval_ms"] = monitor.interval_s * 1000
@@ -349,9 +363,10 @@ def write_summary(  # noqa: C901
         f"- Maximum active DB connections observed: "
         f"{metadata.get('active_db_connections_peak', 'unknown')}",
         "", "## Results", "",
-        "The error rate column is the raw HTTP non-200 rate. For same-game "
-        "requests, HTTP 400 responses after the first committed move are "
-        "expected; `Unexpected errors` excludes those expected turn rejections.",
+        "The error rate column is the raw HTTP non-200 rate. In same-game "
+        "concurrency, HTTP 400 (the AI turn has already moved) and HTTP 409 "
+        "(the search snapshot became stale) are expected conflict outcomes; "
+        "`Unexpected errors` excludes only responses with those specific details.",
         "",
         "| Scenario | Difficulty | Concurrency | Requests | 2xx | HTTP 400 | HTTP 409 | "
         "Error rate | Unexpected errors | Throughput (req/s) | "
