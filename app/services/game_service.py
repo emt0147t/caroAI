@@ -113,9 +113,9 @@ class GameService:
             ai_player=2,
             difficulty=difficulty,
         )
-        record_ai_search(difficulty, result)
         if not isinstance(result, dict):
             raise InvalidAIMoveError("AI returned an invalid move response")
+        record_ai_search(difficulty, result)
 
         row = result.get("row")
         col = result.get("col")
