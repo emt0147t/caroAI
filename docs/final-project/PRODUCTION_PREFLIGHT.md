@@ -1,4 +1,4 @@
-# CaroAI — Production Preflight Audit & Deployment Guide
+# CaroAI — Production Preflight Audit & Deployment Guide (Current Release)
 
 **Role:** Senior Software Architect, Tech Lead, DevOps Engineer, QA Lead
 **Date:** November 3, 2026
@@ -13,6 +13,29 @@
 **Baseline CI Workflow Run:** GitHub Actions Run [#41475666768](https://github.com/emt0147t/caroAI/actions/runs/41475666768) (`status: completed`, `conclusion: success`)
 **Historical Preflight Run:** GitHub Actions Run [#41470234191](https://github.com/emt0147t/caroAI/actions/runs/41470234191) on `f796ef9`
 **Historical PR #49 Baseline:** PR #49 merged at `6cf9bf08b8fb374645b7ecf79eb7a886ac002ef6` (CI Run [#41462195364](https://github.com/emt0147t/caroAI/actions/runs/41462195364))
+
+## Current Production Checkpoint — November 6, 2026
+
+| Item | Verified value |
+|---|---|
+| `main` | `42ee035ab42cd4c0bc934699f4d5433ff4b12a83` |
+| `develop` | `42ee035ab42cd4c0bc934699f4d5433ff4b12a83` (fast-forwarded from main; no force-push) |
+| Release workflow | [CaroAI CI #605](https://github.com/emt0147t/caroAI/actions/runs/42253079008), event `workflow_dispatch`, conclusion `success` |
+| Render service | `srv-dbkd2dflk1mc73fd2ukg` |
+| Live deploy | `dep-dbn02vrncjis73am3dhg`, status `live` |
+| Live image | `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83` |
+| Public URL | [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com) |
+| Post-deploy smoke | `/health`, `/ready`, `/`, `/history.html`, `/api/history`, `/tokens.css`: HTTP 200 |
+
+The release workflow validated the production Environment inputs, published the exact full-SHA image, triggered the Render deploy hook, observed the same image reference in Render's `live` deployment, and completed read-only HTTPS smoke checks. The historical bootstrap-only/pending-release statuses below are superseded by this checkpoint.
+
+### Current engineering follow-ups
+
+1. Phase C AI search instrumentation and latency optimization (node count, candidate branching, alpha-beta pruning, bounded time budget, IMPOSSIBLE admission guard).
+2. Controlled production PvP/PvAI acceptance with uniquely tagged QA data and guaranteed cleanup.
+3. Production observability for request latency/error rates, AI search distributions, process CPU/memory, DB pool/connection occupancy, and transaction duration.
+
+---
 
 ---
 
@@ -51,7 +74,7 @@
 | **Liveness & Readiness Probes** | `app/api/routes_health.py` | **Code-verified & CI-verified** | `/health` returns `{"status":"ok"}`. `/ready` executes database `SELECT 1` and returns 503 if unreachable. |
 | **Containerization** | `Dockerfile`, `docker-compose.yml` | **Code-verified & Locally tested** | Multi-stage build (`python:3.11-slim`), non-root `appuser` (UID 10001), parameterized dynamic port `${PORT:-8000}`, signal-forwarding `exec` startup. |
 | **Bootstrap Live Instance** | Render Web Service & Neon PostgreSQL | **LIVE & VERIFIED** | Bootstrap deployment verified live at `https://caroai-bootstrap-a9e753b33198.onrender.com`. Migrations applied; `/ready` probe and persistence across restart verified (`POST-RESTART PERSISTENCE: PASS`). |
-| **Official Production Release** | Render Web Service & GitHub Actions release | **PENDING / NOT RUN** | Official automated release workflow on protected `main` has not run; full-SHA/short-SHA release tags pending promotion of PR #50. |
+| **Official Production Release** | Render Web Service & GitHub Actions release | **LIVE & VERIFIED** | Workflow #605 published and deployed the exact full-SHA image; Render deploy `dep-dbn02vrncjis73am3dhg` is live. |
 
 ---
 
@@ -262,9 +285,13 @@ Direct push to `main` is strictly prohibited by repository rulesets (`main` enfo
 
 ---
 
-## 10. Remaining Steps Prior to Official Release
+## 10. Post-Release Engineering Work
 
-1. **Bootstrap Deployment Verified:** Bootstrap Web Service (`srv-dbkd2dflk1mc73fd2ukg`) is LIVE at `https://caroai-bootstrap-a9e753b33198.onrender.com` connected to Neon PostgreSQL, with schema migrations applied and post-restart persistence verified (`POST-RESTART PERSISTENCE: PASS`).
-2. **GitHub Environment Secrets & Variables:** The five secrets in Environment `production` have been entered by the repository owner, but remain to be validated by an executing release job. Environment variable `CAROAI_PUBLIC_URL` remains UNCONFIRMED — PENDING OWNER VERIFICATION.
-3. **PR #50 Promotion to `main`:** Pull Request #50 from `develop` into `main` must be reviewed by a write-access team member, approved, and merged.
-4. **Trigger Official Production Release:** Following merge of PR #50, dispatch `CaroAI CI/CD` on `main` with `release_approved=true` to publish traceable commit-SHA images to Docker Hub and trigger the official deployment hook.
+The official release is complete. The remaining work is post-release hardening, not release provisioning:
+
+1. **P0 — Baseline and evidence hygiene:** keep `main` and `develop` synchronized; maintain current README, acceptance report, preflight, and benchmark report.
+2. **P1 — AI search performance:** measure node count, branching, candidate-cap pruning and alpha-beta pruning by fixture/difficulty; test optional time budgets and IMPOSSIBLE concurrency admission; move AI computation outside the row-lock transaction with snapshot revalidation before commit.
+3. **P2 — Production gameplay acceptance:** execute one deterministic PvP win and one PvAI turn against the public service; verify read-back and history; use a run-scoped QA tag and clean only that run's records.
+4. **P3 — Observability:** record bounded-cardinality HTTP and AI metrics, pool/connection occupancy and transaction duration; compare with Render's CPU, memory, HTTP latency and database connection metrics; define warning/critical thresholds.
+
+**Important:** the November 6 release's HTTP smoke tests were read-only. They did not create or mutate production games. Do not claim production PvP/PvAI E2E acceptance until the separate controlled QA run is recorded.
