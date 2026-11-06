@@ -1,3 +1,4 @@
+import math
 import os
 import time
 from typing import Any, Dict, List
@@ -64,10 +65,10 @@ def get_ai_move(
                     "CAROAI_IMPOSSIBLE_TIME_BUDGET_MS must be numeric"
                 ) from exc
 
-    if time_budget_ms is not None and time_budget_ms < 0:
+    if time_budget_ms is not None and (not math.isfinite(time_budget_ms) or time_budget_ms < 0):
         raise ValueError("time_budget_ms must be non-negative")
 
-    stats = SearchStats() if collect_stats else None
+    stats = SearchStats() if (collect_stats or time_budget_ms is not None) else None
     start_time = time.perf_counter()
     (row, col), score = find_best_move(
         board=board,
@@ -88,6 +89,6 @@ def get_ai_move(
         "score": score,
         "elapsed_ms": round(elapsed_ms, 2),
     }
-    if stats is not None:
+    if collect_stats and stats is not None:
         result["search_stats"] = stats.to_dict()
     return result
