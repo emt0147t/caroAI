@@ -4,9 +4,9 @@
 **Repository**: `emt0147t/caroAI`
 **Evaluation Role**: Principal Software Engineer + Tech Lead + DevOps Engineer + QA Lead
 **Assessment Date**: November 7, 2026 (current-status addendum; historical audit evidence retained below)
-**Integration Branch**: `develop` (current synchronized baseline: `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`)
+**Integration Branch**: `develop` (Phase C merged at `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0`; production `main` remains `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`)
 **Production Branch**: `main` (current production baseline: `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`)
-**Delivery PR Status**: PR #58 has been merged to `main`; current `main` and `develop` are identical at `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`. The current production release is live via Render deployment `dep-dbn02vrncjis73am3dhg`.
+**Delivery PR Status**: PR #58 is merged to `main`; Phase C PR #60 is now merged to `develop` at `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0`. Production `main` remains at `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`, live via Render deployment `dep-dbn02vrncjis73am3dhg`.
 
 ---
 
@@ -19,8 +19,8 @@ This section supersedes conflicting release, branch, and deployment statements i
 | Item | Verified value |
 |---|---|
 | `main` | `42ee035ab42cd4c0bc934699f4d5433ff4b12a83` |
-| `develop` | `42ee035ab42cd4c0bc934699f4d5433ff4b12a83` |
-| Branch comparison | Identical; 0 ahead / 0 behind |
+| `develop` | `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0` (Phase C merge commit) |
+| Branch comparison | `develop` is 81 commits ahead of `main`, 0 behind; Phase C is merged only to `develop` |
 | Production service | Render `srv-dbkd2dflk1mc73fd2ukg` |
 | Production deployment | `dep-dbn02vrncjis73am3dhg`, status `live` |
 | Production image | `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83` |
@@ -66,7 +66,7 @@ CaroAI is a university Final Project delivering a full-stack, 15×15 Gomoku (C�
 |---|---|---|---|---|---|
 | **Git Commits (>= 30)** | At least 30 meaningful commits in repository history | **PASS** | `origin/main..938a174` yields **388 commits** (339 non-merge, 49 merge commits). Core implementation and engineering commits alone total **159 commits**. | `origin/develop` (Baseline `938a174`) | None. Exceeds requirement by >5x for implementation commits and >12x overall. |
 | **Five-Member Collaboration** | Demonstrable contribution across all 5 team members | **PASS** | Exact shortlog on non-merges (N=339): Vũ Duy Hiếu (142 commits, 41.9%), Nguyễn Xuân Thành (86 commits, 25.4%), Mạc Quang Vinh (51 commits, 15.0%), Ngọc Hiền (41 commits, 12.1%), Trần Danh Kiên (19 commits, 5.6%). Sums exactly to 339 non-merge commits (100.0%). | `docs/final-project/GIT_COLLABORATION_AUDIT.md` (Baseline `938a174`) | None. Preserved in Git commit graph without squashing or history rewriting. |
-| **Feature Branches & PRs** | Clean branch workflow, PR reviews, branch protection | **PASS** | PR #58 integrated the Impossible difficulty and benchmark updates into `main`; current `main` and `develop` are synchronized at `42ee035`. Historical PR #50 references below describe the earlier promotion cycle and are superseded by PR #58. | [PR #58](https://github.com/emt0147t/caroAI/pull/58) | Historical documentation PRs require separate backlog review. |
+| **Feature Branches & PRs** | Clean branch workflow, PR reviews, branch protection | **PASS** | PR #58 integrated Impossible difficulty and benchmark updates into `main`. Phase C PR #60 is merged into `develop` at `fd888b6...`; it is not yet promoted to `main`. | [PR #58](https://github.com/emt0147t/caroAI/pull/58) · [PR #60](https://github.com/emt0147t/caroAI/pull/60) | Phase C promotion to `main` requires a separate reviewed PR and production release approval. |
 | **Merge Conflict Resolution** | Genuine conflict created, resolved, tested, and documented | **PASS** | Competing branches `feature/deploy-config-resources` (`8fe6c02`) and `feature/deploy-config-networking` (`30530b7`) conflicted on `docs/final-project/deployment-config.md`. Resolved into `67bdf86`. | `67bdf86` | None. Documented with unified diffs and markers in `MERGE_CONFLICT_EVIDENCE.md`. |
 | **Multi-Stage Dockerfile** | Non-root user, dynamic port `${PORT:-8000}`, healthcheck | **PASS** | Built candidate image `caroai:candidate` (`sha256:630fe329...`). Unified container serves both static UI and API on same port. Healthcheck validates `http://localhost:${PORT:-8000}/ready`. | `Dockerfile` | None. Verified locally and via CI check `Docker image build`. |
 | **Docker Hub Publishing** | Automated release job publishes full-SHA and short-SHA tags to Docker Hub | **LIVE / VERIFIED** | Production release workflow #42253079008 published the commit-pinned image `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83`; Render reports the matching image digest as live. | [Production release run](https://github.com/emt0147t/caroAI/actions/runs/42253079008) | Release evidence is specific to this SHA; future releases still require an approved manual dispatch. |
@@ -221,10 +221,10 @@ This section replaces the historical PR #50 pre-merge rollout snapshot.
    - `main` remains protected by its PR review requirement; production release is a separate manual exact-SHA dispatch.
 4. **Branch / Integration Status**
    - PR #58 integrated the current production release into `main`.
-   - `main` and `develop` are synchronized at `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`.
+   - `main` remains `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`; `develop` contains Phase C at `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0`.
    - P0 documentation refresh is proposed in [PR #61](https://github.com/emt0147t/caroAI/pull/61).
 5. **Phase C and Remaining Acceptance**
-   - Phase C is staged in [PR #60](https://github.com/emt0147t/caroAI/pull/60), ready for human review and not yet merged. Its controlled benchmarks and CI/E2E evidence are separate from the deployed production baseline.
+   - Phase C [PR #60](https://github.com/emt0147t/caroAI/pull/60) has merged into `develop` at `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0`; it is not promoted to `main` and is not deployed. Follow-up PostgreSQL-backed QA runner integration test is under [PR #62](https://github.com/emt0147t/caroAI/pull/62).
    - The Phase C production QA routes/migration have not been deployed, so the run-scoped live PvP/PvAI acceptance runner has not been executed against the current website.
    - A full interactive PvP/PvAI acceptance on the current production commit remains outstanding; earlier gameplay and restart-persistence evidence came from the previous bootstrap release and is historical.
    - Render zero-downtime cutover has not been empirically verified for this application.
