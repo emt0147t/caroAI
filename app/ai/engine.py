@@ -1,8 +1,10 @@
+import os
 import time
 from typing import Any, Dict, List
 
 from app.ai.evaluator import BOARD_SIZE, EMPTY
 from app.ai.minimax import find_best_move
+from app.ai.search_stats import SearchStats
 
 DIFFICULTY_CONFIG = {
     "EASY": {"depth": 1, "candidate_limit": 6},
@@ -35,6 +37,9 @@ def get_ai_move(
     board: List[List[int]],
     ai_player: int,
     difficulty: str = "MEDIUM",
+    *,
+    time_budget_ms: float | None = None,
+    collect_stats: bool = True,
 ) -> Dict[str, Any]:
     """
     Entry point chính của AI Engine để Backend FastAPI gọi tới.
@@ -49,19 +54,40 @@ def get_ai_move(
     diff_key = difficulty.upper()
     config = DIFFICULTY_CONFIG.get(diff_key, DIFFICULTY_CONFIG["MEDIUM"])
 
+    if time_budget_ms is None and diff_key == "IMPOSSIBLE":
+        configured_budget = os.getenv("CAROAI_IMPOSSIBLE_TIME_BUDGET_MS")
+        if configured_budget:
+            try:
+                time_budget_ms = float(configured_budget)
+            except ValueError as exc:
+                raise ValueError(
+                    "CAROAI_IMPOSSIBLE_TIME_BUDGET_MS must be numeric"
+                ) from exc
+
+    if time_budget_ms is not None and time_budget_ms < 0:
+        raise ValueError("time_budget_ms must be non-negative")
+
+    stats = SearchStats() if collect_stats else None
     start_time = time.perf_counter()
     (row, col), score = find_best_move(
         board=board,
         ai_player=ai_player,
         depth=config["depth"],
         candidate_limit=config["candidate_limit"],
+        stats=stats,
+        time_budget_ms=time_budget_ms,
     )
     _validate_engine_move(board, row, col, score)
     elapsed_ms = (time.perf_counter() - start_time) * 1000.0
+    if stats is not None:
+        stats.elapsed_ms = elapsed_ms
 
-    return {
+    result = {
         "row": row,
         "col": col,
         "score": score,
         "elapsed_ms": round(elapsed_ms, 2),
     }
+    if stats is not None:
+        result["search_stats"] = stats.to_dict()
+    return result
