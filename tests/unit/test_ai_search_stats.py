@@ -22,7 +22,7 @@ def test_search_stats_derive_branching_and_pruning_rates():
 
     assert stats.average_branching_factor == pytest.approx(4.0)
     assert stats.candidate_cap_pruning_rate == pytest.approx(1 / 3)
-    assert stats.alpha_beta_pruning_rate == pytest.approx(0.5)
+    assert stats.alpha_beta_pruning_rate == pytest.approx(1 / 3)
 
 
 def test_minimax_populates_nodes_branching_and_pruning_stats():
