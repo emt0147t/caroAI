@@ -164,7 +164,6 @@ def _rank_moves(
 ):
     candidates = [forced_move] if forced_move is not None else get_candidate_moves(board, radius=1)
     ranked = []
-    human_player = 2 if ai_player == 1 else 1
     maximizing_for_ai = player == ai_player
 
     for row, col in candidates:
@@ -211,7 +210,7 @@ def _rank_moves(
     return ranked[:candidate_limit]
 
 
-def _minimax_search(
+def _minimax_search(  # noqa: C901
     board: List[List[int]],
     depth: int,
     alpha: int,
@@ -406,7 +405,7 @@ def _root_search(
     return scores
 
 
-def find_strategic_move(
+def find_strategic_move(  # noqa: C901
     board: List[List[int]],
     ai_player: int,
     *,
