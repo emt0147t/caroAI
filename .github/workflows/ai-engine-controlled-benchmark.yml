@@ -1,0 +1,66 @@
+name: AI Engine Controlled Benchmark
+
+on:
+  push:
+    branches:
+      - benchmark/impossible-engine-latency
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-engine-benchmark-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  engine-benchmark:
+    name: Minimax benchmark (Ubuntu 24.04 / Python 3.11)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout exact benchmark source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Record runner metadata
+        run: |
+          echo "Commit: $GITHUB_SHA"
+          echo "Runner: $RUNNER_NAME"
+          echo "OS: $(lsb_release -ds)"
+          echo "Kernel: $(uname -a)"
+          echo "CPU:"
+          lscpu
+          echo "Memory:"
+          free -h
+          python --version
+          python -m pip freeze
+
+      - name: Run fixed-fixture engine benchmark
+        run: |
+          python scripts/benchmark_ai_sprint3.py \
+            --runs 30 \
+            --warmup 3 \
+            --output-dir "reports/benchmark-impossible-$GITHUB_SHA"
+
+      - name: Upload raw measurements and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: caroai-engine-benchmark-${{ github.sha }}
+          path: reports/benchmark-impossible-${{ github.sha }}/
+          if-no-files-found: warn
+          retention-days: 30

@@ -20,7 +20,7 @@
         {"row": 7, "col": 6, "player": 1}
       ],
       "expected_moves": [[7, 7]],
-      "difficulty": ["EASY", "MEDIUM", "HARD"]
+      "difficulty": ["EASY", "MEDIUM", "HARD", "IMPOSSIBLE"]
     },
     {
       "name": "demo_forced_block",
@@ -36,7 +36,7 @@
         {"row": 7, "col": 7, "player": 1}
       ],
       "expected_moves": [[0, 1]],
-      "difficulty": ["EASY", "MEDIUM", "HARD"]
+      "difficulty": ["EASY", "MEDIUM", "HARD", "IMPOSSIBLE"]
     },
     {
       "name": "demo_midgame_search",
@@ -54,7 +54,7 @@
         {"row": 6, "col": 8, "player": 1}
       ],
       "expected_moves": [],
-      "difficulty": ["MEDIUM", "HARD"],
+      "difficulty": ["EASY", "MEDIUM", "HARD", "IMPOSSIBLE"],
       "require_no_immediate_win": true
     }
   ]
