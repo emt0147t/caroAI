@@ -2,6 +2,7 @@
 from copy import deepcopy
 
 from app.ai.adapter import board_to_ai
+from app.observability import record_ai_search
 from app.ai.admission import (
     AIAdmissionRejectedError,
     ImpossibleAdmissionGuard,
@@ -112,6 +113,7 @@ class GameService:
             ai_player=2,
             difficulty=difficulty,
         )
+        record_ai_search(difficulty, result)
         if not isinstance(result, dict):
             raise InvalidAIMoveError("AI returned an invalid move response")
 
