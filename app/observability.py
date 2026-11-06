@@ -238,7 +238,7 @@ def install_observability(app: FastAPI) -> None:
         return
     app.add_middleware(HTTPMetricsMiddleware)
 
-    def metrics_endpoint():
+    def metrics_endpoint(_request):
         return Response(
             content=generate_latest(),
             media_type=CONTENT_TYPE_LATEST,
