@@ -96,8 +96,23 @@ jobs:
               raise SystemExit("PostgreSQL monitor failed: " + summary["postgres_monitor_error"])
 
           grouped = summary.get("group_summary", [])
-          if len(grouped) != 20:
-              raise SystemExit(f"Expected exactly 20 workload groups, got {len(grouped)}")
+          workload_scenarios = {
+              "single_request",
+              "same_game_concurrent",
+              "different_game_concurrent",
+          }
+          workload_groups = [
+              row for row in grouped if row.get("scenario") in workload_scenarios
+          ]
+          read_under_load_groups = [
+              row for row in grouped
+              if row.get("scenario") == "read_api_under_ai_load"
+          ]
+          if len(workload_groups) != 20 or len(read_under_load_groups) != 2:
+              raise SystemExit(
+                  "Expected 20 primary workload groups and 2 read-under-load groups; "
+                  f"got {len(workload_groups)} and {len(read_under_load_groups)}"
+              )
           if summary.get("samples_per_group") != 30 or summary.get("warmup_count") != 3:
               raise SystemExit("Expected 30 measured samples plus 3 warmups per group")
           same_game = [row for row in grouped if row["scenario"] == "same_game_concurrent"]
