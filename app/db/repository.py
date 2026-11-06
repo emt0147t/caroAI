@@ -7,11 +7,12 @@ from threading import RLock
 from typing import Iterator
 from uuid import uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.db.models import Game as GameRecord
+from app.db.models import GameAnalysis
 from app.db.models import Move as PersistedMove
 from app.domain.game_rules import GameRules, InvalidMoveError
 from app.domain.game_state import GameMode, GameState, GameStatus, Move
@@ -86,13 +87,16 @@ class SQLAlchemyGameUnitOfWork:
         self.session = session
         self._loaded_records: dict[str, GameRecord] = {}
 
-    def create_game(self, mode: GameMode) -> str:
+    def create_game(
+        self, mode: GameMode, *, qa_run_id: str | None = None
+    ) -> str:
         public_id = str(uuid4())
         record = GameRecord(
             public_id=public_id,
             mode=mode.value,
             status=GameStatus.IN_PROGRESS.value,
             result=None,
+            qa_run_id=qa_run_id,
         )
         self.session.add(record)
         self.session.flush()
@@ -176,6 +180,29 @@ class SQLAlchemyGameUnitOfWork:
         )
         self.session.flush()
 
+    def delete_qa_games(self, qa_run_id: str) -> list[str]:
+        """Delete only games explicitly tagged with the exact QA run capability."""
+        records = self.session.scalars(
+            select(GameRecord).where(GameRecord.qa_run_id == qa_run_id)
+        ).all()
+        if not records:
+            return []
+        internal_ids = [record.id for record in records]
+        public_ids = [record.public_id for record in records]
+
+        # game_analysis.move_id references moves, so analysis rows are removed
+        # before moves and parent games in the same transaction.
+        self.session.execute(
+            delete(GameAnalysis).where(GameAnalysis.game_id.in_(internal_ids))
+        )
+        self.session.execute(
+            delete(PersistedMove).where(PersistedMove.game_id.in_(internal_ids))
+        )
+        self.session.execute(
+            delete(GameRecord).where(GameRecord.id.in_(internal_ids))
+        )
+        return public_ids
+
     def list_history(
         self, *, limit: int = 50, offset: int = 0
     ) -> list[GameHistoryRecord]:
@@ -232,16 +259,34 @@ class InMemoryGameUnitOfWork:
         games: dict[str, GameState],
         started_at: dict[str, datetime],
         ended_at: dict[str, datetime],
+        qa_run_ids: dict[str, str],
     ) -> None:
         self._games = games
         self._started_at = started_at
         self._ended_at = ended_at
+        self._qa_run_ids = qa_run_ids
 
-    def create_game(self, mode: GameMode) -> str:
+    def create_game(
+        self, mode: GameMode, *, qa_run_id: str | None = None
+    ) -> str:
         game_id = str(uuid4())
         self._games[game_id] = GameState(mode=mode)
         self._started_at[game_id] = datetime.now(timezone.utc)
+        if qa_run_id is not None:
+            self._qa_run_ids[game_id] = qa_run_id
         return game_id
+
+    def delete_qa_games(self, qa_run_id: str) -> list[str]:
+        game_ids = [
+            game_id for game_id, tagged_run in self._qa_run_ids.items()
+            if tagged_run == qa_run_id
+        ]
+        for game_id in game_ids:
+            self._games.pop(game_id, None)
+            self._started_at.pop(game_id, None)
+            self._ended_at.pop(game_id, None)
+            self._qa_run_ids.pop(game_id, None)
+        return game_ids
 
     def get_game_state(
         self, game_id: str, *, for_update: bool = False
@@ -299,6 +344,7 @@ class InMemoryGameRepository:
         self._games: dict[str, GameState] = {}
         self._started_at: dict[str, datetime] = {}
         self._ended_at: dict[str, datetime] = {}
+        self._qa_run_ids: dict[str, str] = {}
         self._lock = RLock()
 
     @contextmanager
@@ -307,9 +353,11 @@ class InMemoryGameRepository:
             working_copy = deepcopy(self._games)
             started_at_copy = deepcopy(self._started_at)
             ended_at_copy = deepcopy(self._ended_at)
+            qa_run_ids_copy = deepcopy(self._qa_run_ids)
             try:
                 yield InMemoryGameUnitOfWork(
-                    working_copy, started_at_copy, ended_at_copy
+                    working_copy, started_at_copy, ended_at_copy,
+                    qa_run_ids_copy,
                 )
             except Exception:
                 raise
@@ -317,3 +365,4 @@ class InMemoryGameRepository:
                 self._games = working_copy
                 self._started_at = started_at_copy
                 self._ended_at = ended_at_copy
+                self._qa_run_ids = qa_run_ids_copy
