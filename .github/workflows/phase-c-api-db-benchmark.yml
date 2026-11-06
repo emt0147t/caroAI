@@ -96,8 +96,10 @@ jobs:
               raise SystemExit("PostgreSQL monitor failed: " + summary["postgres_monitor_error"])
 
           grouped = summary.get("group_summary", [])
-          if len(grouped) < 16:
-              raise SystemExit(f"Expected at least 16 workload groups, got {len(grouped)}")
+          if len(grouped) != 20:
+              raise SystemExit(f"Expected exactly 20 workload groups, got {len(grouped)}")
+          if summary.get("samples_per_group") != 30 or summary.get("warmup_count") != 3:
+              raise SystemExit("Expected 30 measured samples plus 3 warmups per group")
           same_game = [row for row in grouped if row["scenario"] == "same_game_concurrent"]
           if not same_game or any(not row["expected_same_game_conflicts"] for row in same_game):
               raise SystemExit("Same-game optimistic-concurrency outcomes were not classified correctly")
