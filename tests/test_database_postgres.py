@@ -209,8 +209,9 @@ def test_qa_cleanup_is_run_scoped_and_removes_postgres_dependents(
         service.make_move(ordinary_game_id, 2, 2)
 
         qa_record = session.query(Game).filter_by(public_id=qa_game_id).one()
+        qa_internal_id = qa_record.id
         qa_move = session.scalars(
-            select(Move).where(Move.game_id == qa_record.id)
+            select(Move).where(Move.game_id == qa_internal_id)
         ).one()
         session.add(
             GameAnalysis(
@@ -245,7 +246,7 @@ def test_qa_cleanup_is_run_scoped_and_removes_postgres_dependents(
         assert session.scalar(
             select(func.count())
             .select_from(GameAnalysis)
-            .where(GameAnalysis.game_id == qa_record.id)
+            .where(GameAnalysis.game_id == qa_internal_id)
         ) == 0
         assert session.scalar(
             select(func.count()).select_from(Move)
