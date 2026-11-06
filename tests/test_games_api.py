@@ -283,7 +283,6 @@ def test_ai_move_rejects_invalid_difficulty(difficulty):
     assert response.status_code == 422
 
 
-
 def test_ai_move_returns_409_when_game_changes_during_search(monkeypatch):
     repository = InMemoryGameRepository()
     service = GameService(repository)
