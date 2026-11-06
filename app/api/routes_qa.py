@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 
 from app.api.dependencies import get_game_service
 from app.db.repository import GamePersistenceError
-from app.domain.game_state import GameMode
 from app.schemas.game import GameCreateRequest, GameResponse
 from app.services.game_service import GameService
 
