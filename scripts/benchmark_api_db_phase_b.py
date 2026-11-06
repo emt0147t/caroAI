@@ -25,7 +25,7 @@ import psycopg2
 ROOT = Path(__file__).resolve().parents[1]
 SERVER_METRICS = [
     "engine_search_ms", "row_lock_query_ms", "transaction_duration_ms",
-    "db_connection_hold_ms", "db_backend_pids",
+    "transaction_count", "db_connection_hold_ms", "db_backend_pids",
 ]
 REQUEST_FIELDS = [
     "timestamp_utc", "run_id", "request_id", "scenario", "fixture",
@@ -257,7 +257,7 @@ def write_summary(  # noqa: C901
         fields = [
             "timestamp_utc", "run_id", "request_id", "http_method",
             "endpoint", "http_status", "api_server_ms", "engine_search_ms",
-            "row_lock_query_ms", "transaction_duration_ms",
+            "row_lock_query_ms", "transaction_duration_ms", "transaction_count",
             "db_connection_hold_ms", "db_backend_pids",
         ]
         writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
@@ -285,11 +285,24 @@ def write_summary(  # noqa: C901
         transaction, connection = metric("transaction_duration_ms"), metric("db_connection_hold_ms")
         observed_wait = metric("observed_lock_wait_ms")
         http_400 = sum(r.get("http_status") == 400 for r in rows)
-        expected_400 = scenario == "same_game_concurrent"
-        expected_successes = len(rows) // concurrency if expected_400 else len(rows)
-        expected_400s = len(rows) - expected_successes if expected_400 else 0
+        same_game = scenario == "same_game_concurrent"
+
+        def expected_same_game_conflict(row):
+            if not same_game:
+                return False
+            status = row.get("http_status")
+            detail = str(row.get("error_message") or "").lower()
+            return (
+                status == 409 and "state changed" in detail
+            ) or (
+                status == 400 and "not the ai turn" in detail
+            )
+
+        expected_successes = len(rows) // concurrency if same_game else len(rows)
+        expected_conflicts = len(rows) - expected_successes if same_game else 0
+        expected_conflict_count = sum(expected_same_game_conflict(row) for row in rows)
         unexpected = sum(
-            r.get("http_status") != 200 and not (expected_400 and r.get("http_status") == 400)
+            r.get("http_status") != 200 and not expected_same_game_conflict(r)
             for r in rows
         )
         invalid_successes = sum(
@@ -340,12 +353,12 @@ def write_summary(  # noqa: C901
         "requests, HTTP 400 responses after the first committed move are "
         "expected; `Unexpected errors` excludes those expected turn rejections.",
         "",
-        "| Scenario | Difficulty | Concurrency | Requests | 2xx | HTTP 400 | "
+        "| Scenario | Difficulty | Concurrency | Requests | 2xx | HTTP 400 | HTTP 409 | "
         "Error rate | Unexpected errors | Throughput (req/s) | "
         "API P50 / P95 / max (ms) | Engine P50 / P95 (ms) | "
         "Row lock query P50 / P95 (ms) | Observed lock wait P50 / P95 (ms) | "
         "Transaction P50 / P95 (ms) | Connection hold P50 / P95 (ms) |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
 
     def fmt(value, spec):
@@ -359,7 +372,7 @@ def write_summary(  # noqa: C901
             f"| {item['scenario']} | {item['difficulty']} | "
             f"{item['concurrency']} | {item['sample_count']} | "
             f"{item['success_count']} | {item['http_400_count']} | "
-            f"{fmt(item['error_rate'], '.1%')} | "
+            f"{item['http_409_count']} | {fmt(item['error_rate'], '.1%')} | "
             f"{item['unexpected_error_count']} | "
             f"{fmt(item['throughput_rps'], '.3f')} | "
             f"{fmt(item['api_p50_ms'], '.3f')} / "
