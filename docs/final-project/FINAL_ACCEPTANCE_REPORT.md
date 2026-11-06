@@ -224,7 +224,7 @@ This section replaces the historical PR #50 pre-merge rollout snapshot.
    - `main` and `develop` are synchronized at `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`.
    - P0 documentation refresh is proposed in [PR #61](https://github.com/emt0147t/caroAI/pull/61).
 5. **Phase C and Remaining Acceptance**
-   - Phase C is staged in [PR #60](https://github.com/emt0147t/caroAI/pull/60), currently draft. Its controlled benchmarks and CI/E2E evidence are separate from the deployed production baseline.
+   - Phase C is staged in [PR #60](https://github.com/emt0147t/caroAI/pull/60), ready for human review and not yet merged. Its controlled benchmarks and CI/E2E evidence are separate from the deployed production baseline.
    - The Phase C production QA routes/migration have not been deployed, so the run-scoped live PvP/PvAI acceptance runner has not been executed against the current website.
    - A full interactive PvP/PvAI acceptance on the current production commit remains outstanding; earlier gameplay and restart-persistence evidence came from the previous bootstrap release and is historical.
    - Render zero-downtime cutover has not been empirically verified for this application.
