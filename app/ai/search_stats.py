@@ -18,6 +18,7 @@ class SearchStats:
     generated_candidates: int = 0
     expanded_candidates: int = 0
     candidate_cap_pruned: int = 0
+    candidate_cap_considered: int = 0
     alpha_beta_cutoffs: int = 0
     alpha_beta_pruned: int = 0
     branching_factor_sum: int = 0
@@ -37,9 +38,9 @@ class SearchStats:
 
     @property
     def candidate_cap_pruning_rate(self) -> float:
-        if self.generated_candidates == 0:
+        if self.candidate_cap_considered == 0:
             return 0.0
-        return self.candidate_cap_pruned / self.generated_candidates
+        return self.candidate_cap_pruned / self.candidate_cap_considered
 
     @property
     def alpha_beta_pruning_rate(self) -> float:
