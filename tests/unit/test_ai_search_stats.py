@@ -74,7 +74,6 @@ def test_mandatory_root_win_shortcut_is_not_lost_to_zero_budget():
     assert result["search_stats"]["shortcut"] == "immediate_win"
 
 
-
 def test_mandatory_root_forced_block_is_not_lost_to_zero_budget():
     board = empty_board()
     for col in range(3, 7):
