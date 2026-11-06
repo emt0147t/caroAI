@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import hmac
+import os
 import re
 import time
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from sqlalchemy import event
@@ -238,7 +240,20 @@ def install_observability(app: FastAPI) -> None:
         return
     app.add_middleware(HTTPMetricsMiddleware)
 
-    def metrics_endpoint(_request):
+    def metrics_endpoint(request: Request):
+        # Prometheus output includes operational resource/search data. Keep it
+        # disabled until an operator supplies a dedicated scrape token.
+        token = os.getenv("CAROAI_METRICS_TOKEN")
+        if not token:
+            raise HTTPException(status_code=404, detail="Metrics endpoint is disabled")
+        supplied = request.headers.get("authorization", "")
+        expected = f"Bearer {token}"
+        if not hmac.compare_digest(supplied, expected):
+            raise HTTPException(
+                status_code=401,
+                detail="Metrics authentication required",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         return Response(
             content=generate_latest(),
             media_type=CONTENT_TYPE_LATEST,
