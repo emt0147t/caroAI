@@ -60,7 +60,9 @@ def test_qa_routes_reject_missing_or_invalid_run_capability():
     )
     try:
         with TestClient(app) as client:
-        missing = client.post("/api/qa/games", json={"mode": "HUMAN_VS_HUMAN"})
+            missing = client.post(
+                "/api/qa/games", json={"mode": "HUMAN_VS_HUMAN"}
+            )
             invalid = client.delete(
                 "/api/qa/runs", headers={"X-CaroAI-QA-Run-ID": "not-a-run-id"}
             )
