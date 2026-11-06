@@ -3,10 +3,50 @@
 **Project**: CaroAI — 15×15 Gomoku AI Application
 **Repository**: `emt0147t/caroAI`
 **Evaluation Role**: Principal Software Engineer + Tech Lead + DevOps Engineer + QA Lead
-**Assessment Date**: November 3, 2026
-**Integration Branch**: `develop` (Audit Baseline Commit SHA: `938a17408078ca58c9bec6bf42eec09758be6165`, Historical Pre-Hardening Snapshot: `2a46000b455f9b9779fd7289c6b22ae080aaa44c`, Latest CI-Verified Pre-Refresh Snapshot: `7f7422123654fa6f6293cde3d15c2a6057bc6b92`; PR CI Run [#41570710412](https://github.com/emt0147t/caroAI/actions/runs/41570710412) completed successfully. The subsequent report refresh is documentation-only.)
-**Production Branch**: `main` (Baseline SHA: `d444119d5eb757e364f904bb9eacddd27e14e507`)
-**Delivery PR Status**: [Pull Request #49](https://github.com/emt0147t/caroAI/pull/49) (`feature/final-project-delivery` → `develop`) was successfully merged into `develop` via official merge commit `6cf9bf08b8fb374645b7ecf79eb7a886ac002ef6`. Direct pushes to `develop` succeeded at `f796ef9` and audit baseline `938a174` (CI Run [#41475666768](https://github.com/emt0147t/caroAI/actions/runs/41475666768) verified). PR #50 opened from `develop` targeting `main` (historical pre-hardening CI Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) on `2a46000`; intermediate CI Run [#41565255360](https://github.com/emt0147t/caroAI/actions/runs/41565255360) on `caf9d92`; latest CI-verified pre-refresh snapshot `7f74221` passed in Run [#41570710412](https://github.com/emt0147t/caroAI/actions/runs/41570710412)).
+**Assessment Date**: November 7, 2026 (current-status addendum; historical audit evidence retained below)
+**Integration Branch**: `develop` (current synchronized baseline: `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`)
+**Production Branch**: `main` (current production baseline: `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`)
+**Delivery PR Status**: PR #58 has been merged to `main`; current `main` and `develop` are identical at `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`. The current production release is live via Render deployment `dep-dbn02vrncjis73am3dhg`.
+
+---
+
+## 0. Current Release and Engineering Status — 2026-11-07 (Authoritative)
+
+This section supersedes conflicting release, branch, and deployment statements in the historical November 3 audit sections below. Older sections are retained as provenance for the original university-project acceptance review; they are not the current release state.
+
+### Current Git and production baseline
+
+| Item | Verified value |
+|---|---|
+| `main` | `42ee035ab42cd4c0bc934699f4d5433ff4b12a83` |
+| `develop` | `42ee035ab42cd4c0bc934699f4d5433ff4b12a83` |
+| Branch comparison | Identical; 0 ahead / 0 behind |
+| Production service | Render `srv-dbkd2dflk1mc73fd2ukg` |
+| Production deployment | `dep-dbn02vrncjis73am3dhg`, status `live` |
+| Production image | `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83` |
+| Image digest | `sha256:a80c48d0f1433f600ef5d5e2a5dc124f3057cebe716ab9782f238a614f7f35a7` |
+| Production URL | [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com) |
+| Release workflow | [Run #42253079008](https://github.com/emt0147t/caroAI/actions/runs/42253079008), success |
+
+### Current verification evidence
+
+| Verification | Result | Scope / qualification |
+|---|---|---|
+| Production release and exact image verification | PASS | Render reports the exact commit-SHA image as live |
+| Public release smoke checks | 6 endpoints HTTP 200 | `/health`, `/ready`, `/`, `/history.html`, `/api/history`, `/tokens.css` |
+| Release CI | PASS | Python suite 253 passed, 11 skipped, 1 warning; dedicated PostgreSQL acceptance 15 passed; Compose persistence and Docker build passed |
+| Browser E2E | PASS, 40 tests | Candidate/Compose environment in [run #42241696370](https://github.com/emt0147t/caroAI/actions/runs/42241696370), not a post-deploy production-browser run |
+| Phase C controlled Minimax benchmark | PASS | 1,320 measured calls, 0 failures; [run #42267880120](https://github.com/emt0147t/caroAI/actions/runs/42267880120) |
+| Phase C API/PostgreSQL benchmark | PASS | Disposable PostgreSQL 15.19; 721 correctness checks, 0 failures; [run #42267879898](https://github.com/emt0147t/caroAI/actions/runs/42267879898) |
+| Phase C CI and browser E2E | PASS | [CI #42267890333](https://github.com/emt0147t/caroAI/actions/runs/42267890333); [Browser E2E #42267890323](https://github.com/emt0147t/caroAI/actions/runs/42267890323); production release job skipped |
+
+### Current outstanding acceptance work
+
+1. **Documentation:** refresh README, this report, Production Preflight, and benchmark report to the current production SHA.
+2. **Phase C integration:** Phase C code is on feature branch `feat/phase-c-ai-observability-qa-20261106`, tested at source SHA `8ca52e0ed4a5a2ba4546f94978dcb0c1fb06339f`. It has not been merged to `main` or deployed. Review and PR acceptance remain required.
+3. **Production gameplay acceptance:** the Phase C run-scoped PvP/PvAI QA runner has not been executed against the live website because its QA routes and migration are not deployed. Do not claim post-Phase-C production PvP/PvAI acceptance yet.
+4. **Observability:** Phase C Prometheus instrumentation and alert rules are feature-branch code; a scraper/Alertmanager/notification destination is not configured. Render provider metrics returned CPU/memory samples but no HTTP latency/request-count series in the queried window.
+5. **Performance objective:** 2,000 ms remains a proposed reference, not an adopted production SLO. Hosted-runner benchmarks do not establish production traffic percentiles.
 
 ---
 
