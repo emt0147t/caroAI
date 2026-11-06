@@ -161,3 +161,23 @@ test('start, game and History screens do not overflow at phone, tablet and deskt
     await checkWidth();
   }
 });
+
+
+test('legacy result pages without game_id redirect instead of asserting a fixed outcome', async ({ page }) => {
+  for (const pageName of ['win.html', 'lose.html', 'draw.html']) {
+    await page.goto('/ket_qua/' + pageName);
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/');
+  }
+});
+
+test('legacy result pages with game_id forward to the authoritative board', async ({ page, request }) => {
+  const create = await request.post('/api/games', { data: { mode: 'HUMAN_VS_HUMAN' } });
+  expect(create.status()).toBe(201);
+  const game = await create.json();
+
+  for (const pageName of ['win.html', 'lose.html', 'draw.html']) {
+    await page.goto('/ket_qua/' + pageName + '?game_id=' + encodeURIComponent(game.id));
+    await expect(page).toHaveURL(/\/trong_tran\/index\.html\?game_id=/);
+    await expect(page.locator('#board .cell')).toHaveCount(225);
+  }
+});

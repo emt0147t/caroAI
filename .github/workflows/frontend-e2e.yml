@@ -3,8 +3,14 @@ on:
   push:
     branches: ["feature/frontend-sprint3-e2e-history", "feature/backend-impossible-api-integration"]
   pull_request:
-    branches: [develop, feature/ai-impossible-difficulty]
+    branches: [develop, main, feature/ai-impossible-difficulty]
   workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: "Baseline Git ref for visual comparison"
+        required: false
+        default: "main"
+        type: string
 permissions:
   contents: read
 jobs:
@@ -17,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
         name: Checkout baseline for visual comparison
         with:
-          ref: ${{ github.event.pull_request.base.sha || 'develop' }}
+          ref: ${{ github.event.pull_request.base.sha || inputs.baseline_ref || 'main' }}
           path: baseline-source
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -75,8 +81,15 @@ jobs:
       - name: Capture candidate screenshots
         env:
           CAROAI_BASE_URL: http://127.0.0.1:8080
-          EVIDENCE_LABEL: after
+          EVIDENCE_LABEL: candidate
         run: node tests/e2e/capture-ui-evidence.cjs
+      - name: Run visual regression comparison
+        env:
+          BASELINE_DIR: evidence/before
+          CANDIDATE_DIR: evidence/candidate
+          DIFF_DIR: evidence/diff
+          VISUAL_DIFF_THRESHOLD: "0.02"
+        run: npm run test:visual
       - name: Run browser E2E
         run: npm run test:e2e
         env:
@@ -96,3 +109,4 @@ jobs:
       - name: Stop candidate stack
         if: always()
         run: docker compose down -v
+

@@ -47,7 +47,9 @@ test('network and HTTP errors are surfaced to the UI', () => {
 
 test('busy state disables board and new game controls to prevent duplicate requests', () => {
   assert.match(gameScript, /if \(s\.busy\) return/);
-  assert.match(gameScript, /b\.disabled = s\.busy/);
+  assert.match(gameScript, /button\.disabled = s\.busy/);
+  assert.match(gameScript, /button\.tabIndex = -1/);
+  assert.match(gameScript, /target\.disabled/);
   assert.match(gameScript, /newBtn\.disabled = value/);
 });
 
@@ -59,3 +61,4 @@ test('welcome dashboard includes health indicator, metrics grid, and rules refer
   assert.match(welcome, /checkSystemHealth\(\)/);
   assert.match(welcome, /loadDashboardStats\(\)/);
 });
+

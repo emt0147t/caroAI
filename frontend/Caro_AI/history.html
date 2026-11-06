@@ -1,96 +1,440 @@
 <!doctype html>
 <html lang="vi">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lịch sử ván đấu · CaroAI</title>
-<style>
-:root{color-scheme:light;--bg:var(--ui-color-canvas);--card:var(--ui-color-surface);--ink:var(--ui-color-text);--sub:var(--ui-color-muted);--line:var(--ui-color-border);--accent:var(--ui-color-accent);--error:var(--ui-color-error)}
-*{box-sizing:border-box}body{margin:0;padding:var(--ui-space-6);background:var(--bg);color:var(--ink);font:16px var(--ui-font)}
-main{max-width:900px;margin:0 auto}.top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:20px}
-h1{margin:0;font-size:clamp(1.5rem,4vw,2.1rem)}a,button{font:inherit}a{color:var(--accent);font-weight:700;text-decoration:none}
-button{border:1px solid var(--line);border-radius:var(--ui-radius-control);padding:10px 14px;background:white;color:var(--ink);font-weight:700;cursor:pointer}
-button:disabled{opacity:.6;cursor:wait}.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--ui-radius-panel);padding:20px;box-shadow:var(--ui-shadow-card)}
-#state{color:var(--sub);line-height:1.6}#state.error{color:var(--error)}.list{display:grid;gap:10px;margin-top:14px}
-.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:var(--ui-radius-control);padding:14px}
-.name{font-weight:800}.meta{color:var(--sub);font-size:.9rem;margin-top:5px;line-height:1.5}.empty{padding:24px;text-align:center;color:var(--sub)}
-@media(max-width:520px){body{padding:14px}.panel{padding:14px}.item{grid-template-columns:1fr}.item a{justify-self:start}}
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/tokens.css">
+<script src="/theme-sound.js"></script>
+<style>
+:root {
+  --bg: var(--ui-color-canvas);
+  --card: var(--ui-color-surface);
+  --subdued: var(--ui-color-surface-subdued);
+  --ink: var(--ui-color-text);
+  --sub: var(--ui-color-muted);
+  --line: var(--ui-color-border);
+  --line-strong: var(--ui-color-border-strong);
+  --accent: var(--ui-color-accent);
+  --accent-soft: var(--ui-color-accent-soft);
+  --error: var(--ui-color-error);
+  --error-soft: var(--ui-color-error-soft);
+  --error-border: var(--ui-color-error-border);
+  --color-x: var(--ui-color-x);
+  --color-o: var(--ui-color-o);
+  --color-warning: var(--ui-color-warning);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  padding: var(--ui-space-6) var(--ui-space-4);
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px var(--ui-font);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background-color var(--ui-motion-base), color var(--ui-motion-base);
+}
+
+main {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.top {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.top-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--card);
+  flex-shrink: 0;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.4rem, 4vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ui-radius-control);
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background var(--ui-motion-fast), border-color var(--ui-motion-fast), color var(--ui-motion-fast);
+}
+
+.header-ctrl-btn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+a, button {
+  font: inherit;
+}
+
+a.home-link {
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--ui-radius-control);
+  background: var(--card);
+  transition: background var(--ui-motion-fast), border-color var(--ui-motion-fast), color var(--ui-motion-fast);
+}
+
+a.home-link:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button {
+  border: 1px solid var(--line);
+  border-radius: var(--ui-radius-control);
+  padding: 8px 16px;
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background var(--ui-motion-fast), border-color var(--ui-motion-fast);
+}
+
+button:hover:not(:disabled) {
+  background: var(--subdued);
+  border-color: var(--line-strong);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--ui-radius-panel);
+  padding: 24px;
+  box-shadow: var(--ui-shadow-card);
+  transition: background var(--ui-motion-base), border-color var(--ui-motion-base);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+#state {
+  color: var(--sub);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+#state.error {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--ui-radius-control);
+  padding: 14px 18px;
+  background: var(--subdued);
+  transition: background var(--ui-motion-fast), border-color var(--ui-motion-fast);
+}
+
+.item:hover {
+  background: var(--card);
+  border-color: var(--line-strong);
+}
+
+.name {
+  font-weight: 800;
+  font-size: 0.98rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meta {
+  color: var(--sub);
+  font-size: 0.84rem;
+  margin-top: 4px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.item a {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: var(--ui-radius-control);
+  background: var(--card);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+  transition: background var(--ui-motion-fast), border-color var(--ui-motion-fast);
+}
+
+.item a:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--sub);
+  font-size: 0.92rem;
+  background: var(--subdued);
+  border: 1px dashed var(--line);
+  border-radius: var(--ui-radius-control);
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.badge-x {
+  background: var(--ui-color-x-soft);
+  color: var(--color-x);
+}
+
+.badge-o {
+  background: var(--ui-color-o-soft);
+  color: var(--color-o);
+}
+
+.badge-draw {
+  background: var(--ui-color-warning-soft);
+  color: var(--color-warning);
+}
+
+.badge-in_progress {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.retry-action-btn {
+  margin-top: 8px;
+  background: var(--card);
+  border-color: var(--error-border);
+  color: var(--error);
+}
+
+.retry-action-btn:hover {
+  background: var(--error-soft);
+}
+
+@media(max-width: 580px) {
+  body {
+    padding: 14px 10px;
+  }
+
+  .panel {
+    padding: 16px 14px;
+  }
+
+  .item {
+    grid-template-columns: 1fr;
+    padding: 12px 14px;
+  }
+
+  .item a {
+    justify-self: start;
+    width: 100%;
+    text-align: center;
+  }
+}
+</style>
 </head>
 <body>
 <main>
-  <header class="top"><h1>Lịch sử ván đấu</h1><nav><a href="/">← Về trang chủ</a></nav></header>
+  <header class="top">
+    <div class="top-brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zM4 10h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 16h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z"/>
+        </svg>
+      </div>
+      <h1>Lịch sử ván đấu</h1>
+    </div>
+    <div class="top-actions">
+      <button id="soundToggleBtn" class="header-ctrl-btn" type="button" aria-label="Bật/Tắt âm thanh"></button>
+      <button id="themeToggleBtn" class="header-ctrl-btn" type="button" aria-label="Chuyển đổi giao diện"></button>
+      <nav><a href="/" class="home-link">← Về trang chủ</a></nav>
+    </div>
+  </header>
+
   <section class="panel" aria-live="polite" aria-busy="true" id="historyPanel">
-    <div class="top"><p id="state">Đang tải lịch sử từ Backend…</p><button id="refresh" type="button">Tải lại</button></div>
+    <div class="panel-header">
+      <p id="state">Đang tải lịch sử từ Backend…</p>
+      <button id="refresh" type="button">Tải lại</button>
+    </div>
     <div id="list" class="list"></div>
   </section>
 </main>
+
 <script>
 const state = document.getElementById('state');
 const list = document.getElementById('list');
 const refresh = document.getElementById('refresh');
 const panel = document.getElementById('historyPanel');
 const API = String(window.CAROAI_API_BASE_URL || '').replace(/\/$/, '');
+
 function dateText(value) {
   if (!value) return 'Chưa có thời gian';
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('vi-VN');
 }
+
 function labelMode(mode) {
   return mode === 'HUMAN_VS_AI' ? 'Người vs AI' : mode === 'HUMAN_VS_HUMAN' ? 'Người vs Người' : (mode || 'Không rõ chế độ');
 }
+
 function labelResult(game) {
   const result = game.result || game.status;
   return ({ IN_PROGRESS: 'Đang chơi', X_WON: 'X thắng', O_WON: 'O thắng', DRAW: 'Hòa' })[result] || result || 'Chưa rõ kết quả';
 }
+
 function render(items) {
   list.replaceChildren();
   const validItems = items.filter(game => game && typeof game.id === 'string' && game.id.trim());
   if (!validItems.length) {
-    const empty = document.createElement('p'); empty.className = 'empty';
+    const empty = document.createElement('p');
+    empty.className = 'empty';
     empty.textContent = 'Chưa có ván đấu nào được lưu.';
-    list.append(empty); return 0;
+    list.append(empty);
+    return 0;
   }
+
   for (const game of validItems) {
-    const item = document.createElement('article'); item.className = 'item';
+    const item = document.createElement('article');
+    item.className = 'item';
+
     const info = document.createElement('div');
-    const name = document.createElement('div'); name.className = 'name';
+    const name = document.createElement('div');
+    name.className = 'name';
     name.textContent = labelMode(game.mode);
-    const meta = document.createElement('div'); meta.className = 'meta';
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
     const moves = Number.isFinite(Number(game.move_count)) ? Number(game.move_count) : '—';
     meta.textContent = dateText(game.started_at || game.created_at) + ' · ' + labelResult(game) + ' · ' + moves + ' nước';
+
     info.append(name, meta);
+
     const open = document.createElement('a');
     open.href = '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id) + '&mode=' + encodeURIComponent(game.mode || '');
     open.textContent = 'Mở bàn cờ →';
-    item.append(info, open); list.append(item);
+
+    item.append(info, open);
+    list.append(item);
   }
   return validItems.length;
 }
+
 async function loadHistory() {
-  refresh.disabled = true; panel.setAttribute('aria-busy', 'true');
-  list.replaceChildren(); state.className = ''; state.textContent = 'Đang tải lịch sử từ Backend…';
+  refresh.disabled = true;
+  panel.setAttribute('aria-busy', 'true');
+  list.replaceChildren();
+  state.className = '';
+  state.textContent = 'Đang tải lịch sử từ Backend…';
+
   try {
-    const response = await fetch(API + '/api/history?limit=20&offset=0', { headers: { Accept: 'application/json' } });
-    let data = null; try { data = await response.json(); } catch (_) {}
+    const response = await fetch(API + '/api/history?limit=20&offset=0', {
+      headers: { Accept: 'application/json' }
+    });
+    let data = null;
+    try { data = await response.json(); } catch (_) {}
+
     if (!response.ok) {
       if (response.status === 404) throw new Error('History API hiện chưa khả dụng. Vui lòng thử lại sau.');
       throw new Error(data?.detail || ('Backend trả về HTTP ' + response.status));
     }
+
     const items = Array.isArray(data) ? data : (data?.items || data?.games);
     if (!Array.isArray(items)) throw new Error('Phản hồi History API chưa đúng định dạng danh sách.');
+
     const count = render(items);
     state.textContent = count ? 'Lịch sử lấy trực tiếp từ Backend.' : 'Chưa có ván đấu được lưu.';
   } catch (error) {
     state.className = 'error';
     state.textContent = (error instanceof TypeError ? 'Không kết nối được Backend. ' : '') + (error.message || 'Không tải được lịch sử.');
-    const retry = document.createElement('button'); retry.type = 'button'; retry.textContent = 'Thử lại';
-    retry.addEventListener('click', loadHistory); list.append(retry);
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'retry-action-btn';
+    retry.textContent = 'Thử lại';
+    retry.addEventListener('click', loadHistory);
+    list.append(retry);
   } finally {
     panel.setAttribute('aria-busy', 'false');
     refresh.disabled = false;
   }
 }
+
 refresh.addEventListener('click', loadHistory);
 loadHistory();
 </script>
