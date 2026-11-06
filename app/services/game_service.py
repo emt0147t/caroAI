@@ -43,17 +43,26 @@ class GameService:
             impossible_guard or get_default_impossible_admission_guard()
         )
 
-    def create_game_with_state(self, mode: GameMode) -> tuple[str, GameState]:
-        """Create a game and return its initial state within the same transaction."""
+    def create_game_with_state(
+        self, mode: GameMode, *, qa_run_id: str | None = None
+    ) -> tuple[str, GameState]:
+        """Create a game; QA tagging is only accepted by the dedicated QA route."""
         with self._repository.transaction() as uow:
-            game_id = uow.create_game(mode)
+            game_id = uow.create_game(mode, qa_run_id=qa_run_id)
             state = uow.get_game_state(game_id)
             return game_id, state
 
-    def create_game(self, mode: GameMode) -> str:
+    def create_game(
+        self, mode: GameMode, *, qa_run_id: str | None = None
+    ) -> str:
         """Create a game and return its public identifier."""
-        game_id, _state = self.create_game_with_state(mode)
+        game_id, _state = self.create_game_with_state(mode, qa_run_id=qa_run_id)
         return game_id
+
+    def delete_qa_run(self, qa_run_id: str) -> list[str]:
+        """Delete only games explicitly tagged by one production QA run."""
+        with self._repository.transaction() as uow:
+            return uow.delete_qa_games(qa_run_id)
 
     def get_game(self, game_id: str) -> GameState:
         try:
