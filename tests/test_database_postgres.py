@@ -262,8 +262,6 @@ def test_qa_cleanup_is_run_scoped_and_removes_postgres_dependents(
             .where(Move.game_id.in_(remaining_internal_ids))
         ) == 2
 
-
-
 def test_production_qa_runner_over_real_postgres_api_and_exact_run_cleanup(
     postgres_engine, monkeypatch, capsys
 ):
