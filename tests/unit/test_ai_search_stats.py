@@ -12,6 +12,7 @@ def empty_board():
 def test_search_stats_derive_branching_and_pruning_rates():
     stats = SearchStats()
     stats.generated_candidates = 30
+    stats.candidate_cap_considered = 30
     stats.candidate_cap_pruned = 10
     stats.expanded_candidates = 8
     stats.alpha_beta_pruned = 4
