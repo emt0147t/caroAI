@@ -217,7 +217,7 @@ async def run_group(
     return rows
 
 
-def write_summary(
+def write_summary(  # noqa: C901
     output_dir: Path, request_rows: list[dict], server_rows: list[dict],
     monitor: PostgresMonitor, metadata: dict,
 ) -> dict:  # noqa: C901 - keep related audit output aggregation together
@@ -347,7 +347,7 @@ def write_summary(
         "Transaction P50 / P95 (ms) | Connection hold P50 / P95 (ms) |",
         "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
-    
+
     def fmt(value, spec):
         return format(value, spec) if value is not None else "N/A"
     for item in summaries:
@@ -599,9 +599,10 @@ async def main_async(args) -> int:  # noqa: C901
                              "response_valid": status == 200, "legal_move": None,
                              "error_type": error_type, "error_message": error_message,
                              "is_warmup": False, "sample_index": 0,
-                "group_wall_seconds": max(
-                    duration_ms for _, duration_ms, _, _ in read_results
-                ) / 1000})
+                             "group_wall_seconds": max(
+                                 duration_ms
+                                 for _, duration_ms, _, _ in read_results
+                             ) / 1000})
             rows.append(await ai_task)
     finally:
         monitor.stop()
