@@ -10,9 +10,15 @@ import warnings
 from uuid import uuid4
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
+
+import scripts.production_qa_acceptance as production_qa
+
+from app.api.dependencies import get_game_service
+from app.main import app
 
 from app.db.models import Base, Game, GameAnalysis, Move
 from app.db.repository import SQLAlchemyGameRepository
@@ -255,3 +261,127 @@ def test_qa_cleanup_is_run_scoped_and_removes_postgres_dependents(
             select(func.count()).select_from(Move)
             .where(Move.game_id.in_(remaining_internal_ids))
         ) == 2
+
+
+
+def test_production_qa_runner_over_real_postgres_api_and_exact_run_cleanup(
+    postgres_engine, monkeypatch, capsys
+):
+    """Exercise the production runner through FastAPI and disposable PostgreSQL."""
+    session_factory = sessionmaker(
+        bind=postgres_engine,
+        autoflush=False,
+        expire_on_commit=False,
+    )
+
+    def postgres_game_service():
+        with session_factory() as session:
+            yield GameService(SQLAlchemyGameRepository(session))
+
+    previous_override = app.dependency_overrides.get(get_game_service)
+    app.dependency_overrides[get_game_service] = postgres_game_service
+    other_run_id = uuid4().hex
+    generated_run_ids = []
+
+    def generate_run_token(_size):
+        token = uuid4().hex
+        generated_run_ids.append(token)
+        return token
+
+    monkeypatch.setenv("CAROAI_PUBLIC_URL", "https://caroai.example")
+    monkeypatch.setattr(production_qa.secrets, "token_hex", generate_run_token)
+
+    try:
+        with TestClient(app) as client:
+            other_created = client.post(
+                "/api/qa/games",
+                headers={"X-CaroAI-QA-Run-ID": other_run_id},
+                json={"mode": "HUMAN_VS_HUMAN"},
+            )
+            assert other_created.status_code == 201
+            other_game_id = other_created.json()["id"]
+            other_move = client.post(
+                f"/api/games/{other_game_id}/moves",
+                json={"row": 2, "col": 3},
+            )
+            assert other_move.status_code == 200
+
+            ordinary_created = client.post(
+                "/api/games", json={"mode": "HUMAN_VS_HUMAN"}
+            )
+            assert ordinary_created.status_code == 201
+            ordinary_game_id = ordinary_created.json()["id"]
+
+            def call_real_api(
+                base_url,
+                method,
+                path,
+                *,
+                run_id,
+                payload=None,
+                expected_status=(200,),
+            ):
+                response = client.request(
+                    method,
+                    base_url.rstrip("/") + path,
+                    headers={"X-CaroAI-QA-Run-ID": run_id},
+                    json=payload,
+                )
+                try:
+                    body = response.json()
+                except ValueError as exc:
+                    raise production_qa.AcceptanceError(
+                        f"{method} {path} returned non-JSON data "
+                        f"(HTTP {response.status_code})"
+                    ) from exc
+                if response.status_code not in expected_status:
+                    detail = (
+                        body.get("detail", "no detail")
+                        if isinstance(body, dict)
+                        else "invalid body"
+                    )
+                    raise production_qa.AcceptanceError(
+                        f"{method} {path} expected {expected_status}, "
+                        f"received HTTP {response.status_code}: {detail}"
+                    )
+                if not isinstance(body, dict):
+                    raise production_qa.AcceptanceError(
+                        f"{method} {path} returned a non-object JSON value"
+                    )
+                return response.status_code, body
+
+            monkeypatch.setattr(
+                production_qa, "request_json", call_real_api
+            )
+            assert production_qa.main() == 0
+
+            # The runner's own PvP/PvAI rows are deleted, while a second run
+            # and a normal untagged game remain readable.
+            assert client.get(f"/api/games/{other_game_id}").status_code == 200
+            assert client.get(f"/api/games/{ordinary_game_id}").status_code == 200
+            history = client.get("/api/history?limit=100&offset=0")
+            assert history.status_code == 200
+            history_ids = {item["id"] for item in history.json()["items"]}
+            assert other_game_id in history_ids
+            assert ordinary_game_id in history_ids
+
+            other_cleanup = client.delete(
+                "/api/qa/runs",
+                headers={"X-CaroAI-QA-Run-ID": other_run_id},
+            )
+            assert other_cleanup.status_code == 200
+            assert other_cleanup.json()["deleted_count"] == 1
+            assert other_cleanup.json()["deleted_game_ids"] == [other_game_id]
+            assert client.get(f"/api/games/{other_game_id}").status_code == 404
+
+    finally:
+        if previous_override is None:
+            app.dependency_overrides.pop(get_game_service, None)
+        else:
+            app.dependency_overrides[get_game_service] = previous_override
+
+    output = capsys.readouterr()
+    assert "Production gameplay acceptance passed" in output.out
+    assert "Production QA cleanup verified" in output.out
+    assert generated_run_ids
+    assert all(token not in output.out + output.err for token in generated_run_ids)
