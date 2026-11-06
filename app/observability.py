@@ -35,6 +35,21 @@ AI_SEARCH_NODES = Histogram(
     ("difficulty",),
     buckets=(1, 10, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 50000, 100000),
 )
+AI_ROOT_CANDIDATES = Histogram(
+    "caroai_ai_root_candidates",
+    "Legal root candidates available before the AI search.",
+    ("difficulty",),
+)
+AI_GENERATED_CANDIDATES = Histogram(
+    "caroai_ai_generated_candidates",
+    "Candidate moves generated across all visited search nodes.",
+    ("difficulty",),
+)
+AI_ADMISSION_REJECTIONS = Counter(
+    "caroai_ai_admission_rejections_total",
+    "IMPOSSIBLE requests rejected because the process-local concurrency limit was full.",
+    ("difficulty",),
+)
 AI_BRANCHING_FACTOR = Histogram(
     "caroai_ai_average_branching_factor",
     "Average post-candidate-cap branching factor per search.",
@@ -140,6 +155,12 @@ def record_ai_search(difficulty: str, result: dict[str, Any]) -> None:
     )
     AI_SEARCH_DURATION.labels(key, outcome).observe(elapsed)
     AI_SEARCH_NODES.labels(key).observe(max(0, int(stats.get("nodes", 0))))
+    AI_ROOT_CANDIDATES.labels(key).observe(
+        max(0, int(stats.get("root_candidates", 0)))
+    )
+    AI_GENERATED_CANDIDATES.labels(key).observe(
+        max(0, int(stats.get("generated_candidates", 0)))
+    )
     AI_BRANCHING_FACTOR.labels(key).observe(
         max(0.0, float(stats.get("average_branching_factor", 0.0)))
     )
@@ -151,6 +172,11 @@ def record_ai_search(difficulty: str, result: dict[str, Any]) -> None:
     )
     if timed_out:
         AI_TIMEOUTS.labels(key).inc()
+
+
+def record_ai_admission_rejection() -> None:
+    """Count a bounded-label IMPOSSIBLE admission rejection."""
+    AI_ADMISSION_REJECTIONS.labels("impossible").inc()
 
 
 def _sql_operation(statement: str) -> str:
