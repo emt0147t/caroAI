@@ -604,7 +604,11 @@ def build_summaries(records: list[dict[str, Any]], fixtures: list[dict[str, Any]
                 "min_ms": min(elapsed) if elapsed else None,
                 "max_ms": max(elapsed) if elapsed else None,
                 "mean_nodes": statistics.mean([row.get("search_nodes", 0) for row in group]) if group else 0.0,
-                "mean_branching_factor": statistics.mean([row.get("average_branching_factor", 0) for row in group]) if group else 0.0,
+                "mean_branching_factor": (
+                    statistics.mean(
+                        [row.get("average_branching_factor", 0) for row in group]
+                    ) if group else 0.0
+                ),
                 "mean_alpha_beta_pruning_rate": (
                     statistics.mean(
                         [row.get("alpha_beta_pruning_rate", 0) for row in group]
