@@ -20,7 +20,7 @@ class InvalidAIMoveError(ValueError):
 class GameService:
     """Application service; storage is injected so production uses PostgreSQL."""
 
-    VALID_AI_DIFFICULTIES = frozenset({"easy", "medium", "hard"})
+    VALID_AI_DIFFICULTIES = frozenset({"easy", "medium", "hard", "impossible"})
 
     def __init__(self, repository=None) -> None:
         # Keep construction without arguments useful for legacy unit tests, but
@@ -79,7 +79,7 @@ class GameService:
             raise InvalidAIMoveError("It is not the AI turn")
         if difficulty not in self.VALID_AI_DIFFICULTIES:
             raise InvalidAIMoveError(
-                "Difficulty must be one of: easy, medium, hard"
+                "Difficulty must be one of: easy, medium, hard, impossible"
             )
 
         result = run_ai_engine(

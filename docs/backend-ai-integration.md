@@ -46,7 +46,7 @@ Input:
 {
     "board": list[list[int]],
     "ai_player": 2,
-    "difficulty": "easy" | "medium" | "hard"
+    "difficulty": "easy" | "medium" | "hard" | "impossible"
 }
 ```
 
@@ -131,9 +131,16 @@ Allowed values:
 easy
 medium
 hard
+impossible
 ```
 
-The default is `medium`.
+The default is `medium`. `impossible` selects the higher-budget Minimax configuration
+(depth 4, candidate limit 20); it is a stronger heuristic setting, not a guarantee
+of perfect or unbeatable play.
+
+Difficulty remains request-scoped: the client sends it with each AI-move request.
+It is not persisted on the game record, so the client may select a different level
+for a later AI turn. No database migration is required for this contract.
 
 ### Success
 

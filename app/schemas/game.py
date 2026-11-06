@@ -19,6 +19,7 @@ class AIDifficulty(str, Enum):
     EASY = "easy"
     MEDIUM = "medium"
     HARD = "hard"
+    IMPOSSIBLE = "impossible"
 
 
 class AIMoveRequest(BaseModel):

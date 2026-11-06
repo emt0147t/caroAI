@@ -51,6 +51,34 @@ test('PvAI difficulty reaches the real API; AI move is rendered from backend sta
   expect(game.current_player).toBe('X');
 });
 
+test('Impossible difficulty reaches the real API and persists a legal AI move', async ({ page, request }) => {
+  const id = await startGame(page, 'HUMAN_VS_AI', 'impossible');
+  await expect(page.locator('#aiDifficulty')).toHaveValue('impossible');
+  await page.locator('#aiDifficulty').selectOption('medium');
+  await page.locator('#aiDifficulty').selectOption('impossible');
+  await expect(page.locator('#aiDifficulty')).toHaveValue('impossible');
+  await expect(page).toHaveURL(/difficulty=impossible/);
+
+  let submittedDifficulty = null;
+  await page.route('**/api/games/*/ai-move', async route => {
+    submittedDifficulty = route.request().postDataJSON()?.difficulty ?? null;
+    await route.continue();
+  });
+
+  await page.getByRole('button', { name: 'Đánh hàng 8, cột 8' }).click();
+  await expect(page.locator('#board .cell').filter({ hasText: /^O$/ })).toHaveCount(1, { timeout: 30000 });
+  await expect(page.locator('#currentPlayer')).toHaveText('X');
+  expect(submittedDifficulty).toBe('impossible');
+  const game = await getGame(request, id);
+  expect(game.move_count).toBe(2);
+  expect(game.board[7][7]).toBe('X');
+  expect(game.board.flat().filter(value => value === 'O')).toHaveLength(1);
+  expect(game.current_player).toBe('X');
+  await page.reload();
+  await expect(page.locator('#aiDifficulty')).toHaveValue('impossible');
+  await expect(page.locator('#board .cell').filter({ hasText: /^O$/ })).toHaveCount(1);
+});
+
 test('busy state disables cells and prevents duplicate move submissions', async ({ page }) => {
   await startGame(page);
   let calls = 0;

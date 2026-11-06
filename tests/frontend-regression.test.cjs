@@ -6,6 +6,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const gameScript = fs.readFileSync(path.join(root, 'frontend/Caro_AI/trong_tran/script.js'), 'utf8');
 const welcome = fs.readFileSync(path.join(root, 'frontend/Caro_AI/welcome.html'), 'utf8');
+const gamePage = fs.readFileSync(path.join(root, 'frontend/Caro_AI/trong_tran/index.html'), 'utf8');
 
 test('create game uses supported backend modes and reads game id', () => {
   assert.match(gameScript, /api\("\/api\/games",\s*\{\s*method:\s*"POST"/);
@@ -27,7 +28,9 @@ test('PvAI gates AI requests by mode, status and O turn; PvP does not trigger AI
   assert.match(gameScript, /s\.game\.status\s*!==\s*"IN_PROGRESS"/);
   assert.match(gameScript, /s\.game\.current_player\s*!==\s*"O"/);
   assert.match(gameScript, /s\.game\.mode === "HUMAN_VS_AI" && s\.game\.current_player === "O"/);
-  assert.match(gameScript, /\["easy","medium","hard"\]\.includes/);
+  assert.match(gameScript, /\["easy","medium","hard","impossible"\]\.includes/);
+  assert.match(welcome, /<option value="impossible">Impossible/);
+  assert.match(gamePage, /<option value="impossible">Impossible/);
 });
 
 test('AI retry resynchronizes game and does not replay the human move', () => {
@@ -58,3 +61,4 @@ test('welcome dashboard includes health indicator, metrics grid, and rules refer
   assert.match(welcome, /checkSystemHealth\(\)/);
   assert.match(welcome, /loadDashboardStats\(\)/);
 });
+

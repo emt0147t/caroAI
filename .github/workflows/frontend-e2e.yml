@@ -1,9 +1,9 @@
 name: Frontend Browser E2E
 on:
   push:
-    branches: ["feature/frontend-sprint3-e2e-history"]
+    branches: ["feature/frontend-sprint3-e2e-history", "feature/backend-impossible-api-integration"]
   pull_request:
-    branches: [develop, main]
+    branches: [develop, main, feature/ai-impossible-difficulty]
   workflow_dispatch:
     inputs:
       baseline_ref:
@@ -109,3 +109,4 @@ jobs:
       - name: Stop candidate stack
         if: always()
         run: docker compose down -v
+

@@ -73,7 +73,15 @@ def minimax(  # noqa: C901
         return (None, int(base_ai - 1.2 * base_hu))
 
     # 3. Sắp xếp sơ bộ các nước đi (Move Ordering) để tăng hiệu quả Alpha-Beta
-    scored_candidates.sort(key=lambda item: item[1], reverse=is_maximizing)
+    # Deterministic tie-breaking improves alpha-beta move ordering and makes
+    # equal-score searches reproducible across Python hash seeds.
+    def move_order_key(item):
+        (r, c), score = item
+        score_key = -score if is_maximizing else score
+        center_distance = abs(r - BOARD_SIZE // 2) + abs(c - BOARD_SIZE // 2)
+        return (score_key, center_distance, r, c)
+
+    scored_candidates.sort(key=move_order_key)
     limited_candidates = [m for m, _ in scored_candidates[:candidate_limit]]
 
     # 4. Duyệt Minimax

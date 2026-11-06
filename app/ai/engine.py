@@ -8,6 +8,9 @@ DIFFICULTY_CONFIG = {
     "EASY": {"depth": 1, "candidate_limit": 6},
     "MEDIUM": {"depth": 2, "candidate_limit": 10},
     "HARD": {"depth": 3, "candidate_limit": 14},
+    # High-budget mode: one extra search ply and a wider candidate set.
+    # This is a very strong heuristic opponent, not a proof of perfect play.
+    "IMPOSSIBLE": {"depth": 4, "candidate_limit": 20},
 }
 
 

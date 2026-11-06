@@ -6,7 +6,7 @@ const s = {
   game: null,
   busy: false,
   lastMove: null,
-  difficulty: ["easy","medium","hard"].includes(qs.get("difficulty")) ? qs.get("difficulty") : "medium",
+  difficulty: ["easy","medium","hard","impossible"].includes(qs.get("difficulty")) ? qs.get("difficulty") : "medium",
   retry: null,
   focusedCell: { row: 0, col: 0 }
 };
@@ -307,7 +307,7 @@ async function aiMove() {
 
 mode.addEventListener("change", () => difficultyGroup?.classList.toggle("hidden", mode.value !== "HUMAN_VS_AI"));
 difficulty?.addEventListener("change", () => {
-  if (["easy","medium","hard"].includes(difficulty.value)) {
+  if (["easy","medium","hard","impossible"].includes(difficulty.value)) {
     s.difficulty = difficulty.value;
   }
   updateUrl();
@@ -336,3 +336,4 @@ if (s.id) {
 } else {
   createGame(qs.get("mode") === "HUMAN_VS_AI" ? "HUMAN_VS_AI" : "HUMAN_VS_HUMAN");
 }
+
