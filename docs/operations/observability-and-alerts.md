@@ -6,7 +6,7 @@
 
 ## Application metrics
 
-The application exports Prometheus text format at `GET /metrics`.
+The application exports Prometheus text format at `GET /metrics` only when `CAROAI_METRICS_TOKEN` is configured. The route requires `Authorization: Bearer <token>` and returns 404 when no token is configured; missing or incorrect credentials receive HTTP 401. Store the token as a Render secret or another secret-manager value, never in source control.
 
 | Metric | Labels | Meaning |
 |---|---|---|
@@ -52,6 +52,11 @@ Use the rules in `ops/monitoring/caroai-alerts.yml` as templates for Prometheus/
 | Render service memory | >85% | >95% | 10 / 5 minutes |
 
 The CPU/memory checks are operational dashboard guidance because this project does not configure a Render-to-Prometheus exporter or alert connector. Revisit the assumed SQLAlchemy pool cap if pool settings or instance count change. An IMPOSSIBLE guard rejection is explicit back-pressure, not necessarily an application fault; monitor its rate and correlate it with HTTP 429s.
+
+## Metrics endpoint security
+
+- `CAROAI_METRICS_TOKEN`: optional secret enabling `/metrics`; when unset, the endpoint is disabled (404). When set, requests must supply the exact bearer token. Use a dedicated random scrape token with read-only monitoring scope; do not reuse database, Docker Hub, or Render credentials.
+- The scrape token is not logged or exposed as a Prometheus label. If a hosted scraper cannot send an Authorization header, use a private authenticated proxy or a dedicated exporter rather than making `/metrics` public.
 
 ## IMPOSSIBLE budget and admission configuration
 
