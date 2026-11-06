@@ -605,8 +605,16 @@ def build_summaries(records: list[dict[str, Any]], fixtures: list[dict[str, Any]
                 "max_ms": max(elapsed) if elapsed else None,
                 "mean_nodes": statistics.mean([row["search_nodes"] for row in group]) if group else 0.0,
                 "mean_branching_factor": statistics.mean([row["average_branching_factor"] for row in group]) if group else 0.0,
-                "mean_alpha_beta_pruning_rate": statistics.mean([row["alpha_beta_pruning_rate"] for row in group]) if group else 0.0,
-                "mean_candidate_cap_pruning_rate": statistics.mean([row["candidate_cap_pruning_rate"] for row in group]) if group else 0.0,
+                "mean_alpha_beta_pruning_rate": (
+                    statistics.mean(
+                        [row["alpha_beta_pruning_rate"] for row in group]
+                    ) if group else 0.0
+                ),
+                "mean_candidate_cap_pruning_rate": (
+                    statistics.mean(
+                        [row["candidate_cap_pruning_rate"] for row in group]
+                    ) if group else 0.0
+                ),
                 "timeout_count": sum(bool(row["search_timed_out"]) for row in group),
             })
 
@@ -642,9 +650,21 @@ def build_summaries(records: list[dict[str, Any]], fixtures: list[dict[str, Any]
             "min_ms": min(elapsed) if elapsed else None,
             "max_ms": max(elapsed) if elapsed else None,
             "mean_nodes": statistics.mean([row["search_nodes"] for row in difficulty_rows]) if difficulty_rows else 0.0,
-            "mean_branching_factor": statistics.mean([row["average_branching_factor"] for row in difficulty_rows]) if difficulty_rows else 0.0,
-            "mean_alpha_beta_pruning_rate": statistics.mean([row["alpha_beta_pruning_rate"] for row in difficulty_rows]) if difficulty_rows else 0.0,
-            "mean_candidate_cap_pruning_rate": statistics.mean([row["candidate_cap_pruning_rate"] for row in difficulty_rows]) if difficulty_rows else 0.0,
+            "mean_branching_factor": (
+                statistics.mean(
+                    [row["average_branching_factor"] for row in difficulty_rows]
+                ) if difficulty_rows else 0.0
+            ),
+            "mean_alpha_beta_pruning_rate": (
+                statistics.mean(
+                    [row["alpha_beta_pruning_rate"] for row in difficulty_rows]
+                ) if difficulty_rows else 0.0
+            ),
+            "mean_candidate_cap_pruning_rate": (
+                statistics.mean(
+                    [row["candidate_cap_pruning_rate"] for row in difficulty_rows]
+                ) if difficulty_rows else 0.0
+            ),
             "timeout_count": sum(bool(row["search_timed_out"]) for row in difficulty_rows),
             "proposed_slo_under_2000ms": p95 is not None and p95 <= PROPOSED_SLO_MS and not failures,
             "slo_acceptance": "PENDING_TEAM_CONFIRMATION",
@@ -700,7 +720,11 @@ def render_report(
             "- The by-difficulty p95 aggregates all fixture trials equally; it "
             "describes this workload, not the real-world distribution of player positions."
         ),
-        "- Root candidate count is measured before the timed call. Search-node, candidate-cap and alpha-beta counters are recorded by the instrumented Minimax engine.",
+        (
+            "- Root candidate count is measured before the timed call. Search-node, "
+            "candidate-cap and alpha-beta counters are recorded by the instrumented "
+            "Minimax engine."
+        ),
         (
             "- The proposed p95 ≤ 2,000 ms target is pending team confirmation. "
             "A measurement below the proposal does not itself accept the SLO."
