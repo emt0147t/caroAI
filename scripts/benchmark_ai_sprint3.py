@@ -43,6 +43,20 @@ CSV_FIELDS = [
     "trial",
     "is_warmup",
     "elapsed_ms",
+    "search_nodes",
+    "search_leaves",
+    "generated_candidates",
+    "expanded_candidates",
+    "candidate_cap_considered",
+    "candidate_cap_pruned",
+    "candidate_cap_pruning_rate",
+    "alpha_beta_cutoffs",
+    "alpha_beta_pruned",
+    "alpha_beta_pruning_rate",
+    "average_branching_factor",
+    "max_branching_factor",
+    "search_timed_out",
+    "search_shortcut",
     "chosen_row",
     "chosen_col",
     "score",
@@ -480,6 +494,9 @@ def run_trial(
     row = result.get("row") if isinstance(result, dict) else None
     col = result.get("col") if isinstance(result, dict) else None
     score = result.get("score") if isinstance(result, dict) else None
+    search_stats = result.get("search_stats", {}) if isinstance(result, dict) else {}
+    if not isinstance(search_stats, dict):
+        search_stats = {}
     has_expected_keys = (
         isinstance(result, dict)
         and all(key in result for key in ("row", "col", "score", "elapsed_ms"))
@@ -531,6 +548,20 @@ def run_trial(
         "trial": trial,
         "is_warmup": is_warmup,
         "elapsed_ms": round(elapsed_ms, 6),
+        "search_nodes": int(search_stats.get("nodes", 0)),
+        "search_leaves": int(search_stats.get("leaves", 0)),
+        "generated_candidates": int(search_stats.get("generated_candidates", 0)),
+        "expanded_candidates": int(search_stats.get("expanded_candidates", 0)),
+        "candidate_cap_considered": int(search_stats.get("candidate_cap_considered", 0)),
+        "candidate_cap_pruned": int(search_stats.get("candidate_cap_pruned", 0)),
+        "candidate_cap_pruning_rate": float(search_stats.get("candidate_cap_pruning_rate", 0.0)),
+        "alpha_beta_cutoffs": int(search_stats.get("alpha_beta_cutoffs", 0)),
+        "alpha_beta_pruned": int(search_stats.get("alpha_beta_pruned", 0)),
+        "alpha_beta_pruning_rate": float(search_stats.get("alpha_beta_pruning_rate", 0.0)),
+        "average_branching_factor": float(search_stats.get("average_branching_factor", 0.0)),
+        "max_branching_factor": int(search_stats.get("max_branching_factor", 0)),
+        "search_timed_out": bool(search_stats.get("timed_out", False)),
+        "search_shortcut": str(search_stats.get("shortcut", "none")),
         "chosen_row": row,
         "chosen_col": col,
         "score": score,
@@ -572,6 +603,23 @@ def build_summaries(records: list[dict[str, Any]], fixtures: list[dict[str, Any]
                 "p95_ms": nearest_rank_percentile(elapsed, 0.95),
                 "min_ms": min(elapsed) if elapsed else None,
                 "max_ms": max(elapsed) if elapsed else None,
+                "mean_nodes": statistics.mean([row.get("search_nodes", 0) for row in group]) if group else 0.0,
+                "mean_branching_factor": (
+                    statistics.mean(
+                        [row.get("average_branching_factor", 0) for row in group]
+                    ) if group else 0.0
+                ),
+                "mean_alpha_beta_pruning_rate": (
+                    statistics.mean(
+                        [row.get("alpha_beta_pruning_rate", 0) for row in group]
+                    ) if group else 0.0
+                ),
+                "mean_candidate_cap_pruning_rate": (
+                    statistics.mean(
+                        [row.get("candidate_cap_pruning_rate", 0) for row in group]
+                    ) if group else 0.0
+                ),
+                "timeout_count": sum(bool(row.get("search_timed_out", False)) for row in group),
             })
 
     per_difficulty = []
@@ -593,6 +641,10 @@ def build_summaries(records: list[dict[str, Any]], fixtures: list[dict[str, Any]
             )
         ]
         p95 = nearest_rank_percentile(elapsed, 0.95)
+        difficulty_rows = [
+            row for row in measured
+            if row["difficulty"] == difficulty and row["elapsed_ms"] is not None
+        ]
         per_difficulty.append({
             "difficulty": difficulty,
             "sample_count": len(elapsed),
@@ -601,6 +653,23 @@ def build_summaries(records: list[dict[str, Any]], fixtures: list[dict[str, Any]
             "p95_ms": p95,
             "min_ms": min(elapsed) if elapsed else None,
             "max_ms": max(elapsed) if elapsed else None,
+            "mean_nodes": statistics.mean([row.get("search_nodes", 0) for row in difficulty_rows]) if difficulty_rows else 0.0,
+            "mean_branching_factor": (
+                statistics.mean(
+                    [row.get("average_branching_factor", 0) for row in difficulty_rows]
+                ) if difficulty_rows else 0.0
+            ),
+            "mean_alpha_beta_pruning_rate": (
+                statistics.mean(
+                    [row.get("alpha_beta_pruning_rate", 0) for row in difficulty_rows]
+                ) if difficulty_rows else 0.0
+            ),
+            "mean_candidate_cap_pruning_rate": (
+                statistics.mean(
+                    [row.get("candidate_cap_pruning_rate", 0) for row in difficulty_rows]
+                ) if difficulty_rows else 0.0
+            ),
+            "timeout_count": sum(bool(row.get("search_timed_out", False)) for row in difficulty_rows),
             "proposed_slo_under_2000ms": p95 is not None and p95 <= PROPOSED_SLO_MS and not failures,
             "slo_acceptance": "PENDING_TEAM_CONFIRMATION",
         })
@@ -655,7 +724,11 @@ def render_report(
             "- The by-difficulty p95 aggregates all fixture trials equally; it "
             "describes this workload, not the real-world distribution of player positions."
         ),
-        "- Root candidate count is measured before the timed call. Node count is not instrumented and is reported as N/A.",
+        (
+            "- Root candidate count is measured before the timed call. Search-node, "
+            "candidate-cap and alpha-beta counters are recorded by the instrumented "
+            "Minimax engine."
+        ),
         (
             "- The proposed p95 ≤ 2,000 ms target is pending team confirmation. "
             "A measurement below the proposal does not itself accept the SLO."
@@ -736,6 +809,22 @@ def render_report(
             f"| {item['sample_count']} | {item['failure_count']} "
             f"| {format_ms(item['median_ms'])} | {format_ms(item['p95_ms'])} "
             f"| {format_ms(item['min_ms'])} | {format_ms(item['max_ms'])} |"
+        )
+
+    lines.extend([
+        "",
+        "## Phase C search work per fixture / difficulty",
+        "",
+        "| Fixture | Difficulty | Mean nodes | Mean branching factor | Alpha-beta pruned | Candidate-cap pruned | Timeouts |",
+        "|---|---|---:|---:|---:|---:|---:|",
+    ])
+    for item in summaries["per_fixture_difficulty"]:
+        lines.append(
+            f"| {item['fixture']} | {item['difficulty']} | {item['mean_nodes']:.1f} "
+            f"| {item['mean_branching_factor']:.2f} "
+            f"| {item['mean_alpha_beta_pruning_rate']:.3f} "
+            f"| {item['mean_candidate_cap_pruning_rate']:.3f} "
+            f"| {item['timeout_count']} |"
         )
 
     demo_names = [fixture["name"] for fixture in fixtures if fixture["is_demo"]]
@@ -824,7 +913,7 @@ def write_outputs(
         "percentile_method": "nearest_rank",
         "proposed_slo_ms": PROPOSED_SLO_MS,
         "slo_acceptance": "PENDING_TEAM_CONFIRMATION",
-        "node_count": "N/A (no node counter instrumented)",
+        "search_metrics_schema": "nodes/leaves/branching/candidate-cap/alpha-beta/timeouts",
         "fixtures": [
             {
                 "name": item["name"],

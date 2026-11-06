@@ -454,3 +454,8 @@ jobs:
           check_endpoint "/api/history" "History API JSON endpoint"
           check_endpoint "/tokens.css" "CSS design tokens asset"
           echo "Production verification passed using GET-only read-only smoke tests."
+      - name: Verify production PvP/PvAI gameplay and clean scoped QA records
+        timeout-minutes: 10
+        env:
+          CAROAI_PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
+        run: python scripts/production_qa_acceptance.py

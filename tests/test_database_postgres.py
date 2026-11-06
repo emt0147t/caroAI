@@ -15,7 +15,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models import Base, Game, GameAnalysis, Move
+from app.db.repository import SQLAlchemyGameRepository
 from app.db.testing import validate_disposable_postgres_target
+from app.domain.game_state import GameMode
+from app.services.game_service import GameService
 
 
 @pytest.fixture
@@ -182,3 +185,73 @@ def test_constraint_failure_rolls_back_game_and_prior_move(postgres_engine):
         assert session.scalar(
             select(func.count()).select_from(Move).where(Move.game_id == game_id)
         ) == 0
+
+
+def test_qa_cleanup_is_run_scoped_and_removes_postgres_dependents(
+    postgres_engine,
+):
+    qa_run_id = "a" * 32
+    other_run_id = "b" * 32
+
+    with Session(postgres_engine) as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        qa_game_id = service.create_game(
+            GameMode.HUMAN_VS_HUMAN, qa_run_id=qa_run_id
+        )
+        other_game_id = service.create_game(
+            GameMode.HUMAN_VS_HUMAN, qa_run_id=other_run_id
+        )
+        ordinary_game_id = service.create_game(GameMode.HUMAN_VS_HUMAN)
+
+        service.make_move(qa_game_id, 0, 0)
+        service.make_move(other_game_id, 1, 1)
+        service.make_move(ordinary_game_id, 2, 2)
+
+        qa_record = session.query(Game).filter_by(public_id=qa_game_id).one()
+        qa_internal_id = qa_record.id
+        qa_move = session.scalars(
+            select(Move).where(Move.game_id == qa_internal_id)
+        ).one()
+        session.add(
+            GameAnalysis(
+                game_id=qa_internal_id,
+                move_id=qa_move.id,
+                best_move_row=0,
+                best_move_col=1,
+            )
+        )
+        session.commit()
+
+    with Session(postgres_engine) as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        deleted_ids = service.delete_qa_run(qa_run_id)
+        repeated_cleanup = service.delete_qa_run(qa_run_id)
+
+    assert deleted_ids == [qa_game_id]
+    assert repeated_cleanup == []
+
+    with Session(postgres_engine) as session:
+        assert session.query(Game).filter_by(public_id=qa_game_id).count() == 0
+        assert session.query(Game).filter_by(public_id=other_game_id).count() == 1
+        assert session.query(Game).filter_by(public_id=ordinary_game_id).count() == 1
+
+        remaining_games = session.scalars(
+            select(Game).where(
+                Game.public_id.in_([other_game_id, ordinary_game_id])
+            )
+        ).all()
+        remaining_internal_ids = {record.id for record in remaining_games}
+        assert len(remaining_internal_ids) == 2
+        assert session.scalar(
+            select(func.count())
+            .select_from(GameAnalysis)
+            .where(GameAnalysis.game_id == qa_internal_id)
+        ) == 0
+        assert session.scalar(
+            select(func.count()).select_from(Move)
+            .where(Move.game_id == qa_internal_id)
+        ) == 0
+        assert session.scalar(
+            select(func.count()).select_from(Move)
+            .where(Move.game_id.in_(remaining_internal_ids))
+        ) == 2

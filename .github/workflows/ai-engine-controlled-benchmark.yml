@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - benchmark/impossible-engine-latency
+      - feat/phase-c-ai-observability-qa-20261106
+      - benchmark/phase-c-impossible-budget-1500
+      - benchmark/phase-c-impossible-budget-2000
 
 permissions:
   contents: read
@@ -49,6 +52,21 @@ jobs:
           python --version
           python -m pip freeze
 
+      - name: Select optional IMPOSSIBLE time budget
+        shell: bash
+        run: |
+          case "$GITHUB_REF_NAME" in
+            benchmark/phase-c-impossible-budget-1500)
+              echo "CAROAI_IMPOSSIBLE_TIME_BUDGET_MS=1500" >> "$GITHUB_ENV"
+              ;;
+            benchmark/phase-c-impossible-budget-2000)
+              echo "CAROAI_IMPOSSIBLE_TIME_BUDGET_MS=2000" >> "$GITHUB_ENV"
+              ;;
+            *)
+              echo "No IMPOSSIBLE time budget configured for this run."
+              ;;
+          esac
+
       - name: Run fixed-fixture engine benchmark
         run: |
           python scripts/benchmark_ai_sprint3.py \
@@ -60,7 +78,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: caroai-engine-benchmark-${{ github.sha }}
+          name: caroai-phase-c-engine-benchmark-${{ github.sha }}
           path: reports/benchmark-impossible-${{ github.sha }}/
           if-no-files-found: warn
           retention-days: 30

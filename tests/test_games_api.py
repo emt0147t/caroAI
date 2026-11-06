@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.ai.admission import ImpossibleAdmissionGuard
 from app.api.dependencies import get_game_service
 from app.db.repository import InMemoryGameRepository
 from app.main import app
@@ -280,3 +281,68 @@ def test_ai_move_rejects_invalid_difficulty(difficulty):
     )
 
     assert response.status_code == 422
+
+
+def test_ai_move_returns_409_when_game_changes_during_search(monkeypatch):
+    repository = InMemoryGameRepository()
+    service = GameService(repository)
+    app.dependency_overrides[get_game_service] = lambda: service
+
+    def fake_ai_move(board, ai_player, difficulty):
+        service.make_move(game_id, 8, 8)
+        return {"row": 6, "col": 8, "score": 0, "elapsed_ms": 1.0}
+
+    monkeypatch.setattr(
+        game_service_module, "run_ai_engine", fake_ai_move
+    )
+    try:
+        with TestClient(app) as api_client:
+            created = api_client.post(
+                "/api/games", json={"mode": "HUMAN_VS_AI"}
+            )
+            game_id = created.json()["id"]
+            first = api_client.post(
+                f"/api/games/{game_id}/moves", json={"row": 7, "col": 7}
+            )
+            assert first.status_code == 200
+
+            response = api_client.post(
+                f"/api/games/{game_id}/ai-move",
+                json={"difficulty": "medium"},
+            )
+            assert response.status_code == 409
+            state = api_client.get(f"/api/games/{game_id}").json()
+            assert state["move_count"] == 2
+            assert state["board"][8][8] == "O"
+            assert state["board"][6][8] == "EMPTY"
+    finally:
+        app.dependency_overrides.pop(get_game_service, None)
+
+
+def test_impossible_admission_limit_returns_429_and_retry_after(monkeypatch):
+    repository = InMemoryGameRepository()
+    guard = ImpossibleAdmissionGuard(max_concurrency=1, queue_wait_ms=0)
+    service = GameService(repository, impossible_guard=guard)
+    app.dependency_overrides[get_game_service] = lambda: service
+
+    try:
+        with TestClient(app) as api_client:
+            created = api_client.post(
+                "/api/games", json={"mode": "HUMAN_VS_AI"}
+            )
+            game_id = created.json()["id"]
+            first = api_client.post(
+                f"/api/games/{game_id}/moves", json={"row": 7, "col": 7}
+            )
+            assert first.status_code == 200
+
+            with guard.acquire():
+                response = api_client.post(
+                    f"/api/games/{game_id}/ai-move",
+                    json={"difficulty": "impossible"},
+                )
+
+            assert response.status_code == 429
+            assert response.headers["retry-after"] == "1"
+    finally:
+        app.dependency_overrides.pop(get_game_service, None)

@@ -18,7 +18,9 @@ def test_impossible_uses_extended_search_budget(monkeypatch):
     board[7][7] = PLAYER_O
     captured = {}
 
-    def fake_find_best_move(board, ai_player, depth, candidate_limit):
+    def fake_find_best_move(
+        board, ai_player, depth, candidate_limit, stats=None, time_budget_ms=None
+    ):
         captured.update(
             ai_player=ai_player,
             depth=depth,

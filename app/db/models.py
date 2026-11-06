@@ -56,6 +56,8 @@ class Game(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     ended_at = Column(DateTime(timezone=True), nullable=True)
+    # Non-null only for explicitly tagged production acceptance games.
+    qa_run_id = Column(String(32), nullable=True, index=True)
 
     moves = relationship("Move", back_populates="game")
     analyses = relationship("GameAnalysis", back_populates="game")
