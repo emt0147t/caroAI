@@ -1,0 +1,124 @@
+name: Phase C API and PostgreSQL Contention Benchmark
+
+on:
+  push:
+    branches:
+      - feat/phase-c-ai-observability-qa-20261106
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase-c-api-db-benchmark-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  api-db-smoke:
+    name: API / PostgreSQL transaction-boundary smoke benchmark
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: caroai_phase_c
+          POSTGRES_USER: caroai_phase_c
+          POSTGRES_PASSWORD: caroai_phase_c_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U caroai_phase_c -d caroai_phase_c"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg2://caroai_phase_c:caroai_phase_c_password@localhost:5432/caroai_phase_c
+    steps:
+      - name: Checkout exact benchmark source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Apply additive migrations to disposable PostgreSQL
+        run: python -c "from app.db.database import get_engine; from scripts.migrate_database import run_migrations; engine=get_engine(); run_migrations(engine); engine.dispose()"
+
+      - name: Record environment metadata
+        run: |
+          echo "Commit: $GITHUB_SHA"
+          echo "Runner: $RUNNER_NAME"
+          echo "OS: $(lsb_release -ds)"
+          echo "Kernel: $(uname -a)"
+          echo "CPU:"
+          lscpu
+          echo "PostgreSQL:"
+          psql "$DATABASE_URL" -c "SELECT version();"
+          python --version
+          python -m pip freeze
+
+      - name: Run controlled API / PostgreSQL concurrency smoke matrix
+        run: |
+          python scripts/benchmark_api_db_phase_b.py             --database-url "$DATABASE_URL"             --smoke-only             --timeout-seconds 120             --monitor-interval-ms 10             --output-dir "reports/phase-c-api-db-$GITHUB_SHA"
+
+      - name: Validate raw API, server, and PostgreSQL evidence
+        run: |
+          python - <<'PY'
+          import csv
+          import json
+          from pathlib import Path
+
+          root = Path("reports/phase-c-api-db-" + __import__("os").environ["GITHUB_SHA"])
+          summary = json.loads((root / "benchmark-summary.json").read_text())
+          requests = list(csv.DictReader((root / "api-requests.csv").open()))
+          server = list(csv.DictReader((root / "server-metrics.csv").open()))
+          postgres = list(csv.DictReader((root / "postgres-observations.csv").open()))
+
+          if not requests or not server:
+              raise SystemExit("Missing Phase C raw request/server metrics")
+          if summary.get("database_correctness_failures") != 0:
+              raise SystemExit("Database correctness checks failed")
+          if summary.get("working_tree_dirty") is not False:
+              raise SystemExit("Benchmark source working tree is dirty")
+          if summary.get("postgres_monitor_error"):
+              raise SystemExit("PostgreSQL monitor failed: " + summary["postgres_monitor_error"])
+
+          grouped = summary.get("group_summary", [])
+          if len(grouped) < 16:
+              raise SystemExit(f"Expected at least 16 workload groups, got {len(grouped)}")
+          same_game = [row for row in grouped if row["scenario"] == "same_game_concurrent"]
+          if not same_game or any(not row["expected_same_game_conflicts"] for row in same_game):
+              raise SystemExit("Same-game optimistic-concurrency outcomes were not classified correctly")
+
+          print(json.dumps({
+              "run_id": summary["run_id"],
+              "source_sha": summary["source_sha"],
+              "raw_request_count": len(requests),
+              "server_metric_count": len(server),
+              "postgres_observation_rows": len(postgres),
+              "database_correctness_checks": summary["database_correctness_checks"],
+              "database_correctness_failures": summary["database_correctness_failures"],
+              "same_game_groups": len(same_game),
+              "same_game_expected_conflicts": all(row["expected_same_game_conflicts"] for row in same_game),
+          }, indent=2))
+          PY
+
+      - name: Upload raw Phase C API / DB measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: caroai-phase-c-api-db-${{ github.sha }}
+          path: reports/phase-c-api-db-${{ github.sha }}/
+          if-no-files-found: warn
+          retention-days: 30
