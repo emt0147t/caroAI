@@ -200,25 +200,32 @@ A final container filesystem inspection was performed against review image `caro
 
 ---
 
-## 5. Production Rollout Status & Checklist
+## 5. Current Production Rollout & Post-Release Checklist
 
-Infrastructure and release rollout status as of PR #50 pre-merge reconciliation:
+This section replaces the historical PR #50 pre-merge rollout snapshot.
 
-1. **Cloud Bootstrap Deployment (Verified LIVE)**:
-   - Render Web Service (`srv-dbkd2dflk1mc73fd2ukg`) is live at `https://caroai-bootstrap-a9e753b33198.onrender.com` using image `emt0147/caroai:bootstrap-a9e753b33198`.
-   - Connected to Neon Serverless PostgreSQL (`caroai-demo`, AWS Singapore `ap-southeast-1`, `neondb`).
-   - Migrations executed, API endpoints 200 OK, PvP/PvAI gameplay verified, and data persistence verified across service restart (`POST-RESTART PERSISTENCE: PASS`).
-2. **GitHub Production Environment Secrets & Variables**:
-   - The five production secrets (`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `RENDER_DEPLOY_HOOK`, `RENDER_API_KEY`, `RENDER_SERVICE_ID`) are owner-reported entered under GitHub Settings → Environments → `production`, but have not yet been validated by an executing production release (release jobs skipped in CI).
-   - **Environment Variable `CAROAI_PUBLIC_URL`**: Status is **UNCONFIRMED — PENDING OWNER VERIFICATION**. Do not claim it is configured or infer its presence from the five secrets.
-3. **GitHub Production Environment Protections**:
-   - Under Settings → Environments → `production`:
-     - **Required reviewers**: Unconfirmed / awaiting verification (do not claim configured unless independently confirmed).
-     - **Deployment branches**: Unconfirmed / awaiting verification (do not claim configured unless independently confirmed).
-4. **Promote `develop` to `main` via Pull Request #50**:
-   - Pull Request #50 (`develop` → `main`) is open.
-   - Requires review approval from an authorized collaborator before merge.
-   - *(Note: Direct push `git push origin main` is blocked by repository branch protection).*
-5. **Trigger Official Production Release**:
-   - Following merge of PR #50, trigger `CaroAI CI/CD` workflow on `main` via `workflow_dispatch` with `release_approved=true`.
-   - The release job will build, tag, and publish official full-SHA and short-SHA images to Docker Hub (`emt0147/caroai`), trigger the Render Deploy Hook, poll the Render API until live, and verify public HTTPS endpoints.
+1. **Current Production Release — LIVE / VERIFIED**
+   - Render Web Service: `srv-dbkd2dflk1mc73fd2ukg`.
+   - Public URL: [CaroAI production](https://caroai-bootstrap-a9e753b33198.onrender.com).
+   - Deployment: `dep-dbn02vrncjis73am3dhg`, status `live`.
+   - Image: `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83`.
+   - Image digest: `sha256:a80c48d0f1433f600ef5d5e2a5dc124f3057cebe716ab9782f238a614f7f35a7`.
+   - Release evidence: [workflow #42253079008](https://github.com/emt0147t/caroAI/actions/runs/42253079008), success.
+   - Release smoke checks: `/health`, `/ready`, `/`, `/history.html`, `/api/history`, and `/tokens.css` all returned HTTP 200.
+2. **GitHub Production Environment Configuration**
+   - The five production secrets (`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `RENDER_DEPLOY_HOOK`, `RENDER_API_KEY`, `RENDER_SERVICE_ID`) were operationally validated by the successful release workflow.
+   - `CAROAI_PUBLIC_URL` was required and its HTTPS-origin format was validated by that same workflow.
+   - Secret values remain confidential and are not recorded here.
+3. **Environment Protection Settings**
+   - Required reviewers and deployment-branch restrictions under Settings → Environments → `production` have not been independently verified. Do not claim those protections are configured based solely on a successful release.
+   - `main` remains protected by its PR review requirement; production release is a separate manual exact-SHA dispatch.
+4. **Branch / Integration Status**
+   - PR #58 integrated the current production release into `main`.
+   - `main` and `develop` are synchronized at `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`.
+   - P0 documentation refresh is proposed in [PR #61](https://github.com/emt0147t/caroAI/pull/61).
+5. **Phase C and Remaining Acceptance**
+   - Phase C is staged in [PR #60](https://github.com/emt0147t/caroAI/pull/60), currently draft. Its controlled benchmarks and CI/E2E evidence are separate from the deployed production baseline.
+   - The Phase C production QA routes/migration have not been deployed, so the run-scoped live PvP/PvAI acceptance runner has not been executed against the current website.
+   - A full interactive PvP/PvAI acceptance on the current production commit remains outstanding; earlier gameplay and restart-persistence evidence came from the previous bootstrap release and is historical.
+   - Render zero-downtime cutover has not been empirically verified for this application.
+
