@@ -1,14 +1,15 @@
 # CaroAI — Gomoku 15×15 AI Gaming Platform
 
-CaroAI is a full-stack 15 × 15 Gomoku (Cờ Caro) competitive gaming application featuring an authoritative FastAPI backend, a Python Minimax AI engine with alpha-beta pruning, a responsive modern web dashboard, persistent PostgreSQL storage, reproducible Docker containerization, and automated GitHub Actions CI/CD.
+CaroAI is a full-stack 15 × 15 Gomoku (Cờ Caro) application with an authoritative FastAPI backend, a Python Minimax engine with alpha-beta pruning, a responsive web dashboard, PostgreSQL persistence, Docker containerization, and an approval-gated GitHub Actions release pipeline. The November 6, 2026 production release is live on Render.
 
 ---
 
 ## 1. Project Overview
 - **Repository**: [https://github.com/emt0147t/caroAI](https://github.com/emt0147t/caroAI)
 - **Target Platform**: Render Web Service & Neon PostgreSQL
-- **Production Application URL**: [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com) (A1 Production Release Live)
-- **Docker Hub Repository**: `docker.io/emt0147/caroai` (Release image: `docker.io/emt0147/caroai:4e8fd2fb1104f36e8363ea54c4255d850247b7a1`)
+- **Production Application URL**: [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com)
+- **Production Release**: `main` commit `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`; Render deploy `dep-dbn02vrncjis73am3dhg` is `live`.
+- **Docker Hub Repository**: `docker.io/emt0147/caroai` (live image: `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83`)
 - **Application Core**: 15 × 15 standard grid, zero client-side game logic authority, persistent game state, and move history.
 
 ---
@@ -16,10 +17,11 @@ CaroAI is a full-stack 15 × 15 Gomoku (Cờ Caro) competitive gaming applicatio
 ## 2. Key Features
 - **Human vs Human (PvP)**: Two players competing on the same device with alternating turns (X starts first).
 - **Human vs AI (PvAI)**: Single-player mode against the intelligent CaroAI Minimax engine.
-- **Three AI Difficulty Levels**:
-  - `easy`: Basic heuristic evaluation for rapid casual play.
-  - `medium`: Balanced positional scoring and threat detection.
-  - `hard`: Deep Minimax search with alpha-beta pruning, tactical open-four / open-three pattern weighting.
+- **Four AI Difficulty Levels**:
+  - `easy`: Small search budget for responsive casual play.
+  - `medium`: Balanced positional evaluation and tactical checks.
+  - `hard`: Deeper Minimax search with alpha-beta pruning.
+  - `impossible`: Highest configured search budget (depth 4, candidate limit 20); this is a strong heuristic opponent, not a proof of perfect play.
 - **Backend-Authoritative Rule Engine**: Turn transitions, move validation, 5-in-a-row victory detection, and 225-cell board draw calculations are 100% computed and verified by the backend.
 - **Persistent Game History**: Real-time recording of games, moves, timestamps, and terminal results in PostgreSQL.
 - **System Health & Readiness**: Separate `/health` (container liveness) and `/ready` (database connectivity probe) endpoints.
@@ -281,89 +283,53 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 ---
 
 ## 15. Docker Hub Image Reference
-- **Docker Hub Account**: `emt0147`
+
 - **Repository**: `docker.io/emt0147/caroai`
-- **Bootstrap Image (Live Demo)**:
-  - **Tag**: `docker.io/emt0147/caroai:bootstrap-a9e753b33198`
-  - **Status**: **VERIFIED / PUBLISHED** (Manually published and running in the bootstrap Web Service)
-  - **Pull command**:
-    ```bash
-    docker pull emt0147/caroai:bootstrap-a9e753b33198
-    ```
-- **Production Release Image (A1 Release)**:
-  - **Status**: **LIVE / VERIFIED** (Built, verified, and running on Render Web Service)
-  - **Release Commit SHA**: `4e8fd2fb1104f36e8363ea54c4255d850247b7a1`
-  - **Tag**: `docker.io/emt0147/caroai:4e8fd2fb1104f36e8363ea54c4255d850247b7a1`
-  - **Pull command**:
-    ```bash
-    docker pull emt0147/caroai:4e8fd2fb1104f36e8363ea54c4255d850247b7a1
-    ```
+- **Live full-SHA tag**: `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83`
+- **Source commit**: `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`
+- **Release workflow**: [CaroAI CI run #605](https://github.com/emt0147t/caroAI/actions/runs/42253079008)
+
+The image is built and published by the protected `main` release workflow. Do not manually move the Render service's bootstrap image setting or deploy an unverified mutable tag.
 
 ---
 
 ## 16. Deployment Instructions (Render Web Service & Neon PostgreSQL)
 
-### 16.1 Neon Database Setup
-1. Create a project in [Neon Console](https://neon.tech) (e.g. `caroai-demo`, AWS Singapore `ap-southeast-1`, PostgreSQL 18, database `neondb`, branch `production`).
-2. Copy the **direct (non-pooler)** PostgreSQL connection string.
-   - **Connection Mode**: The deployed CaroAI production service uses Neon's direct connection rather than the pooled connection (`-pooler` endpoint on port 5432/6543).
-   - **Internal Pooling Distinction**: CaroAI's FastAPI application manages its own internal connection pooling via SQLAlchemy (`pool_pre_ping=True`, pool recycling), so it connects directly to Neon without an external transaction pooler.
-   - **TLS & Channel Binding**: The deployed connection string requires TLS (`sslmode=require`) and channel binding (`channel_binding=require`).
-   - **Security Policy**: Never print, commit, or document the actual hostname, username, password, or `DATABASE_URL` in documentation or source code.
+The existing Render Web Service is configured to pull a prebuilt Docker image. Its automatic deploy setting is disabled; production releases must use the repository's approval-gated GitHub Actions workflow.
 
-### 16.2 Render Web Service Setup
-1. **Create Web Service**:
-   - Choose **Deploy an existing image from a registry**.
-   - Image URL: `docker.io/emt0147/caroai:4e8fd2fb1104f36e8363ea54c4255d850247b7a1` (or automated release tag `docker.io/emt0147/caroai:<sha>`).
-   - Instance Type: **Free**.
-2. **Environment Variables**:
-   - `DATABASE_URL`: Connection string from your Neon PostgreSQL instance (configured in Render environment settings).
-   - `APP_ENV`: `production`
-   - `PORT`: Automatically assigned by Render (e.g. `10000`).
-3. **Health Check Path**:
-   - Set to `/ready` (validates both container liveness and database `SELECT 1` connectivity).
-4. **Deploy & Verification**:
-   - Save changes. Render pulls the image, runs migrations on startup (`000_initial_schema`, `001_games_public_id`), and exposes the public HTTPS URL.
+1. Merge the reviewed release candidate into protected `main`.
+2. Open **Actions → CaroAI CI**, select branch `main`, and dispatch with `release_approved=true`.
+3. Approve the `production` Environment gate when GitHub requests it.
+4. Confirm the release job publishes the full-SHA image, triggers Render with that exact image reference, and waits until Render reports `live`.
+5. Confirm the production smoke checks return 2xx for `/health`, `/ready`, `/`, `/history.html`, `/api/history`, and `/tokens.css`.
+
+**Database security:** `DATABASE_URL` remains configured as a Render secret. Never place the connection string, hostname, username, or password in source control, reports, command output, or screenshots.
 
 ---
 
-## 17. Public HTTPS Application URL & Production Release Status
-- **Production Service**: **LIVE & VERIFIED (A1 Release)**
-  - **Public URL**: [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com)
-  - **Render Service ID**: `srv-dbkd2dflk1mc73fd2ukg`
-  - **Render Deployment ID**: `dep-dbkr3sajnfac739o368g`
-  - **Release Branch**: `main`
-  - **Release Commit**: `4e8fd2fb1104f36e8363ea54c4255d850247b7a1` (PR #51)
-  - **Production Image**: `docker.io/emt0147/caroai:4e8fd2fb1104f36e8363ea54c4255d850247b7a1`
-  - **Instance Type**: Free
-  - **Health Path**: `/ready` (validates container liveness and Neon PostgreSQL database connectivity)
-  - **Verified Endpoints**: `/health` (200 OK), `/ready` (200 OK), `/` (200 OK), `/history.html` (200 OK), `/api/history` (200 OK), `/tokens.css` (200 OK).
-- **Image & Release Verification**:
-  - Live HTTP check: `curl -s https://caroai-bootstrap-a9e753b33198.onrender.com/` returns canonical title `<title>CaroAI · Đấu trường Cờ Caro 15 × 15</title>`.
-  - Liveness check: `curl -s https://caroai-bootstrap-a9e753b33198.onrender.com/health` returns `{"status":"ok"}`.
-  - Database connectivity probe: `curl -s https://caroai-bootstrap-a9e753b33198.onrender.com/ready` returns `{"status":"ready","database":"ok"}`.
-- **Rollback Procedure**:
-  - If a rollback is ever required, open Render Dashboard → Service `caroai-bootstrap-a9e753b33198` → **Deploys** → select previous healthy deployment and click **Rollback to this deploy**, or deploy the previous stable Docker image tag from Docker Hub.
+## 17. Public HTTPS Application URL & Current Production Release
+
+- **Public URL**: [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com)
+- **Render Service ID**: `srv-dbkd2dflk1mc73fd2ukg`
+- **Render Deployment ID**: `dep-dbn02vrncjis73am3dhg`
+- **Deployment status**: `live`
+- **Release branch / source SHA**: `main` / `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`
+- **Production image**: `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83`
+- **Release workflow**: [Run #605 — success](https://github.com/emt0147t/caroAI/actions/runs/42253079008)
+
+The release job verified the exact image reference became live and ran read-only production smoke tests. All six endpoints returned HTTP 200: `/health`, `/ready`, `/`, `/history.html`, `/api/history`, and `/tokens.css`. These GET checks prove availability and database readiness; they do not replace an interactive production gameplay acceptance test.
 
 ---
 
-## 18. Production PostgreSQL Configuration Overview (Neon PostgreSQL)
-- **Database Provider**: Neon Serverless PostgreSQL
-- **Project**: `caroai-demo`
-- **Region**: AWS Singapore (`ap-southeast-1`)
-- **Plan**: Free
-- **PostgreSQL Version**: 18
-- **Database Name**: `neondb`
-- **Branch**: `production`
-- **Configuration**: `DATABASE_URL` is configured in Render Web Service environment settings using Neon direct (non-pooler) connection with `sslmode=require` and `channel_binding=require` (actual hostname, username, password, and connection string are never written into documentation).
-- **Driver**: Psycopg2-binary with SQLAlchemy internal connection pooling (`pool_pre_ping=True`).
-- **Migrations**: `000_initial_schema.sql` and `001_games_public_id.sql` applied successfully on startup; Render startup logs confirmed schema up to date.
-- **Persistence Verification**: **PASS**.
-  - Verified on live cloud infrastructure via Render Web Service restart.
-  - Interactive PvP and PvAI matches created and verified; AI engine move returned player O.
-  - Full game details and histories retrievable from Neon PostgreSQL via `/api/history`.
-  - Both PvP and PvAI games remained fully accessible after Render Web Service restart (`POST-RESTART PERSISTENCE: PASS`).
-- **Fail-Safe**: Zero client-side state is trusted; database is the single source of truth.
+## 18. Production Database & Persistence Notes
+
+- **Database provider**: Neon PostgreSQL, connected by the Render service through the secret `DATABASE_URL`.
+- **Migration lifecycle**: versioned SQL migrations run before Uvicorn starts; the currently verified schema includes `000_initial_schema.sql` and `001_games_public_id.sql`.
+- **Application persistence**: the API uses SQLAlchemy repository/unit-of-work transactions. Game state is reconstructed from ordered persisted moves; the database is authoritative.
+- **Existing durability evidence**: prior cloud verification recorded PvP/PvAI game retrieval after a Render service restart. The November 6 release workflow itself performed read-only GET smoke tests only.
+- **Readiness**: `GET /ready` performs `SELECT 1` and returns 503 when the configured database is unavailable.
+
+No database credentials are documented here. For a new migration, add a versioned SQL file and test both fresh and previously initialized disposable PostgreSQL databases before production release.
 
 ---
 

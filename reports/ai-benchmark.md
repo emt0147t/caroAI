@@ -1,5 +1,58 @@
+# CaroAI AI Performance Baseline — Phase A & Phase B (2026-11-06)
 
-# CaroAI Phase 4 — M2 AI Regression and Benchmark Evidence
+**Scope:** four AI difficulty levels, controlled engine fixtures, and API/PostgreSQL contention measurements. This file's historical Phase 4 section follows below and must not be mistaken for the current four-difficulty baseline.
+
+## Current source and reproducibility evidence
+
+- Production source SHA: `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`.
+- Phase A benchmark workflow: [Run #4](https://github.com/emt0147t/caroAI/actions/runs/42237743095), source SHA `95c42e88c5eb9e88b719668345123b27df9eb2d6`, Ubuntu 24.04 / Python 3.11.18.
+- Phase A raw artifact: 1,320 measured samples plus 132 warm-ups (11 fixtures × 4 difficulties × 30 measured + 3 warm-ups); archive SHA-256 `77d5f3c2e9624a6c5d65e9e633b1cf49ce6e9fca5b95c26ae5d5d4664aaa2ae0`.
+- Phase B review: `phaseb-20261106T140340Z-980e7124`, Windows 10 / Python 3.11.9 / PostgreSQL 15.19 / one API worker / 10 ms PostgreSQL sampling. Review file: [PYTHON311-WINDOWS-REVIEW.md](benchmark-phase-b/PYTHON311-WINDOWS-REVIEW.md).
+
+## Phase A — engine latency
+
+Five of eleven fixtures trigger the root immediate-win/block shortcut and are not representative of depth-limited search. The six true search fixtures are `demo_midgame_search`, `opening_two_stones`, `opening_six_stones`, `mid_game_spread`, `edge_midgame`, and `dense_midgame_34_stones`.
+
+| Difficulty | Search samples | Median ms | P95 ms | Max ms | Calls >2,000 ms |
+|---|---:|---:|---:|---:|---:|
+| EASY | 180 | 6.233 | 12.767 | 12.984 | 0 |
+| MEDIUM | 180 | 29.246 | 61.734 | 65.278 | 0 |
+| HARD | 180 | 235.822 | 523.455 | 527.765 | 0 |
+| IMPOSSIBLE | 180 | 1,110.037 | 2,254.374 | 2,275.298 | 30 |
+
+All 30 IMPOSSIBLE calls above 2,000 ms came from `mid_game_spread`: 12 separated stones and 109 root candidates; median 2,249.8 ms, P95 2,271.2 ms, maximum 2,275.3 ms. The dense 42-stone fixture unexpectedly has an immediate AI win and must be classified as a tactical shortcut, not a deep-search case.
+
+The two-second reference remains provisional, not an adopted SLO. These equal-weight synthetic fixtures are not a production request distribution. Fixed win/block tests passing 30/30 at each difficulty demonstrates those particular tactics only, not optimal play.
+
+## Phase B — API/PostgreSQL contention (IMPOSSIBLE)
+
+| Scenario | Concurrency | Engine P95 ms | API P95 ms | Row-lock query P95 ms | Sampled lock wait P95 ms |
+|---|---:|---:|---:|---:|---:|
+| Single request | 1 | 728.4 | 739.9 | 1.3 | 0 |
+| Different games | 2 | 1,493.9 | 1,565.7 | 1.6 | 0 |
+| Different games | 4 | 2,827.9 | 3,263.6 | 150.8 | 0 |
+| Different games | 8 | 5,329.8 | 6,311.7 | 329.7 | 0 |
+| Same game | 2 | 1,053.5 | 1,070.6 | 970.4 | ~590 |
+| Same game | 4 | 799.1 | 822.7 | 743.3 | ~440 |
+| Same game | 8 | 855.3 | 888.9 | 624.2 | ~360 |
+
+Different-game throughput stayed around 1.40–1.49 requests/second while API P95 increased to 6.31 seconds at concurrency 8 and no PostgreSQL lock wait was sampled. This is consistent with CPU-bound AI search contention in a one-worker process; it does not isolate Python GIL effects from CPU scheduling. Same-game requests waited on the row lock held through AI search. Sampled lock-wait figures are approximate lower bounds; row-lock query duration includes execution and lock wait, not pure lock time.
+
+The Phase B run used one legal five-ply opening fixture, one API worker, and a 10 ms observer interval. It is a controlled local benchmark, not a Render production load test. Pool checkout wait was not directly instrumented in the run. The review also found the generated sentence claiming concurrency 4 was under the provisional two-second reference was wrong; the corrected table above shows engine P95 2,827.9 ms.
+
+## Engineering implications
+
+1. Add search instrumentation that separates node visits, candidate generation, candidate-cap pruning and alpha-beta pruning; occupied-stone count alone does not explain cost.
+2. Evaluate a configurable time budget and a process-local admission guard for IMPOSSIBLE; keep them disabled or explicitly configured until the host-specific trade-off is measured.
+3. Move Minimax computation outside the database row-lock transaction. Re-read under lock and compare the complete position/version before persisting; return a conflict rather than writing a stale move.
+4. Extend fixture coverage to opening, midgame, tactical, edge and dense non-shortcut positions, and report each fixture rather than only aggregate means.
+
+**Current evidence gaps:** Phase C metrics have not yet been collected; Render production AI latency per difficulty is not yet available; no formal latency SLO has been accepted.
+
+---
+
+
+# Historical CaroAI Phase 4 — M2 AI Regression and Benchmark Evidence
 
 **Overall status: PARTIAL — Windows evidence and local regression validation complete; Linux/Docker evidence pending. M1 clarified that p95 ≤ 2,000 ms is a proposed performance target, not an adopted SLO.**
 
