@@ -73,7 +73,7 @@ The release workflow validated the production Environment inputs, published the 
 | **Database Migrations** | `scripts/migrate_database.py` | **Code-verified & CI-verified** | Explicit versioned SQL files (`000_initial_schema.sql`, `001_games_public_id.sql`) applied in transaction before Uvicorn starts; tracked in `schema_migrations`. |
 | **Liveness & Readiness Probes** | `app/api/routes_health.py` | **Code-verified & CI-verified** | `/health` returns `{"status":"ok"}`. `/ready` executes database `SELECT 1` and returns 503 if unreachable. |
 | **Containerization** | `Dockerfile`, `docker-compose.yml` | **Code-verified & Locally tested** | Multi-stage build (`python:3.11-slim`), non-root `appuser` (UID 10001), parameterized dynamic port `${PORT:-8000}`, signal-forwarding `exec` startup. |
-| **Bootstrap Live Instance** | Render Web Service & Neon PostgreSQL | **LIVE & VERIFIED** | Bootstrap deployment verified live at `https://caroai-bootstrap-a9e753b33198.onrender.com`. Migrations applied; `/ready` probe and persistence across restart verified (`POST-RESTART PERSISTENCE: PASS`). |
+| **Production Live Instance** | Render Web Service & Neon PostgreSQL | **LIVE & VERIFIED** | Bootstrap deployment verified live at `https://caroai-bootstrap-a9e753b33198.onrender.com`. Migrations applied; `/ready` probe and persistence across restart verified (`POST-RESTART PERSISTENCE: PASS`). |
 | **Official Production Release** | Render Web Service & GitHub Actions release | **LIVE & VERIFIED** | Workflow #605 published and deployed the exact full-SHA image; Render deploy `dep-dbn02vrncjis73am3dhg` is live. |
 
 ---
@@ -123,10 +123,10 @@ Comprehensive cross-check across application source code, Dockerfile, Docker Com
 | **Port Handling** | `ENV PORT=8000`, `--port ${PORT:-8000}` | Dynamically accepts Render port injection |
 | **Context Hygiene** | `.dockerignore` excludes `.env`, `.env.*`, `!.env.example`, `.git`, `.github`, `docs/`, `venv/` | Hardened exclusion preventing secret leakage into build context |
 | **Docker Hub Registry** | `docker.io/emt0147/caroai` | Verified repository under username `emt0147` |
-| **Bootstrap Tag** | `docker.io/emt0147/caroai:bootstrap-a9e753b33198` | **VERIFIED / LIVE** (Manually published; powering live bootstrap service) |
+| **Historical Bootstrap Tag** | `docker.io/emt0147/caroai:bootstrap-a9e753b33198` | **VERIFIED / LIVE** (Manually published; powering live bootstrap service) |
 | **Automated Tagging Scheme** | Full Commit SHA: `${IMAGE_NAME}:${GITHUB_SHA}`<br>Short SHA: `${IMAGE_NAME}:${GITHUB_SHA:0:12}` | Traceable commit-pinned tags for official releases |
 | **Digest Tracking** | Output digest captured via `${{ steps.publish.outputs.digest }}` | Cryptographic content identifier recorded in release step and exported to `$GITHUB_STEP_SUMMARY` |
-| **Automated Release Publishing** | Push to `docker.io/emt0147/caroai` via CI/CD on `main` | **PENDING / NOT RUN** (Automated release workflow on `main` has not run) |
+| **Automated Release Publishing** | Push to `docker.io/emt0147/caroai` via CI/CD on `main` | **PASS** — workflow #605 published the full-SHA image and Render confirmed it live |
 
 ### 4.1 Final Container Filesystem Inspection Evidence
 A final container filesystem inspection was performed against the locally built review image:
@@ -158,9 +158,11 @@ A final container filesystem inspection was performed against the locally built 
   - **Instance Type:** Free
   - **Health Check Path:** `/ready` (guarantees ASGI server liveness and database `SELECT 1` connectivity)
   - **Observed Behavior:** Render pulled image, executed migrations on startup (reporting schema up to date), and successfully served all endpoints (`/health`, `/ready`, `/`, `/history.html`, `/api/history`, `/tokens.css`).
-- **Official Production Release:** **PENDING / NOT RUN**
-  - Release workflow on `main` is gated and has not run.
-  - Automated deployment via Render Deploy Hook (`RENDER_DEPLOY_HOOK`) with commit-SHA tagged images remains pending PR #50 merge to `main`.
+- **Official Production Release:** **LIVE & VERIFIED**
+  - Source SHA: `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`.
+  - Render deployment: `dep-dbn02vrncjis73am3dhg` (`live`).
+  - Image: `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83`.
+  - Workflow: [#605](https://github.com/emt0147t/caroAI/actions/runs/42253079008).
 - **Downtime Management:** Render zero-downtime deploy is a platform capability designed to boot the new container, validate `/ready`, drain the old container with SIGTERM, and cut over traffic. Note: This behavior is conditional (subject to single-container limits and persistent-disk attachment constraints), and zero-downtime cutover has NOT been empirically tested or verified for this application on production.
 
 ### 5.2 Neon Serverless PostgreSQL
@@ -186,8 +188,8 @@ A final container filesystem inspection was performed against the locally built 
 
 ## 6. Production Read-Only Smoke Tests & Deployment Verification
 
-### 6.1 Verified Endpoints on Live Bootstrap Deployment
-The bootstrap service at `https://caroai-bootstrap-a9e753b33198.onrender.com` was verified across core routes:
+### 6.1 Verified Endpoints on Current Production Deployment
+The production service at `https://caroai-bootstrap-a9e753b33198.onrender.com` was verified across core routes:
 
 | Target Endpoint | Description | Expected HTTP Status | Verification Status | Verification Focus |
 |---|---|---|---|---|
@@ -219,18 +221,18 @@ Configuration entered in repository settings (**Settings** → **Environments** 
 
 | Secret / Variable Name | Type | Current Status | Operational Role |
 |---|---|---|---|
-| **`DOCKERHUB_USERNAME`** | Secret | Entered by owner (pending release job validation) | Docker Hub account username (`emt0147`) for registry login. |
-| **`DOCKERHUB_TOKEN`** | Secret | Entered by owner (pending release job validation) | Personal Access Token with Read/Write registry scope. |
-| **`RENDER_DEPLOY_HOOK`** | Secret | Entered by owner (pending release job validation) | Render Web Service Deploy Hook URL. |
-| **`RENDER_API_KEY`** | Secret | Entered by owner (pending release job validation) | Personal API key for polling Render deploy status API. |
-| **`RENDER_SERVICE_ID`** | Secret | Entered by owner (pending release job validation) | Service identifier (`srv-dbkd2dflk1mc73fd2ukg`) from Render Web Service. |
-| **`CAROAI_PUBLIC_URL`** | Variable | **UNCONFIRMED — PENDING OWNER VERIFICATION** | Public HTTPS URL (do not claim configured or infer from Environment secrets). |
+| **`DOCKERHUB_USERNAME`** | Secret | Validated by successful production release workflow #605 | Docker Hub account username (`emt0147`) for registry login. |
+| **`DOCKERHUB_TOKEN`** | Secret | Validated by successful production release workflow #605 | Personal Access Token with Read/Write registry scope. |
+| **`RENDER_DEPLOY_HOOK`** | Secret | Validated by successful production release workflow #605 | Render Web Service Deploy Hook URL. |
+| **`RENDER_API_KEY`** | Secret | Validated by successful production release workflow #605 | Personal API key for polling Render deploy status API. |
+| **`RENDER_SERVICE_ID`** | Secret | Validated by successful production release workflow #605 | Service identifier (`srv-dbkd2dflk1mc73fd2ukg`) from Render Web Service. |
+| **`CAROAI_PUBLIC_URL`** | Variable | **Validated by successful release workflow #605** | Public HTTPS URL (do not claim configured or infer from Environment secrets). |
 
-*Status note: The five production secrets (`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `RENDER_DEPLOY_HOOK`, `RENDER_API_KEY`, `RENDER_SERVICE_ID`) were entered by the repository owner under GitHub Settings → Environments → `production`, but because release jobs are skipped during CI runs, these secrets have not yet been validated by an executing release job. Meanwhile, `CAROAI_PUBLIC_URL` is UNCONFIRMED — PENDING OWNER VERIFICATION; its configuration in GitHub Settings has not been independently confirmed and must not be inferred from the presence of the secrets.*
+*Status note: all five production secrets and `CAROAI_PUBLIC_URL` were successfully consumed by the release job in workflow #605. This confirms that the release workflow could access the required values; it does not independently prove the Environment's reviewer or deployment-branch protection settings.*
 
 ### 7.1 Environment Protection & Approval Gate Review
-- **Environment Approval Gate:** While `.github/workflows/ci-cd.yml` references `environment: name: production`, GitHub Actions does not enforce manual approvals unless configured by the repository owner. Required Reviewers setting: **Unconfirmed / awaiting verification** under **Settings → Environments → `production`** (do not claim configured unless independently confirmed).
-- **Deployment Branch Policy:** Deployment branch rules restricting deployments exclusively to `main`: **Unconfirmed / awaiting verification** (do not claim configured unless independently confirmed).
+- **Environment Approval Gate:** The production job successfully used Environment `production` in workflow #605. Whether the Environment has mandatory reviewers configured is not independently verified by the workflow result.
+- **Deployment Branch Policy:** Workflow #605 was dispatched from protected `main`; the Environment's deployment-branch restrictions have not been independently inspected.
 
 ---
 
@@ -287,7 +289,7 @@ Direct push to `main` is strictly prohibited by repository rulesets (`main` enfo
 
 ## 10. Post-Release Engineering Work
 
-The official release is complete. The remaining work is post-release hardening, not release provisioning:
+The official release is complete. The remaining work is post-release hardening, not release provisioning. The current Render service's configured `imagePath` still names the historical bootstrap tag, while the live deploy is pinned to the full-SHA image. Continue to use workflow #605's exact-image deploy-hook flow; do not manually redeploy the stale bootstrap image from the Render dashboard.
 
 1. **P0 — Baseline and evidence hygiene:** keep `main` and `develop` synchronized; maintain current README, acceptance report, preflight, and benchmark report.
 2. **P1 — AI search performance:** measure node count, branching, candidate-cap pruning and alpha-beta pruning by fixture/difficulty; test optional time budgets and IMPOSSIBLE concurrency admission; move AI computation outside the row-lock transaction with snapshot revalidation before commit.
