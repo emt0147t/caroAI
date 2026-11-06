@@ -69,11 +69,15 @@ def minimax(  # noqa: C901
             # AI có nước tạo chuỗi 5 ngay lập tức
             if check_win_at(board, r, c, ai_player):
                 board[r][c] = EMPTY
+                if stats is not None:
+                    stats.leaves += 1
                 return ((r, c), SCORE_FIVE)
         else:
             # Human có nước tạo chuỗi 5 ngay lập tức trong lượt của mình
             if check_win_at(board, r, c, human_player):
                 board[r][c] = EMPTY
+                if stats is not None:
+                    stats.leaves += 1
                 return ((r, c), -SCORE_FIVE)
 
         new_p1, new_p2 = get_cell_lines_scores(board, r, c)
@@ -102,6 +106,7 @@ def minimax(  # noqa: C901
     scored_candidates.sort(key=move_order_key)
     limited_candidates = [m for m, _ in scored_candidates[:candidate_limit]]
     if stats is not None:
+        stats.candidate_cap_considered += len(scored_candidates)
         stats.candidate_cap_pruned += max(0, len(scored_candidates) - len(limited_candidates))
         stats.record_branching_factor(len(limited_candidates))
 
