@@ -7,8 +7,8 @@ CaroAI is a full-stack 15 × 15 Gomoku (Cờ Caro) competitive gaming applicatio
 ## 1. Project Overview
 - **Repository**: [https://github.com/emt0147t/caroAI](https://github.com/emt0147t/caroAI)
 - **Target Platform**: Render Web Service & Neon PostgreSQL
-- **Production Application URL**: [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com) (A1 Production Release Live)
-- **Docker Hub Repository**: `docker.io/emt0147/caroai` (Release image: `docker.io/emt0147/caroai:4e8fd2fb1104f36e8363ea54c4255d850247b7a1`)
+- **Production Application URL**: [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com) (current production release live; verified 2026-11-06)
+- **Docker Hub Repository**: `docker.io/emt0147/caroai` (Release image: `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83`)
 - **Application Core**: 15 × 15 standard grid, zero client-side game logic authority, persistent game state, and move history.
 
 ---
@@ -16,10 +16,11 @@ CaroAI is a full-stack 15 × 15 Gomoku (Cờ Caro) competitive gaming applicatio
 ## 2. Key Features
 - **Human vs Human (PvP)**: Two players competing on the same device with alternating turns (X starts first).
 - **Human vs AI (PvAI)**: Single-player mode against the intelligent CaroAI Minimax engine.
-- **Three AI Difficulty Levels**:
+- **Four AI Difficulty Levels**:
   - `easy`: Basic heuristic evaluation for rapid casual play.
   - `medium`: Balanced positional scoring and threat detection.
   - `hard`: Deep Minimax search with alpha-beta pruning, tactical open-four / open-three pattern weighting.
+  - `impossible`: Higher-budget Minimax search (depth 4 / candidate limit 20); a stronger heuristic opponent, not a guarantee of optimal or unbeatable play.
 - **Backend-Authoritative Rule Engine**: Turn transitions, move validation, 5-in-a-row victory detection, and 225-cell board draw calculations are 100% computed and verified by the backend.
 - **Persistent Game History**: Real-time recording of games, moves, timestamps, and terminal results in PostgreSQL.
 - **System Health & Readiness**: Separate `/health` (container liveness) and `/ready` (database connectivity probe) endpoints.
@@ -283,20 +284,20 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 ## 15. Docker Hub Image Reference
 - **Docker Hub Account**: `emt0147`
 - **Repository**: `docker.io/emt0147/caroai`
-- **Bootstrap Image (Live Demo)**:
+- **Bootstrap Image (historical bootstrap artifact)**:
   - **Tag**: `docker.io/emt0147/caroai:bootstrap-a9e753b33198`
-  - **Status**: **VERIFIED / PUBLISHED** (Manually published and running in the bootstrap Web Service)
+  - **Status**: **PUBLISHED / HISTORICAL** (Original bootstrap image; the service now runs the commit-pinned production image)
   - **Pull command**:
     ```bash
     docker pull emt0147/caroai:bootstrap-a9e753b33198
     ```
-- **Production Release Image (A1 Release)**:
+- **Production Release Image (current verified release)**:
   - **Status**: **LIVE / VERIFIED** (Built, verified, and running on Render Web Service)
-  - **Release Commit SHA**: `4e8fd2fb1104f36e8363ea54c4255d850247b7a1`
-  - **Tag**: `docker.io/emt0147/caroai:4e8fd2fb1104f36e8363ea54c4255d850247b7a1`
+  - **Release Commit SHA**: `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`
+  - **Tag**: `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83`
   - **Pull command**:
     ```bash
-    docker pull emt0147/caroai:4e8fd2fb1104f36e8363ea54c4255d850247b7a1
+    docker pull emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83
     ```
 
 ---
@@ -314,7 +315,7 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 ### 16.2 Render Web Service Setup
 1. **Create Web Service**:
    - Choose **Deploy an existing image from a registry**.
-   - Image URL: `docker.io/emt0147/caroai:4e8fd2fb1104f36e8363ea54c4255d850247b7a1` (or automated release tag `docker.io/emt0147/caroai:<sha>`).
+   - Image URL: `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83` (or automated release tag `docker.io/emt0147/caroai:<sha>`).
    - Instance Type: **Free**.
 2. **Environment Variables**:
    - `DATABASE_URL`: Connection string from your Neon PostgreSQL instance (configured in Render environment settings).
@@ -328,22 +329,35 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 ---
 
 ## 17. Public HTTPS Application URL & Production Release Status
-- **Production Service**: **LIVE & VERIFIED (A1 Release)**
-  - **Public URL**: [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com)
-  - **Render Service ID**: `srv-dbkd2dflk1mc73fd2ukg`
-  - **Render Deployment ID**: `dep-dbkr3sajnfac739o368g`
-  - **Release Branch**: `main`
-  - **Release Commit**: `4e8fd2fb1104f36e8363ea54c4255d850247b7a1` (PR #51)
-  - **Production Image**: `docker.io/emt0147/caroai:4e8fd2fb1104f36e8363ea54c4255d850247b7a1`
-  - **Instance Type**: Free
-  - **Health Path**: `/ready` (validates container liveness and Neon PostgreSQL database connectivity)
-  - **Verified Endpoints**: `/health` (200 OK), `/ready` (200 OK), `/` (200 OK), `/history.html` (200 OK), `/api/history` (200 OK), `/tokens.css` (200 OK).
-- **Image & Release Verification**:
-  - Live HTTP check: `curl -s https://caroai-bootstrap-a9e753b33198.onrender.com/` returns canonical title `<title>CaroAI · Đấu trường Cờ Caro 15 × 15</title>`.
-  - Liveness check: `curl -s https://caroai-bootstrap-a9e753b33198.onrender.com/health` returns `{"status":"ok"}`.
-  - Database connectivity probe: `curl -s https://caroai-bootstrap-a9e753b33198.onrender.com/ready` returns `{"status":"ready","database":"ok"}`.
-- **Rollback Procedure**:
-  - If a rollback is ever required, open Render Dashboard → Service `caroai-bootstrap-a9e753b33198` → **Deploys** → select previous healthy deployment and click **Rollback to this deploy**, or deploy the previous stable Docker image tag from Docker Hub.
+
+**Status: LIVE / VERIFIED**
+
+- **Production Service**: Render Web Service, Free plan, Singapore region, one instance.
+- **Public URL**: [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com)
+- **Render Service ID**: `srv-dbkd2dflk1mc73fd2ukg`
+- **Live Deployment ID**: `dep-dbn02vrncjis73am3dhg`
+- **Release branch / commit**: `main` / `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`
+- **Production image**: `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83`
+- **Image digest**: `sha256:a80c48d0f1433f600ef5d5e2a5dc124f3057cebe716ab9782f238a614f7f35a7`
+- **Health check path**: `/ready`
+- **Release evidence**: [GitHub Actions production release run](https://github.com/emt0147t/caroAI/actions/runs/42253079008); Render confirmed the exact commit-SHA image as `live`.
+
+### Verified public endpoints from release workflow
+
+| Endpoint | Result |
+|---|---|
+| `/health` | HTTP 200 |
+| `/ready` | HTTP 200 |
+| `/` | HTTP 200 |
+| `/history.html` | HTTP 200 |
+| `/api/history` | HTTP 200 |
+| `/tokens.css` | HTTP 200 |
+
+These checks confirm route availability and database readiness at release time. They are not a substitute for a full interactive PvP/PvAI acceptance run against the live website.
+
+### Rollback
+
+Open Render Dashboard → service `srv-dbkd2dflk1mc73fd2ukg` → **Deploys** → select the previous healthy deployment and choose **Rollback to this deploy**. The immediately preceding deployment was `dep-dbljvg61egvs73fgovdg` (image `7abed07...`); confirm health and data compatibility before rollback.
 
 ---
 
@@ -395,8 +409,8 @@ GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification o
 7. Click **Lịch sử** in the top navigation bar; verify the finished game appears in the list with move count, duration, and result.
 8. Click **Mở bàn cờ →**; verify the full board and move sequence reload exactly from PostgreSQL persistence.
 
-### 20.2 Online Demonstration (Live Cloud Bootstrap Service)
-The live bootstrap deployment is available for online evaluation:
+### 20.2 Online Demonstration (Current Production Service)
+The current production deployment is available for online evaluation:
 - **Live Demo URL**: [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com)
 - **Evaluation Steps**:
   1. Open [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com) in your web browser.
@@ -405,4 +419,4 @@ The live bootstrap deployment is available for online evaluation:
   4. Play **Người vs AI (PvAI)**: Click **Người vs AI**, select difficulty, and make your move; observe server-side Minimax calculation returning player O moves.
   5. Check Match History: Click **Lịch sử** (`/history.html`) to view persisted matches from Neon PostgreSQL; click **Mở bàn cờ →** to reload exact move history.
   6. Persistence Verification: Cloud database persistence has been verified across Render Web Service restarts (`POST-RESTART PERSISTENCE: PASS`).
-- **Production Release Note**: The official A1 Refined Tabletop release is fully deployed and live on Render via commit 4e8fd2fb1104f36e8363ea54c4255d850247b7a1.
+- **Production Release Note**: The current production release is live on Render via commit `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`.
