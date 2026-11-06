@@ -66,11 +66,11 @@ def test_impossible_blocks_an_opponent_immediate_win():
     board = empty_board()
     for col in range(3, 7):
         board[7][col] = PLAYER_O
-    board[0][0] = PLAYER_X
+    board[7][2] = PLAYER_X  # Đóng đầu trái; chỉ còn một nước thắng ở (7, 7).
 
     result = engine.get_ai_move(board, ai_player=PLAYER_X, difficulty="IMPOSSIBLE")
 
-    assert (result["row"], result["col"]) in {(7, 2), (7, 7)}
+    assert (result["row"], result["col"]) == (7, 7)
 
 
 def test_impossible_midgame_search_returns_legal_move_and_preserves_board():

@@ -50,7 +50,7 @@ def test_single_immediate_threat_is_forced_to_be_blocked():
     board = empty_board()
     for col in range(3, 7):
         board[7][col] = PLAYER_O
-    board[0][0] = X
+    board[7][2] = X  # Opponent has exactly one winning endpoint left.
 
     move, score, stats = find_strategic_move(
         board,
@@ -61,8 +61,8 @@ def test_single_immediate_threat_is_forced_to_be_blocked():
         node_budget=12000,
     )
 
-    assert move in {(7, 2), (7, 7)}
-    assert board[7][move[1]] == EMPTY
+    assert move == (7, 7)
+    assert board[7][7] == EMPTY
     assert stats["depth"] >= 1
 
 
