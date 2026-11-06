@@ -10,15 +10,42 @@ PVP_ID = "qa-pvp-game"
 PVAI_ID = "qa-pvai-game"
 
 
-def install_fake_acceptance_api(monkeypatch, *, fail_ai: bool = False):
-    """Replace HTTP calls with a deterministic API/DB acceptance harness."""
-    state = {
-        "pvp_moves": 0,
-        "deleted": False,
-        "calls": [],
-    }
+class FakeAcceptanceAPI:
+    """Small in-memory API stub used to exercise the acceptance script."""
 
-    def create_qa_game(payload, _expected_status):
+    def __init__(self, *, fail_ai: bool = False):
+        self.fail_ai = fail_ai
+        self.state = {"pvp_moves": 0, "deleted": False, "calls": []}
+        self.handlers = {
+            ("POST", "/api/qa/games"): self.create_qa_game,
+            ("POST", f"/api/games/{PVP_ID}/moves"): self.post_pvp_move,
+            ("POST", f"/api/games/{PVAI_ID}/moves"): self.post_pvai_human_move,
+            ("POST", f"/api/games/{PVAI_ID}/ai-move"): self.post_pvai_ai_move,
+            ("GET", f"/api/games/{PVP_ID}"): self.get_pvp_detail,
+            ("GET", f"/api/games/{PVAI_ID}"): self.get_pvai_detail,
+            ("GET", "/api/history?limit=100&offset=0"): self.get_history,
+            ("DELETE", "/api/qa/runs"): self.delete_qa_run,
+        }
+
+    def __call__(
+        self,
+        base_url,
+        method,
+        path,
+        *,
+        run_id,
+        payload=None,
+        expected_status=(200,),
+    ):
+        assert base_url == "https://caroai.example"
+        assert run_id == RUN_ID
+        self.state["calls"].append((method, path, payload, expected_status))
+        handler = self.handlers.get((method, path))
+        if handler is None:
+            raise AssertionError(f"Unexpected acceptance request: {method} {path}")
+        return handler(payload, expected_status)
+
+    def create_qa_game(self, payload, _expected_status):
         game_id = PVP_ID if payload["mode"] == "HUMAN_VS_HUMAN" else PVAI_ID
         return 201, {
             "id": game_id,
@@ -26,9 +53,9 @@ def install_fake_acceptance_api(monkeypatch, *, fail_ai: bool = False):
             "move_count": 0,
         }
 
-    def post_pvp_move(_payload, _expected_status):
-        state["pvp_moves"] += 1
-        count = state["pvp_moves"]
+    def post_pvp_move(self, _payload, _expected_status):
+        self.state["pvp_moves"] += 1
+        count = self.state["pvp_moves"]
         terminal = count == 9
         return 200, {
             "game": {
@@ -39,11 +66,11 @@ def install_fake_acceptance_api(monkeypatch, *, fail_ai: bool = False):
             }
         }
 
-    def post_pvai_human_move(_payload, _expected_status):
+    def post_pvai_human_move(self, _payload, _expected_status):
         return 200, {"game": {"current_player": "O", "move_count": 1}}
 
-    def post_pvai_ai_move(_payload, _expected_status):
-        if fail_ai:
+    def post_pvai_ai_move(self, _payload, _expected_status):
+        if self.fail_ai:
             raise qa.AcceptanceError("simulated AI endpoint failure")
         board = [["EMPTY"] * 15 for _ in range(15)]
         board[7][7] = "X"
@@ -59,8 +86,8 @@ def install_fake_acceptance_api(monkeypatch, *, fail_ai: bool = False):
             },
         }
 
-    def get_pvp_detail(_payload, expected_status):
-        if state["deleted"]:
+    def get_pvp_detail(self, _payload, _expected_status):
+        if self.state["deleted"]:
             return 404, {}
         return 200, {
             "id": PVP_ID,
@@ -70,8 +97,8 @@ def install_fake_acceptance_api(monkeypatch, *, fail_ai: bool = False):
             "move_count": 9,
         }
 
-    def get_pvai_detail(_payload, expected_status):
-        if state["deleted"]:
+    def get_pvai_detail(self, _payload, _expected_status):
+        if self.state["deleted"]:
             return 404, {}
         return 200, {
             "id": PVAI_ID,
@@ -81,8 +108,8 @@ def install_fake_acceptance_api(monkeypatch, *, fail_ai: bool = False):
             "move_count": 2,
         }
 
-    def get_history(_payload, _expected_status):
-        if state["deleted"]:
+    def get_history(self, _payload, _expected_status):
+        if self.state["deleted"]:
             return 200, {"items": []}
         return 200, {
             "items": [
@@ -103,45 +130,21 @@ def install_fake_acceptance_api(monkeypatch, *, fail_ai: bool = False):
             ]
         }
 
-    def delete_qa_run(_payload, _expected_status):
-        state["deleted"] = True
+    def delete_qa_run(self, _payload, _expected_status):
+        self.state["deleted"] = True
         return 200, {
             "deleted_count": 2,
             "deleted_game_ids": [PVP_ID, PVAI_ID],
         }
 
-    handlers = {
-        ("POST", "/api/qa/games"): create_qa_game,
-        ("POST", f"/api/games/{PVP_ID}/moves"): post_pvp_move,
-        ("POST", f"/api/games/{PVAI_ID}/moves"): post_pvai_human_move,
-        ("POST", f"/api/games/{PVAI_ID}/ai-move"): post_pvai_ai_move,
-        ("GET", f"/api/games/{PVP_ID}"): get_pvp_detail,
-        ("GET", f"/api/games/{PVAI_ID}"): get_pvai_detail,
-        ("GET", "/api/history?limit=100&offset=0"): get_history,
-        ("DELETE", "/api/qa/runs"): delete_qa_run,
-    }
 
-    def fake_request_json(
-        base_url,
-        method,
-        path,
-        *,
-        run_id,
-        payload=None,
-        expected_status=(200,),
-    ):
-        assert base_url == "https://caroai.example"
-        assert run_id == RUN_ID
-        state["calls"].append((method, path, payload, expected_status))
-        handler = handlers.get((method, path))
-        if handler is None:
-            raise AssertionError(f"Unexpected acceptance request: {method} {path}")
-        return handler(payload, expected_status)
-
+def install_fake_acceptance_api(monkeypatch, *, fail_ai: bool = False):
+    """Patch the runner to use an isolated fake HTTPS endpoint."""
+    stub = FakeAcceptanceAPI(fail_ai=fail_ai)
     monkeypatch.setenv("CAROAI_PUBLIC_URL", "https://caroai.example")
     monkeypatch.setattr(qa.secrets, "token_hex", lambda _size: RUN_ID)
-    monkeypatch.setattr(qa, "request_json", fake_request_json)
-    return state
+    monkeypatch.setattr(qa, "request_json", stub)
+    return stub.state
 
 
 def test_production_acceptance_runs_pvp_pvai_reads_history_and_cleans(monkeypatch):
