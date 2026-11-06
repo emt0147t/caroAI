@@ -15,6 +15,9 @@
         const gameId = params.get("game_id");
         if (gameId) {
             window.location.replace("/trong_tran/index.html?game_id=" + encodeURIComponent(gameId));
+        } else {
+            // Never display a fixed outcome without an authoritative game identifier.
+            window.location.replace("/");
         }
     </script>
     <style>

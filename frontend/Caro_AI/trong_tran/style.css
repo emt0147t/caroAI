@@ -385,12 +385,17 @@ button:disabled, select:disabled {
   max-width: 100%;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(15, 34px);
-  grid-template-rows: repeat(15, 34px);
+  grid-template-rows: repeat(15, auto);
   gap: 1px;
   background: var(--grid-line);
   border: 1.5px solid var(--grid-line);
   border-radius: 4px;
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: repeat(15, 34px);
+  gap: 1px;
 }
 
 .caro-board.is-loading {
@@ -518,9 +523,8 @@ button:disabled, select:disabled {
   }
 
   /* Responsive grid sizing: enforce minimum 24px cell touch target (WCAG 2.2 SC 2.5.8) */
-  .caro-board {
+  .board-row {
     grid-template-columns: repeat(15, max(min(calc((100vw - 44px) / 15), 32px), 24px));
-    grid-template-rows: repeat(15, max(min(calc((100vw - 44px) / 15), 32px), 24px));
   }
 
   .cell {

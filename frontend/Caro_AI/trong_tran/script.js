@@ -7,7 +7,8 @@ const s = {
   busy: false,
   lastMove: null,
   difficulty: ["easy","medium","hard"].includes(qs.get("difficulty")) ? qs.get("difficulty") : "medium",
-  retry: null
+  retry: null,
+  focusedCell: { row: 0, col: 0 }
 };
 
 const $ = id => document.getElementById(id);
@@ -80,13 +81,14 @@ function render() {
   turn.classList.toggle("hidden", !g);
   if (!g) {
     board.innerHTML = "";
+    board.tabIndex = -1;
+    board.removeAttribute("aria-readonly");
     resultPanel.classList.add("hidden");
     return;
   }
 
   current.textContent = g.current_player || "-";
   current.className = "tag tag-" + String(g.current_player || "x").toLowerCase();
-
   const resultLabels = { IN_PROGRESS: "", X_WON: "X thắng!", O_WON: "O thắng!", DRAW: "Hòa!" };
   status.textContent = resultLabels[g.status] ?? "Trạng thái không xác định";
   status.className = "game-alert " + String(g.status).toLowerCase();
@@ -102,31 +104,84 @@ function render() {
   if (difficulty) difficulty.value = s.difficulty;
 
   board.innerHTML = "";
-  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-    const b = document.createElement("button"), v = g.board?.[r]?.[c] || "EMPTY";
-    const p = v === "X" || v === "O" ? v : "";
-    const humanTurn = g.mode === "HUMAN_VS_HUMAN" || (g.mode === "HUMAN_VS_AI" && g.current_player === "X");
-    const isStar = ((r === 3 || r === 11) && (c === 3 || c === 11)) || (r === 7 && c === 7);
-    b.type = "button";
-    b.textContent = p;
-    b.setAttribute("aria-label", p ? `Hàng ${r+1}, cột ${c+1}: ${p}` : `Đánh hàng ${r+1}, cột ${c+1}`);
-    b.className = "cell " + (p ? p.toLowerCase() : "") + (isStar ? " star-point" : "") + (s.lastMove?.row === r && s.lastMove?.col === c ? " last-move" : "");
-    b.disabled = s.busy || g.status !== "IN_PROGRESS" || !!p || !humanTurn;
-    b.addEventListener("click", () => makeMove(r, c));
-    b.addEventListener("keydown", (e) => {
-      let targetR = r, targetC = c;
-      if (e.key === "ArrowUp") targetR = Math.max(0, r - 1);
-      else if (e.key === "ArrowDown") targetR = Math.min(N - 1, r + 1);
-      else if (e.key === "ArrowLeft") targetC = Math.max(0, c - 1);
-      else if (e.key === "ArrowRight") targetC = Math.min(N - 1, c + 1);
-      else return;
-      e.preventDefault();
-      board.children[targetR * N + targetC]?.focus();
-    });
-    board.appendChild(b);
+  let firstPlayableCell = null;
+  let preferredPlayableCell = null;
+
+  for (let r = 0; r < N; r++) {
+    const rowElement = document.createElement("div");
+    rowElement.className = "board-row";
+    rowElement.setAttribute("role", "row");
+    rowElement.setAttribute("aria-rowindex", String(r + 1));
+
+    for (let c = 0; c < N; c++) {
+      const cellElement = document.createElement("div");
+      cellElement.setAttribute("role", "gridcell");
+      cellElement.setAttribute("aria-colindex", String(c + 1));
+
+      const button = document.createElement("button");
+      const value = g.board?.[r]?.[c] || "EMPTY";
+      const player = value === "X" || value === "O" ? value : "";
+      const humanTurn = g.mode === "HUMAN_VS_HUMAN" || (g.mode === "HUMAN_VS_AI" && g.current_player === "X");
+      const isStar = ((r === 3 || r === 11) && (c === 3 || c === 11)) || (r === 7 && c === 7);
+
+      button.type = "button";
+      button.tabIndex = -1;
+      button.dataset.row = String(r);
+      button.dataset.col = String(c);
+      button.textContent = player;
+      button.setAttribute("aria-label", player ? `Hàng ${r+1}, cột ${c+1}: ${player}` : `Đánh hàng ${r+1}, cột ${c+1}`);
+      button.className = "cell " + (player ? player.toLowerCase() : "") + (isStar ? " star-point" : "") + (s.lastMove?.row === r && s.lastMove?.col === c ? " last-move" : "");
+      button.disabled = s.busy || g.status !== "IN_PROGRESS" || !!player || !humanTurn;
+
+      if (!button.disabled) {
+        if (!firstPlayableCell) firstPlayableCell = button;
+        if (s.focusedCell?.row === r && s.focusedCell?.col === c) preferredPlayableCell = button;
+      }
+
+      button.addEventListener("focus", () => { s.focusedCell = { row: r, col: c }; });
+      button.addEventListener("click", () => makeMove(r, c));
+      button.addEventListener("keydown", (event) => {
+        const directions = {
+          ArrowUp: [-1, 0], ArrowDown: [1, 0],
+          ArrowLeft: [0, -1], ArrowRight: [0, 1]
+        };
+        const direction = directions[event.key];
+        if (!direction) return;
+        event.preventDefault();
+
+        let targetRow = r + direction[0];
+        let targetCol = c + direction[1];
+        // Skip occupied and otherwise disabled squares until a playable square or edge.
+        while (targetRow >= 0 && targetRow < N && targetCol >= 0 && targetCol < N) {
+          const target = board.querySelector(`.cell[data-row="${targetRow}"][data-col="${targetCol}"]`);
+          if (target && !target.disabled) {
+            board.querySelectorAll(".cell").forEach(cell => { cell.tabIndex = -1; });
+            target.tabIndex = 0;
+            s.focusedCell = { row: targetRow, col: targetCol };
+            target.focus();
+            return;
+          }
+          targetRow += direction[0];
+          targetCol += direction[1];
+        }
+      });
+
+      cellElement.appendChild(button);
+      rowElement.appendChild(cellElement);
+    }
+    board.appendChild(rowElement);
+  }
+
+  const rovingCell = preferredPlayableCell || firstPlayableCell;
+  if (rovingCell) {
+    rovingCell.tabIndex = 0;
+    board.tabIndex = -1;
+    board.removeAttribute("aria-readonly");
+  } else {
+    board.tabIndex = 0;
+    board.setAttribute("aria-readonly", "true");
   }
 }
-
 async function createGame(gameMode = mode.value) {
   if (s.busy) return;
   setError();
