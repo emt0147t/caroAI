@@ -64,7 +64,7 @@ The benchmark used one API worker and disposable PostgreSQL 15.19. It does not e
 
 Detailed Phase C report: [PHASE_C_BENCHMARK_REPORT.md](https://github.com/emt0147t/caroAI/blob/feat/phase-c-ai-observability-qa-20261106/reports/benchmark-phase-c/PHASE_C_BENCHMARK_REPORT.md).
 
-Phase C source branch: `feat/phase-c-ai-observability-qa-20261106`; tested source SHA: `8ca52e0ed4a5a2ba4546f94978dcb0c1fb06339f`. The branch is not merged into `main` and is not deployed. Its production PvP/PvAI QA runner remains unexecuted against the live site.
+Phase C source branch: `feat/phase-c-ai-observability-qa-20261106`; tested runtime source SHA: `8ca52e0ed4a5a2ba4546f94978dcb0c1fb06339f`. Phase C [PR #60](https://github.com/emt0147t/caroAI/pull/60) merged into `develop` at `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0`; it is not promoted to `main` and is not deployed. The production PvP/PvAI QA runner has not been executed against the live site; its real-PostgreSQL integration test is in [PR #62](https://github.com/emt0147t/caroAI/pull/62).
 
 **Performance objective:** 2,000 ms remains a proposed engineering reference, not an adopted SLO. Do not present hosted-runner numbers as a production guarantee.
 
