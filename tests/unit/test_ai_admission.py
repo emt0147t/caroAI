@@ -33,7 +33,6 @@ def test_zero_limit_disables_admission_guard():
             assert True
 
 
-
 def test_impossible_guard_respects_bounded_queue_wait():
     guard = ImpossibleAdmissionGuard(max_concurrency=1, queue_wait_ms=1)
 
