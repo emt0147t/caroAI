@@ -69,9 +69,17 @@ jobs:
           python --version
           python -m pip freeze
 
-      - name: Run controlled API / PostgreSQL concurrency smoke matrix
+      - name: Run controlled API / PostgreSQL concurrency percentile matrix
         run: |
-          python scripts/benchmark_api_db_phase_b.py             --database-url "$DATABASE_URL"             --smoke-only             --timeout-seconds 120             --monitor-interval-ms 10             --output-dir "$OUTPUT_DIR"
+          python scripts/benchmark_api_db_phase_b.py \
+            --database-url "$DATABASE_URL" \
+            --samples 30 \
+            --warmup 3 \
+            --concurrency 1,2 \
+            --difficulties easy,medium,hard,impossible \
+            --timeout-seconds 120 \
+            --monitor-interval-ms 10 \
+            --output-dir "$OUTPUT_DIR"
 
       - name: Validate raw API, server, and PostgreSQL evidence
         run: |
