@@ -55,11 +55,17 @@ def test_qa_run_can_create_read_and_clean_only_its_own_games():
 
 
 def test_qa_routes_reject_missing_or_invalid_run_capability():
-    with TestClient(app) as client:
+    app.dependency_overrides[get_game_service] = lambda: GameService(
+        InMemoryGameRepository()
+    )
+    try:
+        with TestClient(app) as client:
         missing = client.post("/api/qa/games", json={"mode": "HUMAN_VS_HUMAN"})
-        invalid = client.delete(
-            "/api/qa/runs", headers={"X-CaroAI-QA-Run-ID": "not-a-run-id"}
-        )
+            invalid = client.delete(
+                "/api/qa/runs", headers={"X-CaroAI-QA-Run-ID": "not-a-run-id"}
+            )
+    finally:
+        app.dependency_overrides.pop(get_game_service, None)
 
     assert missing.status_code == 422
     assert invalid.status_code == 422
