@@ -424,7 +424,6 @@ def test_draw_status_and_all_moves_persist_across_sessions(database):
         assert move_count == size * size
 
 
-
 def test_qa_cleanup_deletes_only_tagged_game_and_all_dependents(database):
     _engine, session_factory = database
     qa_run_id = "a" * 32
