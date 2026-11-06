@@ -3,6 +3,7 @@ import pytest
 from app.db.repository import InMemoryGameRepository
 from app.domain.game_rules import InvalidMoveError
 from app.domain.game_state import GameMode, GameStatus, Player
+from app.services import game_service as game_service_module
 from app.services.game_service import (
     GameNotFoundError,
     GameService,
@@ -67,7 +68,6 @@ def test_service_keeps_games_isolated():
     assert service.get_game(first_id).board[3][4] == "X"
     assert service.get_game(second_id).board[3][4] == "EMPTY"
     assert service.get_game(second_id).move_count == 0
-
 
 
 def test_ai_search_runs_outside_write_transaction_and_rejects_stale_snapshot(
