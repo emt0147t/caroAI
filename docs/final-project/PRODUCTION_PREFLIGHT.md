@@ -47,21 +47,21 @@ The release workflow completed successfully and Render confirmed the exact commi
 
 | Parameter | Current Audited Value | Status |
 |---|---|---|
-| **Current Branch** | `develop` | Aligned with `origin/develop` |
+| **Current Branch** | `main` / `develop` | Synchronized at `42ee035ab42cd4c0bc934699f4d5433ff4b12a83` (0 ahead / 0 behind) |
 | **Audit Evidence Baseline SHA** | `938a17408078ca58c9bec6bf42eec09758be6165` | Preserved historical audit metrics baseline |
 | **Historical Develop Snapshot** | `2a46000b455f9b9779fd7289c6b22ae080aaa44c` | Pre-hardening develop snapshot (CI Run #41502411622) |
-| **Latest CI-Verified Application Baseline Before Documentation Refresh** | `7f7422123654fa6f6293cde3d15c2a6057bc6b92` | Verified by PR CI Run #41570710412; this refresh changes documentation only |
-| **Documentation Refresh Scope** | `PRODUCTION_PREFLIGHT.md` and `FINAL_ACCEPTANCE_REPORT.md` | No application source, tests, migrations, Docker configuration, or workflows changed |
-| **Main / Develop Relationship** | `develop` was 392 commits ahead, 0 behind `main` at pre-refresh SHA `7f74221` | Historical audit baseline `938a174` contains 339 non-merge and 49 merge commits; strictly linear ancestry |
+| **Current Production Application Baseline** | `42ee035ab42cd4c0bc934699f4d5433ff4b12a83` | Exact image SHA is live on Render; release run #42253079008 |
+| **Documentation Refresh Scope** | `README.md`, `FINAL_ACCEPTANCE_REPORT.md`, `PRODUCTION_PREFLIGHT.md`, `reports/ai-benchmark.md` | Documentation-only; no application source, tests, migrations, Docker configuration, or workflows changed |
+| **Main / Develop Relationship** | `main` and `develop` are identical | 0 ahead / 0 behind at `42ee035ab42cd4c0bc934699f4d5433ff4b12a83` |
 | **Backup Branch** | `backup/develop-before-pr49-sync-20261102` (`5326543`) | Preserved safely |
 | **Ruleset Configuration** | `CaroAI - Protect Develop` allows direct push; `Restrict deletions` and `Block force pushes` remain enabled | Routine engineering proceeds direct-to-develop; `main` requires PR + 1 approval |
 | **Baseline CI Verification** | Run [#41475666768](https://github.com/emt0147t/caroAI/actions/runs/41475666768) on commit `938a174` | All 6 test/build jobs succeeded; release skipped as expected |
 | **Historical PR CI Run** | Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) on commit `2a46000` | Historical PR #50 pre-hardening verification |
-| **Latest PR CI Verification Before Documentation Refresh** | Run [#41570710412](https://github.com/emt0147t/caroAI/actions/runs/41570710412) on commit `7f74221` | All 6 test/build jobs succeeded; release skipped intentionally |
+| **Latest Production Release Verification** | Run [#42253079008](https://github.com/emt0147t/caroAI/actions/runs/42253079008) | Release passed; Render confirmed exact SHA image live and public GET smoke checks passed |
 | **Historical CI Verification** | Run [#41470234191](https://github.com/emt0147t/caroAI/actions/runs/41470234191) on commit `f796ef9` | Preflight baseline run preserved for historical audit |
 
 > [!NOTE]
-> The historical audit metrics baseline (`938a174`) is preserved for contributor and commit accounting. Subsequent maintenance commits (`a9e753b`, historical pre-hardening snapshot `2a46000`, post-hardening snapshot `caf9d92`, and CI-verified pre-refresh snapshot `7f74221`) are tracked separately. This report refresh changes only the two audit documents; the resulting branch head and its CI result are authoritative in [PR #50](https://github.com/emt0147t/caroAI/pull/50) and its Actions checks. The SHA in this note is deliberately a pre-refresh verification baseline, not a self-referential claim about the commit containing this report.
+> The `938a174` audit metrics baseline is retained only for historical contributor/commit accounting. The current source and production baseline is `42ee035`. PR #50 and its checks are historical promotion evidence; PR #58 is the current release integration PR and is merged. This document's detailed November 3 audit values must be interpreted as historical where they differ from section 0.
 
 ---
 
@@ -154,7 +154,7 @@ A final container filesystem inspection was performed against the locally built 
 
 ## 5. Render Web Service & Neon PostgreSQL Preflight
 
-### 5.1 Render Web Service (Bootstrap & Production)
+### 5.1 Render Web Service (historical bootstrap and current production)
 - **Bootstrap Service Status:** **LIVE & VERIFIED**
   - **Service ID:** `srv-dbkd2dflk1mc73fd2ukg`
   - **Public URL:** `https://caroai-bootstrap-a9e753b33198.onrender.com`
@@ -190,8 +190,8 @@ A final container filesystem inspection was performed against the locally built 
 
 ## 6. Production Read-Only Smoke Tests & Deployment Verification
 
-### 6.1 Verified Endpoints on Live Bootstrap Deployment
-The bootstrap service at `https://caroai-bootstrap-a9e753b33198.onrender.com` was verified across core routes:
+### 6.1 Verified Endpoints on Current Production Deployment
+The current commit-pinned production deployment at `https://caroai-bootstrap-a9e753b33198.onrender.com` was verified across core routes by release workflow #42253079008:
 
 | Target Endpoint | Description | Expected HTTP Status | Verification Status | Verification Focus |
 |---|---|---|---|---|
@@ -202,7 +202,7 @@ The bootstrap service at `https://caroai-bootstrap-a9e753b33198.onrender.com` wa
 | **`GET /api/history`** | History REST API | `200 OK` | **PASS (HTTP 200)** | REST API routing and JSON response serialization from Neon PostgreSQL. |
 | **`GET /tokens.css`** | Design tokens | `200 OK` | **PASS (HTTP 200)** | Static CSS stylesheet asset serving. |
 
-### 6.2 Verified Gameplay and Durability Tests
+### 6.2 Historical Live Gameplay and Durability Evidence (pre-current-release)
 - **PvP Game Lifecycle:** Verified creation, moves, and victory detection against live backend.
 - **PvAI Move Execution:** Verified Minimax AI calculation returning player O move.
 - **Production History Retrieval:** Verified game details and moves retrievable from Neon PostgreSQL via `/api/history`.
