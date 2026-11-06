@@ -165,7 +165,7 @@ def minimax(  # noqa: C901
         return (best_move, min_eval)
 
 
-def find_best_move(
+def find_best_move(  # noqa: C901
     board: List[List[int]],
     ai_player: int,
     depth: int = 2,
