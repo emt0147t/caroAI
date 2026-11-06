@@ -603,19 +603,19 @@ def build_summaries(records: list[dict[str, Any]], fixtures: list[dict[str, Any]
                 "p95_ms": nearest_rank_percentile(elapsed, 0.95),
                 "min_ms": min(elapsed) if elapsed else None,
                 "max_ms": max(elapsed) if elapsed else None,
-                "mean_nodes": statistics.mean([row["search_nodes"] for row in group]) if group else 0.0,
-                "mean_branching_factor": statistics.mean([row["average_branching_factor"] for row in group]) if group else 0.0,
+                "mean_nodes": statistics.mean([row.get("search_nodes", 0) for row in group]) if group else 0.0,
+                "mean_branching_factor": statistics.mean([row.get("average_branching_factor", 0) for row in group]) if group else 0.0,
                 "mean_alpha_beta_pruning_rate": (
                     statistics.mean(
-                        [row["alpha_beta_pruning_rate"] for row in group]
+                        [row.get("alpha_beta_pruning_rate", 0) for row in group]
                     ) if group else 0.0
                 ),
                 "mean_candidate_cap_pruning_rate": (
                     statistics.mean(
-                        [row["candidate_cap_pruning_rate"] for row in group]
+                        [row.get("candidate_cap_pruning_rate", 0) for row in group]
                     ) if group else 0.0
                 ),
-                "timeout_count": sum(bool(row["search_timed_out"]) for row in group),
+                "timeout_count": sum(bool(row.get("search_timed_out", False)) for row in group),
             })
 
     per_difficulty = []
@@ -649,23 +649,23 @@ def build_summaries(records: list[dict[str, Any]], fixtures: list[dict[str, Any]
             "p95_ms": p95,
             "min_ms": min(elapsed) if elapsed else None,
             "max_ms": max(elapsed) if elapsed else None,
-            "mean_nodes": statistics.mean([row["search_nodes"] for row in difficulty_rows]) if difficulty_rows else 0.0,
+            "mean_nodes": statistics.mean([row.get("search_nodes", 0) for row in difficulty_rows]) if difficulty_rows else 0.0,
             "mean_branching_factor": (
                 statistics.mean(
-                    [row["average_branching_factor"] for row in difficulty_rows]
+                    [row.get("average_branching_factor", 0) for row in difficulty_rows]
                 ) if difficulty_rows else 0.0
             ),
             "mean_alpha_beta_pruning_rate": (
                 statistics.mean(
-                    [row["alpha_beta_pruning_rate"] for row in difficulty_rows]
+                    [row.get("alpha_beta_pruning_rate", 0) for row in difficulty_rows]
                 ) if difficulty_rows else 0.0
             ),
             "mean_candidate_cap_pruning_rate": (
                 statistics.mean(
-                    [row["candidate_cap_pruning_rate"] for row in difficulty_rows]
+                    [row.get("candidate_cap_pruning_rate", 0) for row in difficulty_rows]
                 ) if difficulty_rows else 0.0
             ),
-            "timeout_count": sum(bool(row["search_timed_out"]) for row in difficulty_rows),
+            "timeout_count": sum(bool(row.get("search_timed_out", False)) for row in difficulty_rows),
             "proposed_slo_under_2000ms": p95 is not None and p95 <= PROPOSED_SLO_MS and not failures,
             "slo_acceptance": "PENDING_TEAM_CONFIRMATION",
         })
