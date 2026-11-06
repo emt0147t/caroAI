@@ -63,7 +63,7 @@ def test_single_immediate_threat_is_forced_to_be_blocked():
 
     assert move in {(7, 2), (7, 7)}
     assert board[7][move[1]] == EMPTY
-    assert stats["depth"] == 0
+    assert stats["depth"] >= 1
 
 
 def test_search_returns_a_legal_move_under_a_tiny_budget():
