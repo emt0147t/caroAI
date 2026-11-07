@@ -2,7 +2,7 @@
 
 **Ngày:** 07/11/2026 (Asia/Bangkok). **Trạng thái release: DRAFT; chưa merge/deploy.**
 
-**Source chạy thử:** `14abd856492f0ff2a5daf61968f8463aa3a39aae`. **Baseline production:** `b848a0e6a527b7ef3f1efa421971c356543fbc17`.
+**Source chạy thử ban đầu:** `14abd856492f0ff2a5daf61968f8463aa3a39aae`. Riêng hàng IMPOSSIBLE–baseline dùng lượt thay thế `2e9f869694953c2dcde75eb213cde79ab6da2574`; app/AI/harness giống byte, artifact và SHA được tách riêng ở mục 7. **Baseline production:** `b848a0e6a527b7ef3f1efa421971c356543fbc17`.
 
 ## 1. Audit và phạm vi đã triển khai
 
@@ -41,21 +41,21 @@ Mỗi nhóm đầu có 200 ván hoàn tất; IMPOSSIBLE–HARD ở 25 ms tăng l
 | HARD–MEDIUM | Mặc định | 166 / 0 / 34 | 83.0% | 77.2–87.6% | 76.9–87.4% |
 | IMPOSSIBLE–HARD | Mặc định | 121 / 1 / 78 | 60.5% | 53.6–67.0% | 53.8–65.4% |
 | HARD–baseline HARD | Mặc định | 132 / 0 / 68 | 66.0% | 59.2–72.2% | 61.5–72.5% |
-| IMPOSSIBLE–baseline IMPOSSIBLE | Mặc định | ĐANG CHẠY | — | — | — |
+| IMPOSSIBLE–baseline IMPOSSIBLE | Mặc định | 149 / 2 / 49 | 74.5% | 68.0–80.0% | 70.1–81.7% |
 | IMPOSSIBLE–reference greedy | Mặc định | 189 / 0 / 11 | 94.5% | 90.4–96.9% | 90.7–97.3% |
 | MEDIUM–EASY | 25 ms | 104 / 0 / 96 | 52.0% | 45.1–58.8% | 44.5–57.4% |
 | HARD–MEDIUM | 25 ms | 165 / 0 / 35 | 82.5% | 76.6–87.1% | 76.9–87.4% |
 | IMPOSSIBLE–HARD | 25 ms | 211 / 0 / 189 | 52.8% | 47.9–57.6% | 46.0–55.7% |
 
-Wilson tính trên chỉ báo thắng của từng ván; các ván đổi màu có tương quan. Bootstrap resample **các khai cuộc riêng biệt**, với score trung bình của từng opening cluster (thắng=1, hòa=0,5, thua=0); đây là estimand cân bằng theo opening, có thể khác tỷ lệ game gộp. CI là mô tả cho tập phân phối khai cuộc này, không phải xác suất thắng mọi người chơi.
+Wilson tính trên chỉ báo thắng của từng ván; các ván đổi màu có tương quan. Bootstrap resample **các khai cuộc riêng biệt**, với score trung bình của từng opening cluster (thắng=1; hòa=0.5; thua=0); đây là estimand cân bằng theo opening, có thể khác tỷ lệ game gộp. CI là mô tả cho tập phân phối khai cuộc này, không phải xác suất thắng mọi người chơi. Độ nhạy khi gộp cả đối xứng D4 nằm ở mục 9.
 
-Tỷ lệ thắng còn lệch theo màu: HARD–baseline HARD thắng 86/100 khi là X, 46/100 khi là O; IMPOSSIBLE–HARD lần lượt 81/100 và 40/100. Vì vậy phải giữ paired colors và cần đánh thử vai AI đi sau như production.
+Tỷ lệ thắng còn lệch theo màu: HARD–baseline HARD thắng 86/100 khi là X, 46/100 khi là O; IMPOSSIBLE–HARD lần lượt 81/100 và 40/100. IMPOSSIBLE–baseline ở lượt đủ 200 ván thắng 93/100 khi là X; khi là O thắng 56, hòa 2, thua 42. Vì vậy phải giữ paired colors và cần đánh thử vai AI đi sau như production.
 
 Đối thủ greedy có chính sách độc lập: oracle luật game cho win/block và đánh giá một ply; không dùng tactical bitboard/TT của candidate. Đây chưa phải một engine Gomoku công bố mạnh. Bằng chứng không chỉ dựa trên self-play: có baseline executable và reference riêng.
 
 **25 ms không phải cấu hình production.** IMPOSSIBLE–HARD ở 400 ván vẫn có CI cắt 50%; không kết luận mức cao nhất mạnh hơn trong stress budget này. Các counter missed immediate win/unique forced block của những nhóm đã hoàn tất đều bằng 0; điều đó không chứng minh không bỏ lỡ mọi chuỗi thắng sâu.
 
-Replay độc lập hiện xác minh **1,800 ván / 44,660 nước AI đã ghi**, 0 sai lệch luật, terminal state, winner hay score. Chạy lại bằng [replay_artifacts.py](replay_artifacts.py) với các ZIP ID trong manifest.
+Replay độc lập xác minh lượt đầu **1.800 ván / 44.660 nước AI đã ghi**, lượt thay thế **2.000 ván / 49.334 nước AI**: tổng **3.800 ván / 93.994 nước AI**, 0 sai lệch luật, terminal state, winner hay score. Đây là số lần thực thi ván, không phải 3.800 khai cuộc độc lập. Chạy lại bằng [replay_artifacts.py](replay_artifacts.py) với từng manifest và các ZIP ID tương ứng; 94 ván của lượt bị hủy được loại hoàn toàn.
 
 ## 4. Performance và stability
 
@@ -90,12 +90,12 @@ API c=8 cho thấy engine có thể vượt clock 700 ms do tranh chấp schedul
 | M0 audit/evaluation | [#68](https://github.com/emt0147t/caroAI/pull/68) | PASS cho hạ tầng | Corpus ban đầu, không phải chứng minh mọi chiến thuật |
 | M1 core | [#69](https://github.com/emt0147t/caroAI/pull/69) | PASS theo regression hiện có | Quiet long-range moves vẫn selective; proof không phải VCT/perfect play đầy đủ |
 | M2 integration | [#70](https://github.com/emt0147t/caroAI/pull/70) | PASS correctness/compatibility CI | Chưa merge, chưa deploy |
-| M3 strength/performance | #70 + artifacts | PARTIAL | Chờ IMPOSSIBLE–baseline; stress 25 ms progression chưa phân biệt được |
+| M3 strength/performance | #70 + artifacts | PARTIAL | Đủ 200 ván cho mọi cặp mặc định; stress 25 ms progression chưa ổn định; giới hạn đối thủ/khai cuộc |
 | M4 release | Chưa thực hiện | BLOCKED | Review người thật, đánh thử, xác nhận capacity/SLO, và cho phép rõ ràng trước merge/deploy |
 
-- [CaroAI CI #42367773080](https://github.com/emt0147t/caroAI/actions/runs/42367773080) trên head `ed51afd8`: Python/lint, PostgreSQL acceptance, persistence, frontend regression, secret scan và Docker build PASS; release job skipped.
-- [Browser E2E #42367773121](https://github.com/emt0147t/caroAI/actions/runs/42367773121) trên head `ed51afd8`: PASS, gồm visual regression.
-- [Competitive evidence ban đầu #42363497808](https://github.com/emt0147t/caroAI/actions/runs/42363497808): 8 nhóm hoàn tất, nhóm cuối bị hủy ở 94 ván và không được tính; lượt thay thế [#42365889564](https://github.com/emt0147t/caroAI/actions/runs/42365889564) chạy cùng byte runtime. Không đồng nhất CI xanh với strength đã đạt.
+- [CaroAI CI #42370144633](https://github.com/emt0147t/caroAI/actions/runs/42370144633) trên head báo cáo `5c7aa15a`: Python/lint, PostgreSQL acceptance, persistence, frontend regression, secret scan và Docker build PASS; release job skipped.
+- [Browser E2E #42370144625](https://github.com/emt0147t/caroAI/actions/runs/42370144625) trên head báo cáo `5c7aa15a`: PASS, gồm visual regression. Thay đổi tiếp theo chỉ bổ sung báo cáo và script phân tích offline; runtime app/benchmarks giữ nguyên.
+- [Competitive evidence ban đầu #42363497808](https://github.com/emt0147t/caroAI/actions/runs/42363497808): 8 nhóm hoàn tất, nhóm cuối bị hủy ở 94 ván và không được tính; lượt thay thế [#42365889564](https://github.com/emt0147t/caroAI/actions/runs/42365889564) **PASS toàn bộ 11 jobs**, gồm 9 tournament hoàn tất, engine latency và HTTP/PostgreSQL. Không đồng nhất workflow xanh với mọi strength gate đã đạt.
 
 Tiêu chí quyết định tiếp theo: chỉ kết luận candidate mạnh hơn baseline/level trước khi kết quả mặc định và CI ủng hộ; tăng tập khai cuộc khi chưa phân biệt được, hoặc giữ PARTIAL. Không sửa nhãn để che việc chưa đạt. Chưa triển khai Replay/Hint/Multiplayer; validator ở đây chỉ dùng nhật ký thật để kiểm chứng tournament.
 
@@ -103,7 +103,7 @@ Tiêu chí quyết định tiếp theo: chỉ kết luận candidate mạnh hơn
 
 [artifact-manifest.json](artifact-manifest.json) lưu ID, source SHA, archive SHA-256 và link tải. Summary JSON được giữ cùng báo cáo; ZIP raw giữ đầy đủ nước đi, seeds, opening, runtime/package metadata và timing rows trong GitHub Actions (retention 30 ngày). Artifact digest đã đối chiếu sau tải. Không dùng benchmark Windows/Phase C cũ để tính speedup trên runner hiện tại.
 
-HARD có bằng chứng cải thiện ở nhóm mặc định đã đo. IMPOSSIBLE đã có bằng chứng hơn HARD ở preset mặc định; còn chờ so sánh với baseline cũ; chưa đề xuất merge hoặc tuyên bố engine bất bại/optimal.
+HARD có bằng chứng cải thiện ở nhóm mặc định đã đo. IMPOSSIBLE đã có bằng chứng hơn HARD ở preset mặc định; đã hoàn tất so sánh 200 ván với baseline cũ (xem CI trong bảng); chưa đề xuất merge hoặc tuyên bố engine bất bại/optimal.
 
 
 Workflow follow-up: cập nhật báo cáo đã hủy lượt IMPOSSIBLE–baseline ở source `14abd856` trước khi đủ 200 ván; artifact dở dang không được tính. Workflow được sửa bằng preflight so sánh runtime diff và concurrency theo từng job. Lượt đo chạy lại ở `2e9f869` có cùng byte của toàn bộ app/AI/harness với `14abd856`; chỉ report khác. Thay đổi tài liệu không hủy hoặc lặp lại benchmark. Workflow-only matrix/infrastructure edits có thể chạy chủ động bằng workflow_dispatch.
@@ -135,6 +135,7 @@ không cộng gộp thành mẫu khai cuộc độc lập mới hoặc chọn l�
 | hard-baseline-default | 200 | 132 / 0 / 68 | 134 / 0 / 66 | 60.2–73.1% | 61.5–73.1% |
 | hard-medium-default | 200 | 166 / 0 / 34 | 165 / 0 / 35 | 76.6–87.1% | 76.4–86.8% |
 | hard-medium-screen25 | 200 | 165 / 0 / 35 | 164 / 0 / 36 | 76.1–86.7% | 75.8–86.8% |
+| impossible-baseline-default | 200 | Chưa đủ mẫu | 149 / 2 / 49 | 68.0–80.0% | 70.1–81.7% |
 | impossible-greedy-default | 200 | 189 / 0 / 11 | 181 / 0 / 19 | 85.6–93.8% | 86.8–95.1% |
 | impossible-hard-default | 200 | 121 / 1 / 78 | 127 / 0 / 73 | 56.6–69.9% | 57.4–69.2% |
 | impossible-hard-screen25 | 400 | 211 / 0 / 189 | 182 / 0 / 218 | 40.7–50.4% | 42.4–52.0% |
@@ -176,3 +177,27 @@ chưa có đối thủ Gomoku công bố mạnh, VCT đầy đủ hoặc bằng 
 Production candidate latency và capacity trên Render chưa đo; production vẫn chạy
 baseline. Các giới hạn này giữ trạng thái PARTIAL/BLOCKED cho phát hành, dù regression
 và pipeline xanh. Replay/Hint/Multiplayer chưa được triển khai.
+
+## 9. Kiểm tra độ nhạy theo đối xứng khai cuộc
+
+Bootstrap định trước nhóm các lịch sử khai cuộc giống hệt nhau; một số nhóm còn
+tương đương sau D4. Phân tích **bổ sung sau chạy**, không thay kết quả định trước,
+gộp các bàn khai cuộc tương đương xoay/lật và bỏ phụ thuộc vào thứ tự đặt các quân
+cùng màu. Có 80 canonical board clusters ở bộ 200 ván và 155 ở bộ 400 ván.
+Đây vẫn là tập khai cuộc sinh có giới hạn, không phải mẫu đại diện người chơi.
+
+| Nhóm mặc định | CI bootstrap canonical 95% ban đầu | CI bootstrap canonical 95% lặp lại |
+|---|---:|---:|
+| hard-baseline-default | 62.4–74.5% | 63.0–75.4% |
+| hard-medium-default | 75.6–86.9% | 74.4–85.8% |
+| impossible-baseline-default | Không đủ mẫu | 71.1–82.8% |
+| impossible-greedy-default | 88.8–96.9% | 87.4–95.6% |
+| impossible-hard-default | 51.0–63.0% | 55.8–68.4% |
+| medium-easy-default | 64.4–76.6% | 64.4–76.6% |
+
+CI này ước lượng score có trọng số đều theo **canonical opening cluster**, khác
+score gộp theo ván và score đều theo exact-opening ở bảng chính. Kết quả không
+đổi kết luận stress 25 ms: IMPOSSIBLE–HARD vẫn cắt 50%; MEDIUM–EASY lặp lại vẫn
+thua rõ. Không xem các CI phụ là một thử nghiệm mới độc lập hoặc chứng minh global
+95% cho mọi difficulty. Script và dữ liệu: [opening_sensitivity.py](opening_sensitivity.py),
+[opening-sensitivity.json](opening-sensitivity.json).

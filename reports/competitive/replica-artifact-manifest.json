@@ -4,6 +4,17 @@
   "pooling": "Repeat of the same seed/opening set; do not pool as new independent openings.",
   "artifacts": [
     {
+      "id": 13572838955,
+      "archive_sha256": "589e83a612b8368815e8ec591f8f8279185eb9e9e68626d1e1aa3f8afb0b8dec",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "files": [
+        "impossible-baseline-default.json",
+        "impossible-baseline-default.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13572838955"
+    },
+    {
       "id": 13572550144,
       "archive_sha256": "036befd0402405b7789fb635b7dfb663569aeba23bbf4802467371b2b2d63822",
       "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
@@ -125,8 +136,8 @@
   "retention_days": 30,
   "independent_replay": {
     "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
-    "complete_games": 1800,
-    "legal_logged_moves": 42497,
+    "complete_games": 2000,
+    "legal_logged_moves": 49334,
     "failures": 0
   }
 }

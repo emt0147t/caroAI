@@ -11,6 +11,40 @@
   },
   "comparisons": [
     {
+      "comparison": "impossible-baseline-default",
+      "games_per_run": 200,
+      "original_wdl": null,
+      "replica_wdl": [
+        149,
+        2,
+        49
+      ],
+      "replica_win_rate_wilson95": [
+        0.6803707417954529,
+        0.8003950482796865
+      ],
+      "replica_score_opening_bootstrap95": [
+        0.7005494505494505,
+        0.8173076923076923
+      ],
+      "original_cpu": null,
+      "replica_cpu": "AMD EPYC 7763 64-Core Processor",
+      "python": "3.11.18",
+      "artifact_id": 13572838955,
+      "archive_sha256": "589e83a612b8368815e8ec591f8f8279185eb9e9e68626d1e1aa3f8afb0b8dec",
+      "artifact_url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13572838955",
+      "candidate_missed_win": {
+        "misses": 0,
+        "opportunities": 149,
+        "rate": 0.0
+      },
+      "candidate_missed_block": {
+        "misses": 0,
+        "opportunities": 683,
+        "rate": 0.0
+      }
+    },
+    {
       "comparison": "hard-baseline-default",
       "games_per_run": 200,
       "original_wdl": [
