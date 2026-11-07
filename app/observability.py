@@ -152,7 +152,7 @@ def record_ai_search(difficulty: str, result: dict[str, Any]) -> None:
     timed_out = bool(stats.get("timed_out", False))
     shortcut = stats.get("shortcut", "none")
     outcome = "timeout" if timed_out else (
-        "tactical_shortcut" if shortcut in {"immediate_win", "forced_block"}
+        "tactical_shortcut" if shortcut in {"immediate_win", "forced_block", "forced_loss", "proven_fork", "proven_four_chain"}
         else "search"
     )
     AI_SEARCH_DURATION.labels(key, outcome).observe(elapsed)

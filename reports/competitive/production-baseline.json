@@ -1,0 +1,22 @@
+{
+  "observed_at_utc": "2026-11-07T09:57:33Z",
+  "source_sha": "b848a0e6a527b7ef3f1efa421971c356543fbc17",
+  "project_id": "prj-dbkcvvflk1mc73fcrlh0",
+  "service_id": "srv-dbkd2dflk1mc73fd2ukg",
+  "live_deploy_id": "dep-dbnf2js9v7es73cjpic0",
+  "image": "docker.io/emt0147/caroai:b848a0e6a527b7ef3f1efa421971c356543fbc17",
+  "image_digest": "sha256:a3356edd1f741d4970b0b08f840d968b5340aa45dfc3771adc0493713102a799",
+  "deploy_status": "live",
+  "public_read_only_checks": {"/health": 200, "/ready": 200, "/api/qa/games": 404},
+  "latest_sample": {"cpu_usage_cores": 0.0021785367, "memory_usage_bytes": 72171520},
+  "http_latency_metrics": "EMPTY: no production latency conclusion",
+  "production_mutations_performed": false,
+  "historical_phase_c_artifact": {
+    "workflow_run_id": 42267880120,
+    "artifact_id": 13528925942,
+    "archive_sha256_verified": "5ccad1e687a6968feeba2a441329d52e66c8bc2ca2ea11e5901a2da14d109a29",
+    "source_sha": "8ca52e0ed4a5a2ba4546f94978dcb0c1fb06339f",
+    "raw_rows": 1452,
+    "scope": "Historical; not compared numerically with current host to claim speedup"
+  }
+}

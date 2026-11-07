@@ -1,7 +1,7 @@
 """Validate specifications and experiment accounting without candidate code."""
 import pytest
 
-from benchmarks.competitive.corpus import base_cases, cases, fork_moves, wins
+from benchmarks.competitive.corpus import base_cases, cases, continuous_four_moves, fork_moves, wins
 from benchmarks.competitive.metrics import paired_interval, percentile, wilson
 from benchmarks.competitive.tournament import opening
 
@@ -17,6 +17,12 @@ def test_tactical_specifications_against_independent_domain_oracle(case):
     elif case.outcome == 'create_fork':
         assert not wins(board, case.player)
         assert fork_moves(board, case.player) == set(case.expected_moves)
+    elif case.outcome.startswith('vcf_'):
+        assert continuous_four_moves(board, case.player, int(case.outcome[-1])) == set(case.expected_moves)
+    elif case.outcome == 'forced_loss':
+        assert not wins(board, case.player)
+        assert wins(board, 3 - case.player) == set(case.expected_moves)
+        assert len(case.expected_moves) >= 2
     else:
         assert fork_moves(board, 3 - case.player)
         for row, col in case.expected_moves:
@@ -27,7 +33,7 @@ def test_tactical_specifications_against_independent_domain_oracle(case):
 
 def test_symmetry_and_color_expansion_keeps_explicit_empty_answer_sets():
     expanded = list(cases())
-    assert len(expanded) == 192
+    assert len(expanded) == 240
     assert len({c.name for c in expanded}) == len(expanded)
     for case in expanded:
         board = case.board()
@@ -46,5 +52,5 @@ def test_intervals_cover_known_counts_and_pairing():
 
 def test_opening_protocol_is_seeded_and_varied():
     assert opening(77) == opening(77)
-    assert len({tuple(opening(seed)) for seed in range(100)}) >= 20
-    assert all(len(set(opening(seed))) == 2 for seed in range(100))
+    assert len({tuple(opening(seed)) for seed in range(100)}) >= 80
+    assert all(len(set(opening(seed))) == len(opening(seed)) for seed in range(100))

@@ -8,20 +8,52 @@ from app.ai.search_stats import SearchStats
 from benchmarks.competitive.corpus import wins
 
 BASELINE_SHA = 'b848a0e6a527b7ef3f1efa421971c356543fbc17'
+class TimedStats(SearchStats):
+    search_started = None
+
+    def start_budget(self, time_budget_ms):
+        self.search_started = perf_counter()
+        super().start_budget(time_budget_ms)
+
+
 BASELINE_CONFIG = {'EASY': (1, 6), 'MEDIUM': (2, 10), 'HARD': (3, 14), 'IMPOSSIBLE': (4, 20)}
+
+
+def verify_baseline():
+    """Fail closed if an experiment would silently use a modified baseline."""
+    import hashlib
+    from pathlib import Path
+    import subprocess
+    root = Path(__file__).resolve().parents[2]
+    checksums = {}
+    for name in ('minimax.py', 'evaluator.py', 'move_generator.py'):
+        path = 'app/ai/' + name
+        expected = subprocess.check_output(['git', 'show', BASELINE_SHA + ':' + path], cwd=root)
+        actual = (root / path).read_bytes()
+        if actual != expected:
+            raise ValueError('baseline source mismatch: ' + path)
+        checksums[path] = hashlib.sha256(actual).hexdigest()
+    return checksums
 
 
 def baseline(board, player, difficulty, budget_ms, seed=0):
     """Exact baseline minimax policy; explicit evaluation budget may override default."""
     started = perf_counter()
-    stats = SearchStats()
+    stats = TimedStats()
     depth, cap = BASELINE_CONFIG[difficulty]
     move, score = find_best_move(board, player, depth, cap, stats, budget_ms)
+    finished = perf_counter()
+    stats.elapsed_ms = (finished - started) * 1000
+    values = stats.to_dict()
+    values.update({'search_ms': (finished - stats.search_started) * 1000 if stats.search_started else 0.0,
+                   'fallback_used': stats.timed_out})
     return {'row': move[0], 'col': move[1], 'score': score,
-            'elapsed_ms': (perf_counter() - started) * 1000, 'search_stats': stats.to_dict()}
+            'elapsed_ms': stats.elapsed_ms, 'search_stats': values}
 
 
 def candidate(board, player, difficulty, budget_ms, seed=0):
+    if difficulty in ('EASY', 'MEDIUM'):
+        return baseline(board, player, difficulty, budget_ms, seed)
     from app.ai.competitive import choose_move, POLICIES
     return choose_move(board, player, POLICIES[difficulty], time_budget_ms=budget_ms)
 

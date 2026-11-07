@@ -1,0 +1,313 @@
+{
+  "scope": "Post-hoc sensitivity analysis; not new games or a new independent replication.",
+  "estimand": "Equal-weight canonical D4 board clusters, preserving stone colors and side to move; this differs from game-weighted score and exact-opening-weighted score.",
+  "limitations": "Does not make these seeded openings representative of human games or remove all strategic dependence between related opening families.",
+  "records": [
+    {
+      "comparison": "medium-easy-default",
+      "source_sha": "14abd856492f0ff2a5daf61968f8463aa3a39aae",
+      "workflow_run_id": 42363497808,
+      "artifact_id": 13570492231,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.7056250000000001,
+      "canonical_cluster_bootstrap95": [
+        0.6443749999999999,
+        0.76625
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.6373626373626373,
+        0.7527472527472527
+      ]
+    },
+    {
+      "comparison": "medium-easy-screen25",
+      "source_sha": "14abd856492f0ff2a5daf61968f8463aa3a39aae",
+      "workflow_run_id": 42363497808,
+      "artifact_id": 13570428803,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.495,
+      "canonical_cluster_bootstrap95": [
+        0.425,
+        0.5662499999999999
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.44505494505494503,
+        0.5741758241758241
+      ]
+    },
+    {
+      "comparison": "hard-medium-screen25",
+      "source_sha": "14abd856492f0ff2a5daf61968f8463aa3a39aae",
+      "workflow_run_id": 42363497808,
+      "artifact_id": 13570418913,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.81125,
+      "canonical_cluster_bootstrap95": [
+        0.74875,
+        0.8675
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.7692307692307693,
+        0.8736263736263736
+      ]
+    },
+    {
+      "comparison": "impossible-hard-screen25",
+      "source_sha": "14abd856492f0ff2a5daf61968f8463aa3a39aae",
+      "workflow_run_id": 42363497808,
+      "artifact_id": 13571290526,
+      "games": 400,
+      "exact_opening_clusters": 174,
+      "canonical_d4_board_clusters": 155,
+      "equal_canonical_cluster_score": 0.49193548387096775,
+      "canonical_cluster_bootstrap95": [
+        0.44193548387096776,
+        0.5441935483870968
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.45977011494252873,
+        0.5574712643678161
+      ]
+    },
+    {
+      "comparison": "hard-medium-default",
+      "source_sha": "14abd856492f0ff2a5daf61968f8463aa3a39aae",
+      "workflow_run_id": 42363497808,
+      "artifact_id": 13571136332,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.8125,
+      "canonical_cluster_bootstrap95": [
+        0.75625,
+        0.86875
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.7692307692307693,
+        0.8736263736263736
+      ]
+    },
+    {
+      "comparison": "hard-baseline-default",
+      "source_sha": "14abd856492f0ff2a5daf61968f8463aa3a39aae",
+      "workflow_run_id": 42363497808,
+      "artifact_id": 13570966554,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.6849999999999999,
+      "canonical_cluster_bootstrap95": [
+        0.62375,
+        0.745
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.6153846153846154,
+        0.7252747252747253
+      ]
+    },
+    {
+      "comparison": "impossible-greedy-default",
+      "source_sha": "14abd856492f0ff2a5daf61968f8463aa3a39aae",
+      "workflow_run_id": 42363497808,
+      "artifact_id": 13570552842,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.93125,
+      "canonical_cluster_bootstrap95": [
+        0.8875,
+        0.96875
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.9065934065934066,
+        0.9725274725274725
+      ]
+    },
+    {
+      "comparison": "impossible-hard-default",
+      "source_sha": "14abd856492f0ff2a5daf61968f8463aa3a39aae",
+      "workflow_run_id": 42363497808,
+      "artifact_id": 13571178447,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.569375,
+      "canonical_cluster_bootstrap95": [
+        0.51,
+        0.63
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.5384615384615384,
+        0.6538461538461539
+      ]
+    },
+    {
+      "comparison": "impossible-baseline-default",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "artifact_id": 13572838955,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.77,
+      "canonical_cluster_bootstrap95": [
+        0.7112499999999999,
+        0.8275
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.7005494505494505,
+        0.8173076923076923
+      ]
+    },
+    {
+      "comparison": "hard-baseline-default",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "artifact_id": 13572550144,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.6925,
+      "canonical_cluster_bootstrap95": [
+        0.63,
+        0.7537499999999999
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.6153846153846154,
+        0.7307692307692307
+      ]
+    },
+    {
+      "comparison": "hard-medium-default",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "artifact_id": 13572310565,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.8012499999999999,
+      "canonical_cluster_bootstrap95": [
+        0.74375,
+        0.8574999999999999
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.7637362637362637,
+        0.8681318681318682
+      ]
+    },
+    {
+      "comparison": "hard-medium-screen25",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "artifact_id": 13571965537,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.795,
+      "canonical_cluster_bootstrap95": [
+        0.73125,
+        0.85375
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.7582417582417582,
+        0.8681318681318682
+      ]
+    },
+    {
+      "comparison": "impossible-hard-default",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "artifact_id": 13571928386,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.61875,
+      "canonical_cluster_bootstrap95": [
+        0.5575,
+        0.6837500000000001
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.5741758241758241,
+        0.6923076923076923
+      ]
+    },
+    {
+      "comparison": "impossible-hard-screen25",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "artifact_id": 13571920975,
+      "games": 400,
+      "exact_opening_clusters": 174,
+      "canonical_d4_board_clusters": 155,
+      "equal_canonical_cluster_score": 0.47967741935483865,
+      "canonical_cluster_bootstrap95": [
+        0.43000000000000005,
+        0.5316129032258065
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.4238505747126437,
+        0.5201149425287356
+      ]
+    },
+    {
+      "comparison": "impossible-greedy-default",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "artifact_id": 13571897296,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.91625,
+      "canonical_cluster_bootstrap95": [
+        0.87375,
+        0.95625
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.8681318681318682,
+        0.9505494505494505
+      ]
+    },
+    {
+      "comparison": "medium-easy-default",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "artifact_id": 13571294817,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.7056250000000001,
+      "canonical_cluster_bootstrap95": [
+        0.6443749999999999,
+        0.76625
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.6373626373626373,
+        0.7527472527472527
+      ]
+    },
+    {
+      "comparison": "medium-easy-screen25",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "artifact_id": 13570983608,
+      "games": 200,
+      "exact_opening_clusters": 91,
+      "canonical_d4_board_clusters": 80,
+      "equal_canonical_cluster_score": 0.058750000000000004,
+      "canonical_cluster_bootstrap95": [
+        0.026250000000000002,
+        0.095
+      ],
+      "prespecified_exact_cluster_bootstrap95": [
+        0.027472527472527472,
+        0.09340659340659341
+      ]
+    }
+  ]
+}

@@ -7,8 +7,8 @@ Từ engine.py (source thực tế):
     DIFFICULTY_CONFIG = {
         "EASY":   {"depth": 1, "candidate_limit": 6},
         "MEDIUM": {"depth": 2, "candidate_limit": 10},
-        "HARD":   {"depth": 3, "candidate_limit": 14},
-        "IMPOSSIBLE": {"depth": 4, "candidate_limit": 20},
+        "HARD":   {"depth": 4, "candidate_limit": 8},
+        "IMPOSSIBLE": {"depth": 6, "candidate_limit": 12},
     }
     diff_key = difficulty.upper()
     config = DIFFICULTY_CONFIG.get(diff_key, DIFFICULTY_CONFIG["MEDIUM"])
@@ -50,7 +50,7 @@ def test_difficulty_config_has_hard():
 
 
 def test_difficulty_config_no_extra_keys():
-    """Contract chỉ định nghĩa 3 mức độ."""
+    """Contract chỉ định nghĩa bốn mức độ."""
     assert set(DIFFICULTY_CONFIG.keys()) == {"EASY", "MEDIUM", "HARD", "IMPOSSIBLE"}
 
 

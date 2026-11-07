@@ -1,0 +1,14 @@
+{
+  "source_sha": "14abd856492f0ff2a5daf61968f8463aa3a39aae",
+  "workflow_run_id": 42363497808,
+  "artifact_id": 13571965303,
+  "archive_sha256": "c3d373c4ac12e24e4c2fbe91bb8199a70b8ece70e664e25430c37d36e5bf8059",
+  "status": "INCOMPLETE_NOT_ACCEPTED",
+  "completed_game_records": 94,
+  "required_game_records": 200,
+  "reason": "Report-only PR update cancelled the old global-concurrency workflow.",
+  "replacement_workflow_run_id": 42365889564,
+  "replacement_source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+  "runtime_bytes_identical_to_original": true,
+  "included_in_accepted_tournament_counts": false
+}

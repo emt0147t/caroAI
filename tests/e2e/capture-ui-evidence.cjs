@@ -1,6 +1,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { chromium } = require('@playwright/test');
+const { prepareFont, evidencePage, captureStable } = require('./stable-fonts.cjs');
 
 async function disableMotion(page) {
   await page.addStyleTag({
@@ -40,13 +41,14 @@ async function stabilizeHistoryPage(page) {
   const outputDir = path.join('evidence', label);
   await fs.mkdir(outputDir, { recursive: true });
 
+  const font = await prepareFont(outputDir);
   const browser = await chromium.launch({ headless: true });
   try {
     // 1. Mobile 390x844 Light Screenshots
-    const mobilePage = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+    const mobilePage = await evidencePage(browser, { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 }, font);
     await mobilePage.goto(baseUrl + '/', { waitUntil: 'networkidle' });
     await stabilizeStartPage(mobilePage);
-    await mobilePage.screenshot({ path: path.join(outputDir, 'start-390x844.png'), fullPage: true });
+    await captureStable(mobilePage, { path: path.join(outputDir, 'start-390x844.png'), fullPage: true });
 
     const created = await mobilePage.request.post(baseUrl + '/api/games', {
       data: { mode: 'HUMAN_VS_HUMAN' }
@@ -64,7 +66,7 @@ async function stabilizeHistoryPage(page) {
     });
     await disableMotion(mobilePage);
     await mobilePage.locator('#board .cell').first().waitFor({ state: 'visible' });
-    await mobilePage.screenshot({ path: path.join(outputDir, 'game-390x844.png'), fullPage: true });
+    await captureStable(mobilePage, { path: path.join(outputDir, 'game-390x844.png'), fullPage: true });
 
     await mobilePage.goto(baseUrl + '/history.html', { waitUntil: 'networkidle' });
     await mobilePage.waitForFunction(() => {
@@ -72,20 +74,20 @@ async function stabilizeHistoryPage(page) {
       return !state || !state.textContent.includes('Đang tải');
     });
     await stabilizeHistoryPage(mobilePage);
-    await mobilePage.screenshot({ path: path.join(outputDir, 'history-390x844.png'), fullPage: true });
+    await captureStable(mobilePage, { path: path.join(outputDir, 'history-390x844.png'), fullPage: true });
 
     // 2. Desktop 1280x800 Light Screenshots
-    const desktopPage = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
+    const desktopPage = await evidencePage(browser, { viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 }, font);
     await desktopPage.goto(baseUrl + '/', { waitUntil: 'networkidle' });
     await stabilizeStartPage(desktopPage);
-    await desktopPage.screenshot({ path: path.join(outputDir, 'start-1280x800.png'), fullPage: true });
+    await captureStable(desktopPage, { path: path.join(outputDir, 'start-1280x800.png'), fullPage: true });
 
     await desktopPage.goto(baseUrl + '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id), {
       waitUntil: 'networkidle'
     });
     await disableMotion(desktopPage);
     await desktopPage.locator('#board .cell').first().waitFor({ state: 'visible' });
-    await desktopPage.screenshot({ path: path.join(outputDir, 'game-1280x800.png'), fullPage: true });
+    await captureStable(desktopPage, { path: path.join(outputDir, 'game-1280x800.png'), fullPage: true });
 
     await desktopPage.goto(baseUrl + '/history.html', { waitUntil: 'networkidle' });
     await desktopPage.waitForFunction(() => {
@@ -93,7 +95,7 @@ async function stabilizeHistoryPage(page) {
       return !state || !state.textContent.includes('Đang tải');
     });
     await stabilizeHistoryPage(desktopPage);
-    await desktopPage.screenshot({ path: path.join(outputDir, 'history-1280x800.png'), fullPage: true });
+    await captureStable(desktopPage, { path: path.join(outputDir, 'history-1280x800.png'), fullPage: true });
 
     // 3. Check Dark Theme Support
     await desktopPage.goto(baseUrl + '/', { waitUntil: 'networkidle' });
@@ -109,14 +111,14 @@ async function stabilizeHistoryPage(page) {
         localStorage.setItem('caroai_theme', 'dark');
       });
       await stabilizeStartPage(desktopPage);
-      await desktopPage.screenshot({ path: path.join(outputDir, 'dark-start-1280x800.png'), fullPage: true });
+      await captureStable(desktopPage, { path: path.join(outputDir, 'dark-start-1280x800.png'), fullPage: true });
 
       await desktopPage.goto(baseUrl + '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id), {
         waitUntil: 'networkidle'
       });
       await disableMotion(desktopPage);
       await desktopPage.locator('#board .cell').first().waitFor({ state: 'visible' });
-      await desktopPage.screenshot({ path: path.join(outputDir, 'dark-game-1280x800.png'), fullPage: true });
+      await captureStable(desktopPage, { path: path.join(outputDir, 'dark-game-1280x800.png'), fullPage: true });
 
       await desktopPage.goto(baseUrl + '/history.html', { waitUntil: 'networkidle' });
       await desktopPage.waitForFunction(() => {
@@ -124,10 +126,10 @@ async function stabilizeHistoryPage(page) {
         return !state || !state.textContent.includes('Đang tải');
       });
       await stabilizeHistoryPage(desktopPage);
-      await desktopPage.screenshot({ path: path.join(outputDir, 'dark-history-1280x800.png'), fullPage: true });
+      await captureStable(desktopPage, { path: path.join(outputDir, 'dark-history-1280x800.png'), fullPage: true });
 
       // 4. Mobile 390x844 Dark Screenshots (Task A1-05 requirement)
-      const mobileDarkPage = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+      const mobileDarkPage = await evidencePage(browser, { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 }, font);
       await mobileDarkPage.goto(baseUrl + '/', { waitUntil: 'networkidle' });
       await disableMotion(mobileDarkPage);
       await mobileDarkPage.evaluate(() => {
@@ -135,14 +137,14 @@ async function stabilizeHistoryPage(page) {
         localStorage.setItem('caroai_theme', 'dark');
       });
       await stabilizeStartPage(mobileDarkPage);
-      await mobileDarkPage.screenshot({ path: path.join(outputDir, 'dark-start-390x844.png'), fullPage: true });
+      await captureStable(mobileDarkPage, { path: path.join(outputDir, 'dark-start-390x844.png'), fullPage: true });
 
       await mobileDarkPage.goto(baseUrl + '/trong_tran/index.html?game_id=' + encodeURIComponent(game.id), {
         waitUntil: 'networkidle'
       });
       await disableMotion(mobileDarkPage);
       await mobileDarkPage.locator('#board .cell').first().waitFor({ state: 'visible' });
-      await mobileDarkPage.screenshot({ path: path.join(outputDir, 'dark-game-390x844.png'), fullPage: true });
+      await captureStable(mobileDarkPage, { path: path.join(outputDir, 'dark-game-390x844.png'), fullPage: true });
 
       await mobileDarkPage.goto(baseUrl + '/history.html', { waitUntil: 'networkidle' });
       await mobileDarkPage.waitForFunction(() => {
@@ -150,7 +152,7 @@ async function stabilizeHistoryPage(page) {
         return !state || !state.textContent.includes('Đang tải');
       });
       await stabilizeHistoryPage(mobileDarkPage);
-      await mobileDarkPage.screenshot({ path: path.join(outputDir, 'dark-history-390x844.png'), fullPage: true });
+      await captureStable(mobileDarkPage, { path: path.join(outputDir, 'dark-history-390x844.png'), fullPage: true });
     } else {
       process.stdout.write('Skipping dark screenshots for ' + label + ': theme API is unavailable.\n');
     }

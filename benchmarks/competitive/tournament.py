@@ -27,10 +27,18 @@ def opening(seed):
     styles = [((7, 7), (7, 8)), ((7, 7), (6, 6)), ((3, 3), (3, 4)),
               ((7, 7), (5, 7)), ((11, 4), (10, 5))]
     result = list(styles[seed % len(styles)])
-    # Different seeds perturb the orientation and a legal third move.
+    # Multiple opening lengths avoid treating repeated two-stone boards as
+    # independent evidence of strength.
     rotation, reflect = rng.randrange(4), rng.randrange(2)
     from benchmarks.competitive.corpus import transform_cell
-    return [transform_cell(m, rotation, reflect) for m in result]
+    result = [transform_cell(m, rotation, reflect) for m in result]
+    target = (2, 4, 6, 8)[seed % 4]
+    while len(result) < target:
+        nearby = sorted({(r + dr, c + dc) for r, c in result
+                         for dr in range(-2, 3) for dc in range(-2, 3)
+                         if 0 <= r + dr < 15 and 0 <= c + dc < 15} - set(result))
+        result.append(rng.choice(nearby))
+    return result
 
 
 def play(first, second, seed, budget_ms, levels):
@@ -71,10 +79,12 @@ def play(first, second, seed, budget_ms, levels):
 def run(args):
     if args.games < 200 or args.games % 2:
         raise ValueError('initial comparison requires an even number of at least 200 games')
+    from benchmarks.competitive.adapters import verify_baseline
+    baseline_hashes = verify_baseline()
     candidate, opponent = load_adapter(args.candidate), load_adapter(args.opponent)
     path = Path(args.output)
     path.parent.mkdir(parents=True, exist_ok=True)
-    results, pair_scores = [], []
+    results, pair_scores, clusters = [], [], {}
     with path.with_suffix('.jsonl').open('w') as raw:
         for pair in range(args.games // 2):
             scores = []
@@ -90,15 +100,24 @@ def run(args):
                 raw.write(json.dumps(result, separators=(',', ':')) + '\n')
                 raw.flush()
             pair_scores.append(sum(scores) / 2)
+            cluster = tuple(map(tuple, result['opening']))
+            clusters.setdefault(cluster, []).append(sum(scores) / 2)
             if (pair + 1) % 10 == 0:
                 print(f'{args.candidate_level} vs {args.opponent_level}: {2 * (pair + 1)}/{args.games}', flush=True)
     won = sum(r['candidate_score'] == 1 for r in results)
     drawn = sum(r['candidate_score'] == .5 for r in results)
     summary = {'protocol': vars(args), 'environment': provenance(Path(__file__).resolve().parents[2]),
+               'baseline_files_sha256': baseline_hashes,
                'games': len(results), 'wins': won, 'draws': drawn, 'losses': len(results) - won - drawn,
                'score_rate': (won + .5 * drawn) / len(results), 'win_rate_wilson95': wilson(won, len(results)),
-               'score_rate_paired_bootstrap95': paired_interval(pair_scores),
-               'note': 'Screening at specified per-move budget; not default-budget or production strength evidence.'}
+               'score_rate_paired_bootstrap95': paired_interval([sum(v) / len(v) for v in clusters.values()]),
+               'unique_opening_clusters': len(clusters),
+               'opening_sweep_wilson95': wilson(sum(all(s == 1 for s in v) for v in clusters.values()), len(clusters)),
+               'uncertainty_note': 'Bootstrap resamples unique opening clusters. All-equal scores give a degenerate interval; use sweep Wilson interval and more diverse opponents too.',
+               'baseline_source_sha': 'b848a0e6a527b7ef3f1efa421971c356543fbc17',
+               'note': ('Default-policy tournament on this runtime; not production strength evidence.'
+                        if args.budget_ms is None else
+                        'Screening at specified per-move budget; not default-budget or production strength evidence.')}
     for kind in ('win', 'block'):
         for who in ('candidate', 'opponent'):
             idx = lambda r: r['candidate_color'] - 1 if who == 'candidate' else 2 - r['candidate_color']
@@ -118,7 +137,7 @@ def main():
     p.add_argument('--opponent-level', default='HARD')
     p.add_argument('--games', type=int, default=200)
     p.add_argument('--seed', type=int, default=20261107)
-    p.add_argument('--budget-ms', type=float, default=25)
+    p.add_argument('--budget-ms', type=float, default=None)
     p.add_argument('--output', required=True)
     run(p.parse_args())
 

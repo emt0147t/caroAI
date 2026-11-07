@@ -1,0 +1,233 @@
+name: Competitive Engine Evidence
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'benchmarks/competitive/**'
+      - 'scripts/benchmark_ai_sprint3.py'
+      - 'scripts/benchmark_api_db_phase_b.py'
+      - 'scripts/phase_b_server.py'
+      - 'reports/ai-demo-boards.json'
+      - '.github/workflows/competitive-evidence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect runtime changes (preserve evidence on report updates)
+    runs-on: ubuntu-24.04
+    outputs:
+      run: ${{ steps.changes.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - id: changes
+        env:
+          ACTION: ${{ github.event.action }}
+          PREVIOUS_HEAD: ${{ github.event.before }}
+        run: |
+          python - <<'PYCODE'
+          import os, subprocess
+          before = os.environ.get('PREVIOUS_HEAD', '')
+          should_run = True
+          if os.environ.get('ACTION') == 'synchronize' and before:
+              exists = subprocess.run(['git', 'cat-file', '-e', before + '^{commit}'], capture_output=True)
+              if exists.returncode == 0:
+                  changed = subprocess.check_output(['git', 'diff', '--name-only', before, 'HEAD'], text=True).splitlines()
+                  files = {'scripts/benchmark_ai_sprint3.py', 'scripts/benchmark_api_db_phase_b.py',
+                           'scripts/phase_b_server.py', 'reports/ai-demo-boards.json'}
+                  should_run = any(p.startswith(('app/', 'benchmarks/competitive/')) or p in files for p in changed)
+          # Workflow-only infrastructure/matrix edits can be measured explicitly
+          # with workflow_dispatch. Documentation never invalidates a running test.
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('run=' + str(should_run).lower() + '\n')
+          print('Run controlled benchmarks:', should_run)
+          PYCODE
+
+  tournament:
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    concurrency:
+      group: competitive-tournament-${{ github.event.pull_request.number || github.ref }}-${{ matrix.name }}
+      cancel-in-progress: true
+    name: Tournament ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: hard-baseline-default
+            candidate_level: HARD
+            opponent_level: HARD
+            opponent: baseline
+            budget: ''
+          - name: impossible-baseline-default
+            candidate_level: IMPOSSIBLE
+            opponent_level: IMPOSSIBLE
+            opponent: baseline
+            budget: ''
+          - name: impossible-greedy-default
+            candidate_level: IMPOSSIBLE
+            opponent_level: IMPOSSIBLE
+            opponent: tactical_greedy
+            budget: ''
+          - name: medium-easy-screen25
+            candidate_level: MEDIUM
+            opponent_level: EASY
+            opponent: candidate
+            budget: '--budget-ms 25'
+          - name: hard-medium-screen25
+            candidate_level: HARD
+            opponent_level: MEDIUM
+            opponent: candidate
+            budget: '--budget-ms 25'
+          - name: impossible-hard-screen25
+            games: 400
+            candidate_level: IMPOSSIBLE
+            opponent_level: HARD
+            opponent: candidate
+            budget: '--budget-ms 25'
+          - name: medium-easy-default
+            candidate_level: MEDIUM
+            opponent_level: EASY
+            opponent: candidate
+            budget: ''
+          - name: hard-medium-default
+            candidate_level: HARD
+            opponent_level: MEDIUM
+            opponent: candidate
+            budget: ''
+          - name: impossible-hard-default
+            candidate_level: IMPOSSIBLE
+            opponent_level: HARD
+            opponent: candidate
+            budget: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Run complete color-paired games
+        run: >-
+          python -m benchmarks.competitive.tournament
+          --games ${{ matrix.games || 200 }}
+          --candidate-level ${{ matrix.candidate_level }}
+          --opponent-level ${{ matrix.opponent_level }}
+          --opponent benchmarks.competitive.adapters:${{ matrix.opponent }}
+          ${{ matrix.budget }}
+          --output ${{ runner.temp }}/competitive/${{ matrix.name }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: competitive-${{ matrix.name }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/competitive/
+          retention-days: 30
+
+  engine-latency:
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    concurrency:
+      group: competitive-engine-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    name: Controlled baseline and candidate engine latency
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: >-
+          python -m benchmarks.competitive.performance --runs 10 --concurrency 1
+          --output ${{ runner.temp }}/competitive/engine-default.json
+      - run: >-
+          python -m benchmarks.competitive.performance --runs 10 --concurrency 1 2 4 8 --budget-ms 25
+          --output ${{ runner.temp }}/competitive/engine-screen25-contention.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: competitive-engine-latency-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/competitive/
+          retention-days: 30
+
+  api-latency:
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    concurrency:
+      group: competitive-api-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    name: Disposable PostgreSQL API latency c1 c2 c4 c8
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: caroai_competitive
+          POSTGRES_USER: caroai_competitive
+          POSTGRES_PASSWORD: local_benchmark_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U caroai_competitive -d caroai_competitive"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://caroai_competitive:local_benchmark_only@localhost:5432/caroai_competitive
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: >-
+          python -c 'from app.db.database import get_engine; from scripts.migrate_database import run_migrations;
+          engine=get_engine(); run_migrations(engine); engine.dispose()'
+      - name: Measure real local HTTP and persistence
+        run: >-
+          python scripts/benchmark_api_db_phase_b.py
+          --database-url "$DATABASE_URL" --samples 10 --warmup 1 --concurrency 1,2,4,8
+          --difficulties easy,medium,hard,impossible --timeout-seconds 120 --monitor-interval-ms 10
+          --output-dir ${{ runner.temp }}/competitive-api
+      - name: Check correctness and matrix coverage
+        env:
+          REPORT: ${{ runner.temp }}/competitive-api/benchmark-summary.json
+        run: |
+          python - <<'PY'
+          import json, os
+          d = json.load(open(os.environ['REPORT']))
+          assert d['database_correctness_failures'] == 0
+          assert not d['postgres_monitor_error']
+          assert d['working_tree_dirty'] is False
+          assert {int(g['concurrency']) for g in d['group_summary']} >= {1, 2, 4, 8}
+          print(json.dumps({'source_sha': d['source_sha'], 'checks': d['database_correctness_checks']}))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: competitive-api-latency-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/competitive-api/
+          retention-days: 30
