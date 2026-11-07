@@ -179,8 +179,6 @@ def test_impossible_depth_and_candidate_limit_exceed_hard():
     assert DIFFICULTY_CONFIG["IMPOSSIBLE"]["depth"] > DIFFICULTY_CONFIG["HARD"]["depth"]
     assert DIFFICULTY_CONFIG["IMPOSSIBLE"]["candidate_limit"] > DIFFICULTY_CONFIG["HARD"]["candidate_limit"]
 
-
-
 @pytest.mark.parametrize("diff", ["HARD", "IMPOSSIBLE"])
 def test_strong_difficulty_has_search_budgets(diff):
     config = DIFFICULTY_CONFIG[diff]
