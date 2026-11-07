@@ -46,7 +46,7 @@ def _validate_engine_move(board: List[List[int]], row: Any, col: Any, score: Any
         raise ValueError("AI engine returned a malformed score")
 
 
-def get_ai_move(
+def get_ai_move(  # noqa: C901
     board: List[List[int]],
     ai_player: int,
     difficulty: str = "MEDIUM",
