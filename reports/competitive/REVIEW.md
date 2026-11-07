@@ -104,3 +104,6 @@ Tiêu chí quyết định tiếp theo: chỉ kết luận candidate mạnh hơn
 [artifact-manifest.json](artifact-manifest.json) lưu ID, source SHA, archive SHA-256 và link tải. Summary JSON được giữ cùng báo cáo; ZIP raw giữ đầy đủ nước đi, seeds, opening, runtime/package metadata và timing rows trong GitHub Actions (retention 30 ngày). Artifact digest đã đối chiếu sau tải. Không dùng benchmark Windows/Phase C cũ để tính speedup trên runner hiện tại.
 
 HARD có bằng chứng cải thiện ở nhóm mặc định đã đo. IMPOSSIBLE đã có bằng chứng hơn HARD ở preset mặc định; còn chờ so sánh với baseline cũ; chưa đề xuất merge hoặc tuyên bố engine bất bại/optimal.
+
+
+Workflow follow-up: cập nhật báo cáo đã hủy lượt IMPOSSIBLE–baseline ở source `14abd856` trước khi đủ 200 ván; artifact dở dang không được tính. Workflow được sửa bằng preflight so sánh runtime diff và concurrency theo từng job. Lượt đo chạy lại ở `2e9f869` có cùng byte của toàn bộ app/AI/harness với `14abd856`; chỉ report khác. Thay đổi tài liệu không hủy hoặc lặp lại benchmark. Workflow-only matrix/infrastructure edits có thể chạy chủ động bằng workflow_dispatch.

@@ -4,20 +4,59 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'app/ai/**'
+      - 'app/**'
       - 'benchmarks/competitive/**'
-      - 'tests/unit/test_competitive*'
+      - 'scripts/benchmark_ai_sprint3.py'
+      - 'scripts/benchmark_api_db_phase_b.py'
+      - 'scripts/phase_b_server.py'
+      - 'reports/ai-demo-boards.json'
       - '.github/workflows/competitive-evidence.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: competitive-evidence-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
 jobs:
+  changes:
+    name: Detect runtime changes (preserve evidence on report updates)
+    runs-on: ubuntu-24.04
+    outputs:
+      run: ${{ steps.changes.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - id: changes
+        env:
+          ACTION: ${{ github.event.action }}
+          PREVIOUS_HEAD: ${{ github.event.before }}
+        run: |
+          python - <<'PYCODE'
+          import os, subprocess
+          before = os.environ.get('PREVIOUS_HEAD', '')
+          should_run = True
+          if os.environ.get('ACTION') == 'synchronize' and before:
+              exists = subprocess.run(['git', 'cat-file', '-e', before + '^{commit}'], capture_output=True)
+              if exists.returncode == 0:
+                  changed = subprocess.check_output(['git', 'diff', '--name-only', before, 'HEAD'], text=True).splitlines()
+                  files = {'scripts/benchmark_ai_sprint3.py', 'scripts/benchmark_api_db_phase_b.py',
+                           'scripts/phase_b_server.py', 'reports/ai-demo-boards.json'}
+                  should_run = any(p.startswith(('app/', 'benchmarks/competitive/')) or p in files for p in changed)
+          # Workflow-only infrastructure/matrix edits can be measured explicitly
+          # with workflow_dispatch. Documentation never invalidates a running test.
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('run=' + str(should_run).lower() + '\n')
+          print('Run controlled benchmarks:', should_run)
+          PYCODE
+
   tournament:
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    concurrency:
+      group: competitive-tournament-${{ github.event.pull_request.number || github.ref }}-${{ matrix.name }}
+      cancel-in-progress: true
     name: Tournament ${{ matrix.name }}
     runs-on: ubuntu-24.04
     timeout-minutes: 180
@@ -74,7 +113,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -94,18 +133,23 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: competitive-${{ matrix.name }}-${{ github.event.pull_request.head.sha }}
+          name: competitive-${{ matrix.name }}-${{ github.event.pull_request.head.sha || github.sha }}
           path: ${{ runner.temp }}/competitive/
           retention-days: 30
 
   engine-latency:
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    concurrency:
+      group: competitive-engine-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
     name: Controlled baseline and candidate engine latency
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -122,11 +166,16 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: competitive-engine-latency-${{ github.event.pull_request.head.sha }}
+          name: competitive-engine-latency-${{ github.event.pull_request.head.sha || github.sha }}
           path: ${{ runner.temp }}/competitive/
           retention-days: 30
 
   api-latency:
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    concurrency:
+      group: competitive-api-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
     name: Disposable PostgreSQL API latency c1 c2 c4 c8
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -146,7 +195,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -179,6 +228,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: competitive-api-latency-${{ github.event.pull_request.head.sha }}
+          name: competitive-api-latency-${{ github.event.pull_request.head.sha || github.sha }}
           path: ${{ runner.temp }}/competitive-api/
           retention-days: 30
