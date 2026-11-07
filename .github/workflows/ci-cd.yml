@@ -525,8 +525,20 @@ jobs:
           check_endpoint "/tokens.css" "CSS design tokens asset"
           echo "Production verification passed using GET-only read-only smoke tests."
       - name: Verify production PvP/PvAI gameplay and clean scoped QA records
+        id: production_qa_acceptance
         timeout-minutes: 10
         env:
           CAROAI_PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
           CAROAI_QA_HMAC_SECRET: ${{ secrets.CAROAI_QA_HMAC_SECRET }}
         run: python scripts/production_qa_acceptance.py
+      - name: Disable production QA routes and verify post-release runtime
+        id: production_qa_shutdown
+        if: ${{ always() && steps.publish.outputs.digest != '' }}
+        timeout-minutes: 20
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
+          QA_ACCEPTANCE_OUTCOME: ${{ steps.production_qa_acceptance.outcome }}
+        run: python scripts/production_qa_shutdown.py
