@@ -169,7 +169,8 @@ def _search(pos, player, depth, extensions, alpha, beta, ply, context):  # noqa:
     if pos.occupied == FULL:
         stats.leaves += 1
         return 0
-    if depth <= 0 and not (extensions > 0 and (opponent_wins or four_moves(pos.stones[player], pos.occupied))):
+    forcing = four_moves(pos.stones[player], pos.occupied) if depth <= 0 else 0
+    if depth <= 0 and not (extensions > 0 and (opponent_wins or forcing)):
         stats.leaves += 1
         return _evaluate(pos, player)
     # Never replace nominal depth with the extension depth in the cache key.
@@ -191,8 +192,16 @@ def _search(pos, player, depth, extensions, alpha, beta, ply, context):  # noqa:
                 beta = min(beta, entry.score)
             if alpha >= beta:
                 return entry.score
-    moves = _ordered(pos, player, context, entry.move if entry else None, opponent_wins)
-    best, best_move = -INF, None
+    # Threat quiescence explores forcing attacks or the mandatory reply, not a
+    # second full quiet tree. Stand pat is forbidden while facing an immediate win.
+    best = _evaluate(pos, player) if depth <= 0 and not opponent_wins else -INF
+    if best >= beta:
+        context.save(key, best, alpha_start, beta_start, None)
+        return best
+    alpha = max(alpha, best)
+    selected = opponent_wins or (forcing if depth <= 0 else 0)
+    moves = _ordered(pos, player, context, entry.move if entry else None, selected)
+    best_move = None
     for index, move in enumerate(moves):
         context.check()
         stats.expanded_candidates += 1

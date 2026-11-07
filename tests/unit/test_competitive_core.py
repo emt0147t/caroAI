@@ -217,3 +217,29 @@ def test_root_alpha_window_agrees_with_independent_full_window_enumeration():
     assert score == best
     assert move == next(candidate for candidate, value in full if value == best)
     assert ctx.stats.nodes <= reference.stats.nodes
+
+
+def test_horizon_extension_searches_independently_verified_forcing_moves(monkeypatch):
+    from app.ai import competitive
+    case = next(c for c in base_cases() if c.name == 'extend_open_three')
+    board = case.board()
+    expected = set()
+    for r in range(15):
+        for c in range(15):
+            if board[r][c]:
+                continue
+            board[r][c] = 1
+            if wins(board, 1):
+                expected.add((r, c))
+            board[r][c] = 0
+    generated = []
+    original = competitive._ordered
+
+    def capture(*args, **kwargs):
+        moves = original(*args, **kwargs)
+        generated.append(set(moves))
+        return moves
+
+    monkeypatch.setattr(competitive, '_ordered', capture)
+    _search(Position(board), 1, 0, 1, -INF, INF, 0, context())
+    assert generated[0] == expected

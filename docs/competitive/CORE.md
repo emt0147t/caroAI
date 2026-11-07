@@ -32,3 +32,8 @@ forced loss and a domain-rule verified continuous-four certificate.
 Strength and latency acceptance remain PARTIAL until tournament and performance
 artifacts on a frozen commit exist. The small corpus is an initial regression suite,
 not proof that its tactics represent the full distribution of human games.
+
+The follow-up preserves root alpha bounds between siblings and restricts horizon
+extensions to independently verified forcing moves or mandatory replies, with a
+stand-pat evaluation only when no immediate block is required. Root pruning is
+checked against full-window enumeration with the same answer and no extra nodes.
