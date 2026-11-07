@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: competitive-evidence-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   tournament:
@@ -51,10 +51,26 @@ jobs:
             opponent: candidate
             budget: '--budget-ms 25'
           - name: impossible-hard-screen25
+            games: 400
             candidate_level: IMPOSSIBLE
             opponent_level: HARD
             opponent: candidate
             budget: '--budget-ms 25'
+          - name: medium-easy-default
+            candidate_level: MEDIUM
+            opponent_level: EASY
+            opponent: candidate
+            budget: ''
+          - name: hard-medium-default
+            candidate_level: HARD
+            opponent_level: MEDIUM
+            opponent: candidate
+            budget: ''
+          - name: impossible-hard-default
+            candidate_level: IMPOSSIBLE
+            opponent_level: HARD
+            opponent: candidate
+            budget: ''
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,10 +82,10 @@ jobs:
           python-version: '3.11'
           cache: pip
       - run: python -m pip install -r requirements-dev.txt
-      - name: Run 200 complete color-paired games
+      - name: Run complete color-paired games
         run: >-
           python -m benchmarks.competitive.tournament
-          --games 200
+          --games ${{ matrix.games || 200 }}
           --candidate-level ${{ matrix.candidate_level }}
           --opponent-level ${{ matrix.opponent_level }}
           --opponent benchmarks.competitive.adapters:${{ matrix.opponent }}
@@ -123,7 +139,7 @@ jobs:
           POSTGRES_PASSWORD: local_benchmark_only
         ports: ['5432:5432']
         options: >-
-          --health-cmd 'pg_isready -U caroai_competitive -d caroai_competitive'
+          --health-cmd "pg_isready -U caroai_competitive -d caroai_competitive"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://caroai_competitive:local_benchmark_only@localhost:5432/caroai_competitive

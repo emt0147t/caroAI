@@ -58,6 +58,33 @@ def fork_moves(board, player):
     return result
 
 
+def continuous_four_moves(board, player, attacks):
+    """Independent bounded proof oracle using only domain-rule win scans."""
+    result = set()
+    for r in range(15):
+        for c in range(15):
+            if board[r][c]:
+                continue
+            board[r][c] = player
+            try:
+                threats = wins(board, player)
+                if not threats or wins(board, 3 - player):
+                    continue
+                if len(threats) >= 2:
+                    result.add((r, c))
+                elif attacks > 1:
+                    rr, cc = next(iter(threats))
+                    board[rr][cc] = 3 - player
+                    try:
+                        if continuous_four_moves(board, player, attacks - 1):
+                            result.add((r, c))
+                    finally:
+                        board[rr][cc] = 0
+            finally:
+                board[r][c] = 0
+    return result
+
+
 def base_cases():
     cases = []
 
@@ -86,6 +113,12 @@ def base_cases():
     add('cross_double_four', 'double_threat', cross, closed, [(7, 7)], 'create_fork')
     add('defend_cross_fork', 'layered_defense', closed, cross,
         [(7, 7), (7, 8), (8, 7)], 'avoid_fork')
+    chain = [(7, 4), (7, 5), (7, 6), (5, 5), (6, 6)]
+    add('continuous_four_two_attacks', 'forcing_chain', chain, [(7, 3)], [(7, 7)], 'vcf_2')
+    add('continuous_four_three_attacks', 'layered_attack', chain + [(8, 9), (8, 10)],
+        [(7, 3), (4, 4)], [(7, 7)], 'vcf_3')
+    add('unavoidable_open_four', 'open_four_defense', [], [(7, c) for c in range(4, 8)],
+        [(7, 3), (7, 8)], 'forced_loss')
     return cases
 
 

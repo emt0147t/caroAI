@@ -34,7 +34,7 @@ def run(args):
             rows = {'baseline': [], 'candidate': []}
             with ThreadPoolExecutor(max_workers=concurrency) as pool:
                 for fixture in fixtures:
-                    for repetition in range(args.runs):
+                    for repetition in range(-args.warmup, args.runs):
                         # Alternate order to avoid a systematic cold/warm advantage.
                         adapters = [('baseline', baseline), ('candidate', candidate)]
                         if repetition % 2:
@@ -44,15 +44,29 @@ def run(args):
                                      for _ in range(concurrency)]
                             for future in calls:
                                 row = {'adapter': name, 'difficulty': level, 'concurrency': concurrency,
-                                       'fixture': fixture['name'], 'trial': repetition, **future.result()}
+                                       'fixture': fixture['name'], 'trial': repetition, 'warmup': repetition < 0, **future.result()}
                                 raw.append(row)
-                                rows[name].append(row)
+                                if repetition >= 0:
+                                    rows[name].append(row)
             for name, records in rows.items():
                 times = [r['engine_ms'] for r in records]
+                search = [r for r in records if r.get('shortcut', 'none') == 'none']
+                times_search = [r['search_ms'] for r in search if r.get('search_ms') is not None]
+                expanded = sum(r.get('expanded_candidates', 0) for r in records)
+                pruned = sum(r.get('alpha_beta_pruned', 0) for r in records)
+                probes = sum(r.get('tt_probes', 0) for r in records)
+                branching_nodes = sum(r.get('branching_factor_nodes', 0) for r in records)
                 groups.append({'adapter': name, 'difficulty': level, 'concurrency': concurrency, 'n': len(records),
                                'p50_ms': percentile(times, .5), 'p95_ms': percentile(times, .95), 'max_ms': max(times),
                                'timeouts': sum(bool(r.get('timed_out')) for r in records),
-                               'fallbacks': sum(bool(r.get('fallback_used')) for r in records)})
+                               'fallbacks': sum(bool(r.get('fallback_used')) for r in records),
+                               'search_only_n': len(search), 'search_only_p50_ms': percentile(times_search, .5),
+                               'search_only_p95_ms': percentile(times_search, .95),
+                               'nodes_mean': sum(r.get('nodes', 0) for r in records) / len(records),
+                               'effective_branching': sum(r.get('branching_factor_sum', 0) for r in records)
+                               / branching_nodes if branching_nodes else 0,
+                               'alpha_beta_pruning_rate': pruned / (expanded + pruned) if expanded + pruned else 0,
+                               'tt_hit_rate': sum(r.get('tt_hits', 0) for r in records) / probes if probes else 0})
             print(level, concurrency, 'complete', flush=True)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -65,6 +79,7 @@ def run(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--runs', type=int, default=5)
+    parser.add_argument('--warmup', type=int, default=1)
     parser.add_argument('--concurrency', nargs='+', type=int, default=[1, 2, 4, 8])
     parser.add_argument('--budget-ms', type=float, default=None)
     parser.add_argument('--output', required=True)

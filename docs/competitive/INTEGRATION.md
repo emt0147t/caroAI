@@ -36,3 +36,11 @@ reference engine, human play tests and production candidate latency remain PARTI
 The tactical-greedy reference is independent in decision policy, not a published
 strong-engine benchmark. Broader VCT/multilayer tactical coverage remains future work.
 All PRs remain draft. Merge and production deploy require explicit user authorization.
+
+Corpus v2 has 240 color/symmetry variants, including two- and three-attack continuous-
+four certificates verified by an independent exhaustive domain-rule oracle, and an
+unavoidable open-four loss. HARD's short proof search addresses the newly exposed
+three-attack miss; IMPOSSIBLE retains longer proofs and wider/deeper tactical search.
+Engine measurements include an excluded warm-up, mandatory-root/optional-search
+separation, shortcut-stratified latency and truthful legacy fallback counts. A new
+head cancels superseded evidence jobs; incomplete logs never count as full games.
