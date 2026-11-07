@@ -1,7 +1,7 @@
 """Deterministic tactical search with compatible TT horizons and complete timing.
 
-HARD uses direct forcing attacks and a short threat extension. IMPOSSIBLE also
-searches continuous-four proofs and a wider neighborhood. Neither is perfect play.
+HARD uses short continuous-four proofs and a short threat extension. IMPOSSIBLE
+searches longer proofs, deeper extensions and a wider neighborhood. Neither is perfect play.
 """
 from dataclasses import dataclass, field
 import math
@@ -31,7 +31,7 @@ POLICIES = {
     # EASY/MEDIUM definitions support policy tournaments; production stays legacy.
     'EASY': Policy(1, 6, 1, 0, 0, 40, 800),
     'MEDIUM': Policy(2, 10, 1, 0, 0, 100, 3000),
-    'HARD': Policy(4, 8, 1, 1, 0, 250, 16000),
+    'HARD': Policy(4, 8, 1, 1, 3, 250, 16000),
     'IMPOSSIBLE': Policy(6, 12, 2, 3, 5, 700, 40000),
 }
 
@@ -319,6 +319,7 @@ def choose_move(board, player, policy, *, time_budget_ms=None, use_tt=True):  # 
     own_wins, enemy_wins = pos.wins(player), pos.wins(3 - player)
     stats = context.stats
     stats.root_candidates = neighborhood(pos.occupied, policy.radius).bit_count()
+    optional_started = perf_counter()
     if own_wins:
         move, score, fallback = next(cells(own_wins)), MATE - 1, False
         stats.shortcut = 'immediate_win'
@@ -366,7 +367,10 @@ def choose_move(board, player, policy, *, time_budget_ms=None, use_tt=True):  # 
     result_stats.update({'depth': completed, 'tt_probes': context.tt_probes, 'tt_hits': context.tt_hits,
                          'tt_hit_rate': context.tt_hits / context.tt_probes if context.tt_probes else 0.0,
                          'proof_nodes': context.proof_nodes, 'transposition_table_size': len(context.table),
-                         'fallback_used': fallback, 'search_ms': (finished - search_started) * 1000,
+                         'fallback_used': fallback,
+                         'root_tactical_ms': (optional_started - search_started) * 1000,
+                         'search_ms': 0.0 if stats.shortcut in {'immediate_win', 'forced_block', 'forced_loss'}
+                         else (finished - optional_started) * 1000,
                          'budget_ms': budget, 'stop_reason': (
                              'node_budget' if stats.nodes > policy.node_limit else 'deadline'
                          ) if stats.timed_out else (stats.shortcut if stats.shortcut != 'none' else 'depth')})

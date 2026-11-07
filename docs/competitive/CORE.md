@@ -2,7 +2,7 @@
 
 This PR adds an unused candidate API (`choose_move`); it does not switch production
 routing. EASY/MEDIUM tournament adapters use the unchanged baseline implementation.
-HARD uses radius 1, quiet cap 8, depth cap 4, one tactical extension, no VCF solver.
+HARD uses radius 1, quiet cap 8, depth cap 4, one tactical extension, bounded three-attack continuous-four proofs.
 IMPOSSIBLE uses radius 2, quiet cap 12, depth cap 6, three tactical extensions and
 bounded continuous-four proof search (at most five attack/reply pairs). Defaults
 250/700ms are engine-entry wall-clock budgets, not a server/API SLO. Essential
@@ -22,7 +22,7 @@ prove the local forcing win. Exhaustion is unknown. This is not an exhaustive VC
 proof-number, Renju or perfect-play solver. Rules match the backend's unrestricted
 at-least-five win condition, including overlines and wins blocked at both ends.
 
-Validation before frozen-SHA experiments: 718 passed / 14 skipped; 403 core tests;
+Validation before frozen-SHA experiments: 718 passed / 14 skipped; 405 core tests;
 CI lint passes. Core tests include 192 positions x 2 levels, randomized independent
 win-mask checks, exact fork oracles, TT on/off and narrow-window bound checks, the
 PR 66 extension-alias regression, safe interruption of all internal state, immutable
@@ -37,3 +37,7 @@ The follow-up preserves root alpha bounds between siblings and restricts horizon
 extensions to independently verified forcing moves or mandatory replies, with a
 stand-pat evaluation only when no immediate block is required. Root pruning is
 checked against full-window enumeration with the same answer and no extra nodes.
+
+Expanded integration corpus exposed a three-attack forcing win missed by HARD's
+heuristic horizon. HARD now proves up to three continuous-four attacks; IMPOSSIBLE
+retains five, wider radius and three extensions. Time budgets were not increased.
