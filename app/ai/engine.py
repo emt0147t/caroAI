@@ -6,14 +6,26 @@ from typing import Any, Dict, List
 from app.ai.evaluator import BOARD_SIZE, EMPTY
 from app.ai.minimax import find_best_move
 from app.ai.search_stats import SearchStats
+from app.ai.strategic_search import find_strategic_move
+
 
 DIFFICULTY_CONFIG = {
     "EASY": {"depth": 1, "candidate_limit": 6},
     "MEDIUM": {"depth": 2, "candidate_limit": 10},
-    "HARD": {"depth": 3, "candidate_limit": 14},
-    # High-budget mode: one extra search ply and a wider candidate set.
-    # This is a very strong heuristic opponent, not a proof of perfect play.
-    "IMPOSSIBLE": {"depth": 4, "candidate_limit": 20},
+    "HARD": {
+        "depth": 5,
+        "candidate_limit": 8,
+        "time_budget_ms": 250,
+        "node_budget": 16000,
+        "diversify": True,
+    },
+    "IMPOSSIBLE": {
+        "depth": 8,
+        "candidate_limit": 10,
+        "time_budget_ms": 700,
+        "node_budget": 40000,
+        "diversify": True,
+    },
 }
 
 
@@ -42,20 +54,15 @@ def get_ai_move(
     time_budget_ms: float | None = None,
     collect_stats: bool = True,
 ) -> Dict[str, Any]:
-    """
-    Entry point chính của AI Engine để Backend FastAPI gọi tới.
-
-    Difficulty giữ nguyên contract Sprint 2: case-insensitive và fallback MEDIUM
-    khi giá trị dạng chuỗi không nằm trong cấu hình. Không có candidate hợp lệ
-    hoặc search trả output bất hợp lệ sẽ raise ValueError thay vì giả trả nước đi.
-    """
+    """Backend-compatible AI entry point with bounded strategic modes."""
     if not isinstance(difficulty, str):
         raise ValueError("AI difficulty must be a string")
 
     diff_key = difficulty.upper()
     config = DIFFICULTY_CONFIG.get(diff_key, DIFFICULTY_CONFIG["MEDIUM"])
 
-    if time_budget_ms is None and diff_key == "IMPOSSIBLE":
+    # Keep the existing environment override and default hard-level budgets.
+    if diff_key == "IMPOSSIBLE" and time_budget_ms is None:
         configured_budget = os.getenv("CAROAI_IMPOSSIBLE_TIME_BUDGET_MS")
         if configured_budget:
             try:
@@ -64,20 +71,42 @@ def get_ai_move(
                 raise ValueError(
                     "CAROAI_IMPOSSIBLE_TIME_BUDGET_MS must be numeric"
                 ) from exc
+    if diff_key in {"HARD", "IMPOSSIBLE"} and time_budget_ms is None:
+        time_budget_ms = float(config["time_budget_ms"])
 
-    if time_budget_ms is not None and (not math.isfinite(time_budget_ms) or time_budget_ms < 0):
+    if time_budget_ms is not None and (
+        not math.isfinite(time_budget_ms) or time_budget_ms < 0
+    ):
         raise ValueError("time_budget_ms must be non-negative")
 
     stats = SearchStats() if (collect_stats or time_budget_ms is not None) else None
     start_time = time.perf_counter()
-    (row, col), score = find_best_move(
-        board=board,
-        ai_player=ai_player,
-        depth=config["depth"],
-        candidate_limit=config["candidate_limit"],
-        stats=stats,
-        time_budget_ms=time_budget_ms,
-    )
+
+    if diff_key in {"HARD", "IMPOSSIBLE"}:
+        budget = int(
+            time_budget_ms if time_budget_ms is not None else config["time_budget_ms"]
+        )
+        (row, col), score, search_info = find_strategic_move(
+            board=board,
+            ai_player=ai_player,
+            max_depth=config["depth"],
+            candidate_limit=config["candidate_limit"],
+            time_budget_ms=budget,
+            node_budget=config["node_budget"],
+            diversify=config["diversify"],
+            stats=stats,
+        )
+    else:
+        (row, col), score = find_best_move(
+            board=board,
+            ai_player=ai_player,
+            depth=config["depth"],
+            candidate_limit=config["candidate_limit"],
+            stats=stats,
+            time_budget_ms=time_budget_ms,
+        )
+        search_info = {}
+
     _validate_engine_move(board, row, col, score)
     elapsed_ms = (time.perf_counter() - start_time) * 1000.0
     if stats is not None:
@@ -91,4 +120,5 @@ def get_ai_move(
     }
     if collect_stats and stats is not None:
         result["search_stats"] = stats.to_dict()
+        result["search_stats"].update(search_info)
     return result
