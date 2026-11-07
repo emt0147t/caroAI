@@ -9,10 +9,16 @@
 | Phase | Evidence | Result | Scope |
 |---|---|---|---|
 | Phase A — controlled Minimax | [Workflow #42237743095](https://github.com/emt0147t/caroAI/actions/runs/42237743095) | 1,320 measured calls, 0 failures | 11 fixtures × 4 difficulties × 30 trials; Ubuntu 24.04 / Python 3.11 |
-| Phase B — API/PostgreSQL Windows review | `phaseb-20261106T140340Z-980e7124`; review note in repository | Correctness checks passed | Windows 10 / Python 3.11.9 / PostgreSQL 15.19; separate from production |
+| Phase B — API/PostgreSQL Windows review | `phaseb-20261106T140340Z-980e7124`; [review note](benchmark-phase-b/PYTHON311-WINDOWS-REVIEW.md) | Qualified historical evidence; 2,401 correctness checks reported, 0 failures | Windows 10 / Python 3.11.9 / PostgreSQL 15.19; exact original source files were not recovered |
 | Phase C — Minimax counters and latency | [Workflow #42267880120](https://github.com/emt0147t/caroAI/actions/runs/42267880120) | PASS | Source SHA `8ca52e0ed4a5a2ba4546f94978dcb0c1fb06339f`; 1,320 measured calls, 0 failures |
 | Phase C — API/PostgreSQL transaction boundary | [Workflow #42267879898](https://github.com/emt0147t/caroAI/actions/runs/42267879898) | PASS | Disposable PostgreSQL 15.19; 721 correctness checks, 0 failures |
 | Phase C — CI / browser E2E | [CI #42267890333](https://github.com/emt0147t/caroAI/actions/runs/42267890333); [E2E #42267890323](https://github.com/emt0147t/caroAI/actions/runs/42267890323) | PASS | Candidate branch only; production release job skipped |
+
+### Phase B Python 3.11 — qualified historical evidence
+
+The preserved run artifacts report **2,401 database correctness checks and 0 failures**. Forensic review could not recover the exact original benchmark harness or PostgreSQL instrumentation: the recorded SHA-256 hashes did not match any available Git blob, including unreachable objects, or the available committed/current copies. The run is useful as qualified historical evidence, but its exact source snapshot cannot be attributed and the benchmark must not be described as fully reproducible.
+
+The preserved Phase B CSV schemas do not contain a `transaction_count` column. Do not claim that `transaction_count` was measured in this Phase B run. Later instrumentation changes that add a transaction count do not establish what the unrecovered Phase B source measured.
 
 ## Phase A controlled benchmark — corrected search-only interpretation
 
@@ -64,7 +70,7 @@ The benchmark used one API worker and disposable PostgreSQL 15.19. It does not e
 
 Detailed Phase C report: [PHASE_C_BENCHMARK_REPORT.md](https://github.com/emt0147t/caroAI/blob/feat/phase-c-ai-observability-qa-20261106/reports/benchmark-phase-c/PHASE_C_BENCHMARK_REPORT.md).
 
-Phase C source branch: `feat/phase-c-ai-observability-qa-20261106`; tested runtime source SHA: `8ca52e0ed4a5a2ba4546f94978dcb0c1fb06339f`. Phase C [PR #60](https://github.com/emt0147t/caroAI/pull/60) merged into `develop` at `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0`; it is not promoted to `main` and is not deployed. The production PvP/PvAI QA runner has not been executed against the live site; its real-PostgreSQL integration test is in [PR #62](https://github.com/emt0147t/caroAI/pull/62).
+Phase C source branch: `feat/phase-c-ai-observability-qa-20261106`; tested runtime source SHA: `8ca52e0ed4a5a2ba4546f94978dcb0c1fb06339f`. Phase C [PR #60](https://github.com/emt0147t/caroAI/pull/60) and follow-up PostgreSQL integration-test [PR #62](https://github.com/emt0147t/caroAI/pull/62) are merged into `develop`; PR #62 merged at `3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd`. The PostgreSQL-backed acceptance integration test is complete in `develop`. Phase C is not promoted to `main` or deployed, and live production PvP/PvAI acceptance remains pending.
 
 **Performance objective:** 2,000 ms remains a proposed engineering reference, not an adopted SLO. Do not present hosted-runner numbers as a production guarantee.
 

@@ -4,9 +4,9 @@
 **Repository**: `emt0147t/caroAI`
 **Evaluation Role**: Principal Software Engineer + Tech Lead + DevOps Engineer + QA Lead
 **Assessment Date**: November 7, 2026 (current-status addendum; historical audit evidence retained below)
-**Integration Branch**: `develop` (Phase C merged at `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0`; production `main` remains `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`)
+**Integration Branch**: `develop` (`3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd`; 85 commits ahead of `main`, 0 behind)
 **Production Branch**: `main` (current production baseline: `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`)
-**Delivery PR Status**: PR #58 is merged to `main`; Phase C PR #60 is now merged to `develop` at `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0`. Production `main` remains at `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`, live via Render deployment `dep-dbn02vrncjis73am3dhg`.
+**Delivery PR Status**: PR #58 is merged to `main`; Phase C PR #60 and PostgreSQL acceptance-test PR #62 are merged to `develop`. PR #62 merged at `3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd`. Production `main` remains at `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`, live via Render deployment `dep-dbn02vrncjis73am3dhg`.
 
 ---
 
@@ -19,8 +19,9 @@ This section supersedes conflicting release, branch, and deployment statements i
 | Item | Verified value |
 |---|---|
 | `main` | `42ee035ab42cd4c0bc934699f4d5433ff4b12a83` |
-| `develop` | `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0` (Phase C merge commit) |
-| Branch comparison | `develop` is 81 commits ahead of `main`, 0 behind; Phase C is merged only to `develop` |
+| `develop` | `3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd` (PR #62 merge commit) |
+| Branch comparison | `develop` is 85 commits ahead of `main`, 0 behind |
+| PR #62 PostgreSQL integration acceptance | Merged to `develop`; complete (17 passed, 0 skipped in the dedicated integration run) |
 | Production service | Render `srv-dbkd2dflk1mc73fd2ukg` |
 | Production deployment | `dep-dbn02vrncjis73am3dhg`, status `live` |
 | Production image | `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83` |
@@ -39,16 +40,19 @@ This section supersedes conflicting release, branch, and deployment statements i
 | Phase C controlled Minimax benchmark | PASS | 1,320 measured calls, 0 failures; [run #42267880120](https://github.com/emt0147t/caroAI/actions/runs/42267880120) |
 | Phase C API/PostgreSQL benchmark | PASS | Disposable PostgreSQL 15.19; 721 correctness checks, 0 failures; [run #42267879898](https://github.com/emt0147t/caroAI/actions/runs/42267879898) |
 | Phase C CI and browser E2E | PASS | [CI #42267890333](https://github.com/emt0147t/caroAI/actions/runs/42267890333); [Browser E2E #42267890323](https://github.com/emt0147t/caroAI/actions/runs/42267890323); production release job skipped |
+| PR #62 PostgreSQL integration test | COMPLETE in `develop` | PR #62 merged at `3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd`; dedicated integration test reported 17 passed, 0 skipped |
 
 ### Current outstanding acceptance work
 
-1. **Documentation:** current-state refresh for README, this report, Production Preflight, and benchmark report is included in this documentation PR; merge is pending review.
-2. **Phase C integration:** Phase C code is on feature branch `feat/phase-c-ai-observability-qa-20261106`, tested at source SHA `8ca52e0ed4a5a2ba4546f94978dcb0c1fb06339f`. It has not been merged to `main` or deployed. Review and PR acceptance remain required.
-3. **Production gameplay acceptance:** the Phase C run-scoped PvP/PvAI QA runner has not been executed against the live website because its QA routes and migration are not deployed. Do not claim post-Phase-C production PvP/PvAI acceptance yet.
-4. **Observability:** Phase C Prometheus instrumentation and alert rules are feature-branch code; a scraper/Alertmanager/notification destination is not configured. Render provider metrics returned CPU/memory samples but no HTTP latency/request-count series in the queried window.
+1. **Documentation:** current-state refresh for README, this report, Production Preflight, and benchmark report is included in PR #61; merge is pending review.
+2. **Phase C integration:** Phase C and its PostgreSQL-backed acceptance integration test are complete in `develop`; PR #60 and PR #62 are merged. This work is not promoted to `main` or deployed.
+3. **Live production gameplay acceptance:** live production PvP/PvAI acceptance remains pending. The PostgreSQL integration test runs against disposable test PostgreSQL and does not constitute live production acceptance.
+4. **Observability:** Phase C Prometheus instrumentation and alert rules are present in `develop` but are not deployed; a scraper/Alertmanager/notification destination is not configured. Render provider metrics returned CPU/memory samples but no HTTP latency/request-count series in the queried window.
 5. **Performance objective:** 2,000 ms remains a proposed reference, not an adopted production SLO. Hosted-runner benchmarks do not establish production traffic percentiles.
 
 ---
+
+> **Historical audit context:** Sections below preserve prior acceptance evidence and snapshots. The authoritative current branch, PR, and production status is in Section 0 above; historical entries should not be read as current release status.
 
 ## 1. Project Overview & System Scope
 
@@ -221,10 +225,10 @@ This section replaces the historical PR #50 pre-merge rollout snapshot.
    - `main` remains protected by its PR review requirement; production release is a separate manual exact-SHA dispatch.
 4. **Branch / Integration Status**
    - PR #58 integrated the current production release into `main`.
-   - `main` remains `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`; `develop` contains Phase C at `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0`.
+   - `main` remains `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`; current `develop` is `3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd` (85 commits ahead, 0 behind).
    - P0 documentation refresh is proposed in [PR #61](https://github.com/emt0147t/caroAI/pull/61).
 5. **Phase C and Remaining Acceptance**
-   - Phase C [PR #60](https://github.com/emt0147t/caroAI/pull/60) has merged into `develop` at `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0`; it is not promoted to `main` and is not deployed. Follow-up PostgreSQL-backed QA runner integration test is under [PR #62](https://github.com/emt0147t/caroAI/pull/62).
+   - Phase C [PR #60](https://github.com/emt0147t/caroAI/pull/60) and PostgreSQL-backed QA runner integration-test [PR #62](https://github.com/emt0147t/caroAI/pull/62) are merged into `develop`; PR #62 merged at `3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd`. The integration test is complete in `develop`, while Phase C remains unpromoted to `main` and undeployed. Live production PvP/PvAI acceptance remains pending.
    - The Phase C production QA routes/migration have not been deployed, so the run-scoped live PvP/PvAI acceptance runner has not been executed against the current website.
    - A full interactive PvP/PvAI acceptance on the current production commit remains outstanding; earlier gameplay and restart-persistence evidence came from the previous bootstrap release and is historical.
    - Render zero-downtime cutover has not been empirically verified for this application.

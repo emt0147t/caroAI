@@ -5,9 +5,9 @@
 **Repository:** `emt0147t/caroAI` (`D:\caro-ai\caroAI`)
 **Integration Branch:** `develop` (Phase C merged; not yet promoted to `main`)
 **Current Production SHA (`main`):** `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`
-**Current Integration SHA (`develop`):** `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0`
+**Current Integration SHA (`develop`):** `3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd`
 **Historical Pre-Hardening Develop Snapshot:** `2a46000b455f9b9779fd7289c6b22ae080aaa44c` (CI Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622))
-**Current Branch Comparison:** `develop` is 81 commits ahead of `main`, 0 behind. Phase C PR #60 merged into `develop` at `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0`.
+**Current Branch Comparison:** `develop` is 85 commits ahead of `main`, 0 behind. PR #62 merged into `develop` at `3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd`.
 **Production Branch Baseline:** `main` (`42ee035ab42cd4c0bc934699f4d5433ff4b12a83`)
 **Latest Production Release Workflow:** [#42253079008](https://github.com/emt0147t/caroAI/actions/runs/42253079008) (success)
 **Historical PR CI Run:** GitHub Actions Run [#41502411622](https://github.com/emt0147t/caroAI/actions/runs/41502411622) on `2a46000`
@@ -19,12 +19,14 @@
 
 ## 0. Current Production Snapshot — 2026-11-07 (Authoritative)
 
-The detailed checks later in this document were originally captured on November 3, 2026. Where those historical sections still say that the official release is pending, they are superseded by this verified current snapshot.
+The detailed checks later in this document were originally captured on November 3, 2026. Where those historical sections still say that the official release is pending, they are superseded by this verified current snapshot. The November 3 live-cloud gameplay observations remain historical evidence and do not satisfy the pending current live production PvP/PvAI acceptance.
 
-| Item | Current state |
+| Item | Current state | Details |
 |---|---|
 | `main` (production) | `42ee035ab42cd4c0bc934699f4d5433ff4b12a83` | Current live Render release |
-| `develop` (integration) | `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0` | Phase C PR #60 merged; 81 commits ahead of `main`, 0 behind |
+| `develop` (integration) | `3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd` | PR #62 merged; 85 commits ahead of `main`, 0 behind |
+| PR #62 PostgreSQL integration acceptance | Complete in `develop` | Dedicated disposable-PostgreSQL integration test completed; not live production gameplay acceptance |
+| Live production PvP/PvAI acceptance | Pending | No current live production gameplay acceptance is claimed |
 | Render service | `srv-dbkd2dflk1mc73fd2ukg`, Free plan, Singapore, one instance |
 | Live deployment | `dep-dbn02vrncjis73am3dhg` — `live` |
 | Exact image | `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83` |
@@ -41,7 +43,8 @@ A subsequent Render provider-metrics query returned recent service CPU samples a
 ### Current baseline and release caveats
 
 - Production auto-deploy remains disabled. Continue to use the manual exact-SHA release workflow; do not use a generic Render redeploy while the service's configured `imagePath` remains the historical bootstrap tag.
-- Phase C is merged into `develop` through PR #60 at `fd888b6...`, but is not merged into `main` and is not deployed. Current Render production remains on `42ee035...`.
+- Phase C is merged into `develop` through PR #60, and its PostgreSQL-backed acceptance integration test is complete through PR #62 at `3d38d4c...`. Phase C is not promoted to `main` and is not deployed. Current Render production remains on `42ee035...`.
+- Live production PvP/PvAI acceptance remains pending. The disposable-PostgreSQL integration test in `develop` does not substitute for acceptance on the live production service.
 - The old November 3 audit baselines and pending-release statements below are historical provenance, not current deployment status.
 - The 2,000 ms performance threshold remains proposed, not a formally adopted SLO.
 
@@ -52,12 +55,13 @@ A subsequent Render provider-metrics query returned recent service CPU samples a
 | Parameter | Current Audited Value | Status |
 |---|---|---|
 | **Production Branch** | `main` | `42ee035ab42cd4c0bc934699f4d5433ff4b12a83` (live Render image) |
-| **Integration Branch** | `develop` | `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0` (Phase C merged via PR #60) |
+| **Integration Branch** | `develop` | `3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd` (PR #62 merge commit) |
 | **Audit Evidence Baseline SHA** | `938a17408078ca58c9bec6bf42eec09758be6165` | Preserved historical audit metrics baseline |
 | **Historical Develop Snapshot** | `2a46000b455f9b9779fd7289c6b22ae080aaa44c` | Pre-hardening develop snapshot (CI Run #41502411622) |
 | **Current Production Application Baseline** | `42ee035ab42cd4c0bc934699f4d5433ff4b12a83` | Exact image SHA is live on Render; release run #42253079008 |
 | **Documentation Refresh Scope** | `README.md`, `FINAL_ACCEPTANCE_REPORT.md`, `PRODUCTION_PREFLIGHT.md`, `reports/ai-benchmark.md` | Documentation-only; no application source, tests, migrations, Docker configuration, or workflows changed |
-| **Main / Develop Relationship** | `develop` is ahead of `main` | 81 commits ahead / 0 behind; Phase C PR #60 merged at `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0` |
+| **Main / Develop Relationship** | `develop` is ahead of `main` | 85 commits ahead / 0 behind; PR #62 merged at `3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd` |
+| **PR #62 PostgreSQL Integration Acceptance** | Complete in `develop` | Dedicated test against disposable PostgreSQL; live production PvP/PvAI acceptance remains pending |
 | **Backup Branch** | `backup/develop-before-pr49-sync-20261102` (`5326543`) | Preserved safely |
 | **Ruleset Configuration** | `CaroAI - Protect Develop` allows direct push; `Restrict deletions` and `Block force pushes` remain enabled | Routine engineering proceeds direct-to-develop; `main` requires PR + 1 approval |
 | **Baseline CI Verification** | Run [#41475666768](https://github.com/emt0147t/caroAI/actions/runs/41475666768) on commit `938a174` | All 6 test/build jobs succeeded; release skipped as expected |
@@ -67,6 +71,8 @@ A subsequent Render provider-metrics query returned recent service CPU samples a
 
 > [!NOTE]
 > The `938a174` audit metrics baseline is retained only for historical contributor/commit accounting. The current source and production baseline is `42ee035`. PR #50 and its checks are historical promotion evidence; PR #58 is the current release integration PR and is merged. This document's detailed November 3 audit values must be interpreted as historical where they differ from section 0.
+
+> **Historical sections:** Detailed November 3 preflight procedures and live-cloud gameplay observations are retained for audit provenance. Current Phase C promotion/deployment and live production gameplay status is stated in Section 0 above.
 
 ---
 
@@ -300,7 +306,7 @@ Direct push to `main` is strictly prohibited by repository rulesets (`main` enfo
 ## 10. Remaining Post-Release Acceptance Work
 
 1. **Documentation baseline:** this preflight and the accompanying README, Final Acceptance Report, and benchmark report now reference the current production release; review this documentation PR before merging.
-2. **Phase C promotion:** Phase C has merged into `develop` via [PR #60](https://github.com/emt0147t/caroAI/pull/60) at `fd888b677169fe7d5ac37db2845fbbbe44dfa0a0`. The follow-up real-PostgreSQL acceptance-runner test is tracked in [PR #62](https://github.com/emt0147t/caroAI/pull/62). After that check passes, create/review a separate promotion PR to `main`; do not release automatically.
+2. **Phase C promotion:** Phase C [PR #60](https://github.com/emt0147t/caroAI/pull/60) and the real-PostgreSQL acceptance-runner test [PR #62](https://github.com/emt0147t/caroAI/pull/62) are merged into `develop`; PR #62 merged at `3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd`. The integration test is complete. Phase C is not promoted to `main` or deployed; live production PvP/PvAI acceptance remains pending.
 3. **Production PvP/PvAI acceptance:** only run after the reviewed Phase C release deploys its QA route and migration. Verify win state, AI move legality, reload/history persistence, and exact-run cleanup; never run destructive cleanup outside its run ID.
 4. **Observability activation:** decide whether to configure a dedicated `CAROAI_METRICS_TOKEN`, deploy an authenticated scraper, and configure notification routing. Alert rules in the repo are templates, not active alerts.
 5. **Capacity/SLO decision:** gather production traffic evidence before enabling IMPOSSIBLE time budgets or concurrency limits. The 2,000 ms value is a proposed reference, not an adopted SLO.
