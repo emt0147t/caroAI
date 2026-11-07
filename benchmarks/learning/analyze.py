@@ -7,7 +7,7 @@ from pathlib import Path
 from app.ai.threats import FULL, bit, cells, encode
 from benchmarks.competitive.corpus import wins
 from benchmarks.learning.certificates import Solver, verify_certificate
-from benchmarks.learning.records import load_games, validate_game
+from benchmarks.learning.records import load_games, private_output, validate_game
 from benchmarks.learning.witness import prove_plan, verify_plan
 
 
@@ -91,7 +91,7 @@ def analyze(path, depth, max_nodes):
             if finding and finding['expected_moves']:
                 break
         output.append({'game_id': game['game_id'], 'move_count': game['move_count'],
-                       'recorded_difficulty': game['difficulty'], 'findings': detected,
+                       'recorded_difficulty': game.get('difficulty'), 'findings': detected,
                        'first_observed_plan_error': first_plan_error(positions, depth, max_nodes),
                        'label': 'Earliest detected certifiable error, not a proven first strategic mistake'})
     return {'dataset_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     parser.add_argument('--max-nodes', type=int, default=30000)
     args = parser.parse_args()
     report = analyze(args.dataset, args.depth, args.max_nodes)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, indent=2) + '\n')
-    print(json.dumps([{'game_id': g['game_id'], 'findings': [
-        {k: v for k, v in f.items() if k != 'board'} for f in g['findings']]} for g in report['games']], indent=2))
+    private_output(args.output).write_text(json.dumps(report, indent=2) + '\n')
+    print(json.dumps({'complete_games': len(report['games']),
+                      'certified_observed_plan_findings': sum(bool(g['first_observed_plan_error']) for g in report['games']),
+                      'private_details': 'Saved locally; no game identifiers, moves or boards printed.'}))

@@ -6,6 +6,7 @@ from pathlib import Path
 from app.ai.competitive import POLICIES, choose_move
 from benchmarks.competitive.corpus import cases, transform_cell
 from benchmarks.learning.model import Model
+from benchmarks.learning.records import private_output
 from benchmarks.learning.search import choose
 
 
@@ -63,6 +64,13 @@ if __name__ == '__main__':
                         help='Optional local owner-controlled data; never auto-upload to public artifacts')
     args = parser.parse_args()
     report = measure(Model.load(args.model), args.private_challenges)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, indent=2) + '\n')
-    print(json.dumps(report, indent=2))
+    output = private_output(args.output) if args.private_challenges else args.output
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(report, indent=2) + '\n')
+    if args.private_challenges:
+        print(json.dumps({'model_sha256': report['model_sha256'],
+                          'private_cases': sum(g['n'] for g in report['human_cases']),
+                          'candidate_pass': sum(g['candidate_pass'] for g in report['human_cases']),
+                          'all_challenges_pass': report['all_challenges_pass']}))
+    else:
+        print(json.dumps(report, indent=2))

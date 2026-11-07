@@ -1,10 +1,21 @@
 """Strict full-history replay and canonical board identities for offline data."""
 import hashlib
 import json
+from pathlib import Path
 
 from app.domain.game_rules import GameRules
 from app.domain.game_state import GameMode, GameState, Player
 from benchmarks.competitive.corpus import transform_cell
+
+
+def private_output(path):
+    """Keep owner-provided histories out of the proposed public source tree."""
+    root = Path(__file__).resolve().parents[2]
+    path = Path(path).resolve()
+    if path.is_relative_to(root) and not path.is_relative_to(root / 'work'):
+        raise ValueError('Private results must be outside this checkout or under ignored work/private/')
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def numeric_board(state):

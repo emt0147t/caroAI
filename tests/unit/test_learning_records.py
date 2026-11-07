@@ -4,6 +4,8 @@ from copy import deepcopy
 import pytest
 
 from benchmarks.learning.records import board_key, validate_game
+from benchmarks.learning.records import private_output
+from pathlib import Path
 
 
 def complete_game():
@@ -53,3 +55,10 @@ def test_canonical_positions_group_d4_but_preserve_player_and_colors():
     rotated = [list(row) for row in zip(*board[::-1])]
     assert board_key(board, 1) == board_key(rotated, 1)
     assert board_key(board, 1) != board_key(board, 2)
+
+
+def test_private_outputs_reject_public_checkout_destinations(tmp_path):
+    root = Path(__file__).resolve().parents[2]
+    with pytest.raises(ValueError, match='Private results'):
+        private_output(root / 'reports/private-history.json')
+    assert private_output(tmp_path / 'private/result.json') == tmp_path / 'private/result.json'
