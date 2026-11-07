@@ -42,3 +42,6 @@ evidence/diff/
 # Logs / frontend dependencies
 *.log
 node_modules/
+
+# Screenshot font cache and local experiment intermediates
+/work/

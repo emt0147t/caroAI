@@ -36,3 +36,10 @@ htmlcov/
 .git
 .github
 docs/
+
+# Local experiment and browser-test artifacts
+work/
+node_modules/
+evidence/
+playwright-report/
+test-results/

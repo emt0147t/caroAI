@@ -107,3 +107,15 @@ HARD có bằng chứng cải thiện ở nhóm mặc định đã đo. IMPOSSIB
 
 
 Workflow follow-up: cập nhật báo cáo đã hủy lượt IMPOSSIBLE–baseline ở source `14abd856` trước khi đủ 200 ván; artifact dở dang không được tính. Workflow được sửa bằng preflight so sánh runtime diff và concurrency theo từng job. Lượt đo chạy lại ở `2e9f869` có cùng byte của toàn bộ app/AI/harness với `14abd856`; chỉ report khác. Thay đổi tài liệu không hủy hoặc lặp lại benchmark. Workflow-only matrix/infrastructure edits có thể chạy chủ động bằng workflow_dispatch.
+
+
+Browser harness follow-up: run 42366401700 failed only the first mobile start
+capture (baseline 390×2928; candidate 390×2807), with different fallback/webfont
+metrics despite byte-identical frontend files. The capture harness now pins the
+external Plus Jakarta Sans font to Google Fonts commit
+`8cd7d0de182c88592d6852c245fe48f66eef55ee`, verifies SHA-256 and routes that response
+in test pages only. Product CSS/fonts and comparator thresholds stay unchanged.
+Local repeated captures: 12/12 identical comparisons (0% diff); deliberate mutation,
+dimension mismatch and missing-image checks still fail as expected (4/4 checks).
+New CI verification remains pending until its run completes. Cached font/test
+artifacts are excluded from Git and Docker build context.
