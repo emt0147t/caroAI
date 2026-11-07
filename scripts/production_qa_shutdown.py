@@ -225,6 +225,29 @@ def _write_summary(
         summary.write("\n".join(lines) + "\n")
 
 
+def _validate_public_url(public_url: str) -> None:
+    try:
+        parsed_url = urlsplit(public_url)
+        parsed_url.port
+    except ValueError:
+        raise RuntimeError("PUBLIC_URL is malformed or has an invalid port") from None
+    if (
+        parsed_url.scheme != "https"
+        or not parsed_url.hostname
+        or parsed_url.path
+        or parsed_url.query
+        or parsed_url.fragment
+        or parsed_url.username
+        or parsed_url.password
+    ):
+        raise RuntimeError("PUBLIC_URL must be a clean HTTPS origin")
+
+
+def _validate_commit_sha(commit_sha: str) -> None:
+    if not re.fullmatch(r"[0-9a-f]{40}", commit_sha):
+        raise RuntimeError("GITHUB_SHA must be a full 40-character commit SHA")
+
+
 def run_shutdown() -> None:
     """Disable QA, deploy that configuration, and verify production behavior."""
     service_id = os.environ.get("RENDER_SERVICE_ID", "").strip()
@@ -249,19 +272,8 @@ def run_shutdown() -> None:
             "Missing required release configuration: " + ", ".join(missing)
         )
 
-    parsed_url = urlsplit(public_url)
-    if (
-        parsed_url.scheme != "https"
-        or not parsed_url.hostname
-        or parsed_url.path
-        or parsed_url.query
-        or parsed_url.fragment
-        or parsed_url.username
-        or parsed_url.password
-    ):
-        raise RuntimeError("PUBLIC_URL must be a clean HTTPS origin")
-    if not re.fullmatch(r"[0-9a-f]{40}", commit_sha):
-        raise RuntimeError("GITHUB_SHA must be a full 40-character commit SHA")
+    _validate_public_url(public_url)
+    _validate_commit_sha(commit_sha)
 
     base_url = public_url.rstrip("/")
     image_ref = f"{image_name}:{commit_sha}"
