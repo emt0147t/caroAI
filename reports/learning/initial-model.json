@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "algorithm": "linear_policy_value_monte_carlo_actor_critic",
+  "policy_features": [
+    "bias",
+    "attack_gain",
+    "defense_gain",
+    "own_next_wins",
+    "enemy_next_wins",
+    "own_neighbors",
+    "enemy_neighbors",
+    "centrality"
+  ],
+  "value_features": [
+    "bias",
+    "own_score",
+    "enemy_score",
+    "own_wins",
+    "enemy_wins",
+    "own_stones",
+    "enemy_stones"
+  ],
+  "policy_weights": [
+    0.0,
+    1.0,
+    1.2,
+    3.0,
+    -3.0,
+    0.1,
+    0.1,
+    0.05
+  ],
+  "value_weights": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "metadata": {}
+}
