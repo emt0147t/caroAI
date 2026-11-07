@@ -1,0 +1,132 @@
+{
+  "games": 200,
+  "wins": 107,
+  "draws": 0,
+  "losses": 93,
+  "score_rate": 0.535,
+  "win_rate_wilson95": [
+    0.4658664687236316,
+    0.6028143584299599
+  ],
+  "canonical_opening_score_bootstrap95": [
+    0.475,
+    0.59375
+  ],
+  "canonical_openings": 80,
+  "bootstrap_estimand": "Equal-weight D4-canonical board opening clusters, not independent game wins.",
+  "strength_gate": "NOT_ESTABLISHED",
+  "production_source_sha": "c10ee2739b6577ea0004f86e91126dd176132319",
+  "production_file_hashes": {
+    "app/ai/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "app/ai/adapter.py": "8602250ec61d60dc8ed4bed6f22a73a700281993e4ad3fdd9951bc443c061e7f",
+    "app/ai/admission.py": "7c43b5ef3ddfbf0421188bdcb5acec5ef0200b4fcb506e6142573cbfc1c4770c",
+    "app/ai/competitive.py": "2b572c6fc9ab0252cd20834f64b7ceebbe64b3b7749e281b5443e63112044a31",
+    "app/ai/engine.py": "7464e872689c2093db450f32c7a241bbc954da34ee916ce6e18d0c85c279f34e",
+    "app/ai/evaluator.py": "88752fefd87b933c6e449a9420ac9447afa9e0ff45e11d06cb9af3773cd28fbc",
+    "app/ai/minimax.py": "aa219e72eac8b6317855195df966825698610bd61742c28d5e36bfa0069402f5",
+    "app/ai/move_generator.py": "76dd3a6d9b249b87ac34f50c8837950d362e4e173320398e41e4de109e2b46c2",
+    "app/ai/search_stats.py": "ca2000a309a0ae6694df2ba55b98f4b3808423d00c35d8d3cc14b71e5ff4b85f",
+    "app/ai/threats.py": "282072dd980656e366c53d86b519af56942e743e19ad4b8d32e67f741de32d1e",
+    "app/domain/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "app/domain/game_rules.py": "cd71def305a4082d7e289616ca223584fc16164119612e36a95aab6224aef297",
+    "app/domain/game_state.py": "08e2528b3c6abbf0b0626c940f943e725b174cc51e40589f34d0d24d3f19f868"
+  },
+  "candidate_model_sha256": "4370e36660dd41a7ebd81c96a0e552bd44d165ca5f7d40d9d873307ec79182aa",
+  "opponent_model_sha256": null,
+  "protocol": {
+    "model": "/home/runner/work/_temp/offline/train/model.json",
+    "initial_model": "/home/runner/work/_temp/offline/train/initial-model.json",
+    "training_manifest": "/home/runner/work/_temp/offline/train/training-manifest.json",
+    "opponent": "production",
+    "level": "IMPOSSIBLE",
+    "budget_ms": 25.0,
+    "games": 200,
+    "seed": 20300101,
+    "output": "/home/runner/work/_temp/results/production-impossible-25.json"
+  },
+  "environment": {
+    "source_sha": "0204bc5b12f6ec27058e220d5a14ca023ea598ee",
+    "working_tree_dirty": false,
+    "source_content_sha256": "6ef7e921c417affa7c100a355365570bf0be47abca77b74f127af095b02482bf",
+    "python": "3.11.18",
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+    "cpu": "AMD EPYC 9V45 96-Core Processor",
+    "packages": [
+      "annotated-doc==0.0.5",
+      "annotated-types==0.8.0",
+      "anyio==4.16.0",
+      "certifi==2026.10.23",
+      "click==8.5.1",
+      "cloudpickle==3.1.2",
+      "fastapi==0.162.2",
+      "flake8==7.5.0",
+      "h11==0.16.0",
+      "httpcore==1.0.9",
+      "httpx==0.28.1",
+      "idna==3.20",
+      "iniconfig==2.3.1",
+      "joblib==1.6.0",
+      "mccabe==0.7.0",
+      "narwhals==2.28.0",
+      "numpy==2.4.6",
+      "opentelemetry-api==1.45.2",
+      "packaging==26.3",
+      "pluggy==1.7.0",
+      "prometheus_client==0.26.0",
+      "psycopg2-binary==2.9.13",
+      "pycodestyle==2.15.0",
+      "pydantic==2.14.3",
+      "pydantic_core==2.50.4",
+      "pyflakes==4.1.0",
+      "Pygments==2.21.0",
+      "pytest==9.2.0",
+      "scikit-learn==1.9.1",
+      "scipy==1.17.1",
+      "SQLAlchemy==2.1.8",
+      "starlette==1.10.0",
+      "threadpoolctl==3.8.0",
+      "typing-inspection==0.4.5",
+      "typing_extensions==4.16.0",
+      "uvicorn==0.54.0"
+    ],
+    "percentiles": "nearest_rank",
+    "clock": "perf_counter_ns"
+  },
+  "candidate_latency": {
+    "n": 2599,
+    "engine_p50_ms": 25.074865,
+    "engine_p95_ms": 25.149087,
+    "engine_max_ms": 31.369893,
+    "timeouts": 1628,
+    "fallbacks": 24,
+    "nodes_mean": 122.49018853405155,
+    "note": "Tournament positions differ by side; not a same-fixture speedup measurement."
+  },
+  "opponent_latency": {
+    "n": 2592,
+    "engine_p50_ms": 25.038638,
+    "engine_p95_ms": 25.08051,
+    "engine_max_ms": 26.330378,
+    "timeouts": 1549,
+    "fallbacks": 4,
+    "nodes_mean": 112.96527777777777,
+    "note": "Tournament positions differ by side; not a same-fixture speedup measurement."
+  },
+  "promotion": "NOT_AUTOMATIC: strength alone does not satisfy challenge/tactical/latency gates.",
+  "candidate_missed_win": {
+    "misses": 0,
+    "opportunities": 107
+  },
+  "candidate_missed_block": {
+    "misses": 0,
+    "opportunities": 466
+  },
+  "opponent_missed_win": {
+    "misses": 0,
+    "opportunities": 93
+  },
+  "opponent_missed_block": {
+    "misses": 0,
+    "opportunities": 474
+  }
+}

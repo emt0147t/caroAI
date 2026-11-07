@@ -16,11 +16,193 @@ on:
         required: true
         type: boolean
         default: false
+      offline_learning:
+        description: 'Run CPU self-play, held-out equal-budget comparisons and challenge gates; never deploy a model'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
+  offline-train:
+    name: Offline self-play training and public tactical audit
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.offline_learning == true && inputs.release_approved == false }}
+    needs: [test, secret-scan]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Train on 4000 complete self-play games with reserved evaluation openings
+        run: >-
+          python -m benchmarks.learning.train --games 4000 --seed 731
+          --evaluation-seed 20300101 --evaluation-pairs 100
+          --output ${{ runner.temp }}/offline/train
+      - name: Independently replay every completed training game
+        run: >-
+          python -m benchmarks.learning.audit --expected-games 4000
+          --raw ${{ runner.temp }}/offline/train/selfplay.jsonl
+          --training-manifest ${{ runner.temp }}/offline/train/training-manifest.json
+          --output ${{ runner.temp }}/offline/train/replay.json
+      - name: Measure candidate and production on independent tactics and human challenges
+        run: >-
+          python -m benchmarks.learning.challenges
+          --model ${{ runner.temp }}/offline/train/model.json
+          --output ${{ runner.temp }}/offline/challenges.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: offline-training-${{ github.sha }}
+          path: ${{ runner.temp }}/offline/
+          retention-days: 30
+
+  offline-evaluate:
+    name: Equal-budget learning comparison ${{ matrix.name }}
+    needs: offline-train
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: production-impossible-700
+            opponent: production
+            level: IMPOSSIBLE
+            budget: 700
+          - name: initial-impossible-700
+            opponent: initial
+            level: IMPOSSIBLE
+            budget: 700
+          - name: production-impossible-25
+            opponent: production
+            level: IMPOSSIBLE
+            budget: 25
+          - name: production-hard-250
+            opponent: production
+            level: HARD
+            budget: 250
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: offline-training-${{ github.sha }}
+          path: ${{ runner.temp }}/offline
+      - name: Play 200 complete color-swapped games on reserved openings
+        run: >-
+          python -m benchmarks.learning.evaluate --games 200 --seed 20300101
+          --model ${{ runner.temp }}/offline/train/model.json
+          --initial-model ${{ runner.temp }}/offline/train/initial-model.json
+          --training-manifest ${{ runner.temp }}/offline/train/training-manifest.json
+          --opponent ${{ matrix.opponent }} --level ${{ matrix.level }} --budget-ms ${{ matrix.budget }}
+          --output ${{ runner.temp }}/results/${{ matrix.name }}.json
+      - name: Independently replay all evaluation games
+        run: >-
+          python -m benchmarks.learning.audit --expected-games 200
+          --raw ${{ runner.temp }}/results/${{ matrix.name }}.jsonl
+          --output ${{ runner.temp }}/results/replay-${{ matrix.name }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: offline-evaluation-${{ matrix.name }}-${{ github.sha }}
+          path: ${{ runner.temp }}/results/
+          retention-days: 30
+
+  offline-latency:
+    name: Paired core latency and engine-thread contention (not API)
+    needs: offline-train
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: offline-training-${{ github.sha }}
+          path: ${{ runner.temp }}/offline
+      - run: >-
+          python -m benchmarks.learning.measure --level IMPOSSIBLE --budget-ms 700
+          --runs 5 --warmup 1 --concurrency 1 2 4 8
+          --model ${{ runner.temp }}/offline/train/model.json
+          --output ${{ runner.temp }}/latency/engine.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: offline-latency-${{ github.sha }}
+          path: ${{ runner.temp }}/latency/
+          retention-days: 30
+
+  offline-decision:
+    name: Record promotion eligibility (never deploy)
+    needs: [offline-evaluate, offline-latency]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: offline-*-${{ github.sha }}
+          path: ${{ runner.temp }}/offline-results
+          merge-multiple: true
+      - run: >-
+          python -m benchmarks.learning.decision
+          --results ${{ runner.temp }}/offline-results
+          --output ${{ runner.temp }}/offline-results/decision.json
+      - name: Publish explicit eligibility in the run summary
+        env:
+          REPORT: ${{ runner.temp }}/offline-results/decision.json
+        run: |
+          python - <<'PY'
+          import json, os
+          report = json.load(open(os.environ['REPORT']))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as output:
+              output.write('## Offline model decision: ' + report['decision'] + '\n\n')
+              output.write('No model was promoted or deployed.\n\n')
+              for key, passed in report['checks'].items():
+                  output.write('- ' + key + ': ' + ('PASS' if passed else 'NOT MET') + '\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: offline-decision-${{ github.sha }}
+          path: ${{ runner.temp }}/offline-results/decision.json
+          retention-days: 30
+
   frontend:
     name: Frontend syntax and regression checks
     runs-on: ubuntu-latest
