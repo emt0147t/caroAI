@@ -67,6 +67,19 @@ class Game(Base):
     # making this column required in any already-provisioned database.
 
 
+class QARunUsage(Base):
+    """Deployment-wide creation quota retained through capability expiry."""
+
+    __tablename__ = "qa_run_usage"
+    __table_args__ = (
+        CheckConstraint("games_created >= 0", name="ck_qa_run_usage_games_nonnegative"),
+    )
+
+    qa_run_id = Column(String(32), primary_key=True)
+    games_created = Column(Integer, nullable=False)
+    expires_at = Column(BigInteger, nullable=False, index=True)
+
+
 class Move(Base):
     """A move belonging to one game."""
 

@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import time
+
+from app.api.qa_security import verify_capability
 from scripts import production_qa_acceptance as qa
 
 
 RUN_ID = "a" * 32
+SECRET = "s" * 32
 PVP_ID = "qa-pvp-game"
 PVAI_ID = "qa-pvai-game"
 
@@ -34,12 +38,18 @@ class FakeAcceptanceAPI:
         path,
         *,
         run_id,
+        capability,
         payload=None,
         expected_status=(200,),
     ):
         assert base_url == "https://caroai.example"
         assert run_id == RUN_ID
-        self.state["calls"].append((method, path, payload, expected_status))
+        assert verify_capability(
+            run_id, capability, SECRET.encode(), now=int(time.time())
+        )
+        self.state["calls"].append(
+            (method, path, payload, expected_status, capability)
+        )
         handler = self.handlers.get((method, path))
         if handler is None:
             raise AssertionError(f"Unexpected acceptance request: {method} {path}")
@@ -142,30 +152,38 @@ def install_fake_acceptance_api(monkeypatch, *, fail_ai: bool = False):
     """Patch the runner to use an isolated fake HTTPS endpoint."""
     stub = FakeAcceptanceAPI(fail_ai=fail_ai)
     monkeypatch.setenv("CAROAI_PUBLIC_URL", "https://caroai.example")
+    monkeypatch.setenv("CAROAI_QA_HMAC_SECRET", SECRET)
     monkeypatch.setattr(qa.secrets, "token_hex", lambda _size: RUN_ID)
     monkeypatch.setattr(qa, "request_json", stub)
     return stub.state
 
 
-def test_production_acceptance_runs_pvp_pvai_reads_history_and_cleans(monkeypatch):
+def test_production_acceptance_runs_pvp_pvai_reads_history_and_cleans(
+    monkeypatch, capsys
+):
     state = install_fake_acceptance_api(monkeypatch)
 
-    assert qa.main() == 0
+    assert qa.main([]) == 0
     assert state["pvp_moves"] == 9
     assert state["deleted"] is True
     assert any(
         method == "DELETE" and path == "/api/qa/runs"
-        for method, path, _payload, _expected in state["calls"]
+        for method, path, _payload, _expected, _capability in state["calls"]
     )
     # Each game is checked for HTTP 404 after cleanup.
     deleted_reads = [
         expected
-        for method, path, _payload, expected in state["calls"]
+        for method, path, _payload, expected, _capability in state["calls"]
         if method == "GET"
         and path in {f"/api/games/{PVP_ID}", f"/api/games/{PVAI_ID}"}
         and expected == (404,)
     ]
     assert len(deleted_reads) == 2
+    output = capsys.readouterr()
+    assert all(
+        capability not in output.out + output.err
+        for _method, _path, _payload, _expected, capability in state["calls"]
+    )
 
 
 def test_production_acceptance_cleans_both_games_when_pvai_fails(
@@ -173,8 +191,35 @@ def test_production_acceptance_cleans_both_games_when_pvai_fails(
 ):
     state = install_fake_acceptance_api(monkeypatch, fail_ai=True)
 
-    assert qa.main() == 1
+    assert qa.main([]) == 1
     assert state["deleted"] is True
     output = capsys.readouterr()
     assert "Production gameplay acceptance failed" in output.err
     assert "Production QA cleanup verified" in output.out
+
+
+def test_production_acceptance_requires_hmac_secret_before_api_calls(monkeypatch):
+    monkeypatch.setenv("CAROAI_PUBLIC_URL", "https://caroai.example")
+    monkeypatch.delenv("CAROAI_QA_HMAC_SECRET", raising=False)
+    monkeypatch.setattr(qa.secrets, "token_hex", lambda _size: RUN_ID)
+
+    try:
+        qa.main([])
+    except SystemExit as exc:
+        assert "CAROAI_QA_HMAC_SECRET" in str(exc)
+    else:
+        raise AssertionError("acceptance runner should require its signing secret")
+
+
+def test_production_acceptance_can_retry_exact_run_cleanup(monkeypatch, capsys):
+    state = install_fake_acceptance_api(monkeypatch)
+
+    assert qa.main(["--cleanup-run-id", RUN_ID]) == 0
+    output = capsys.readouterr()
+    assert state["deleted"] is True
+    assert "recovery cleanup verified" in output.out
+    assert all(
+        capability not in output.out + output.err
+        for _method, _path, _payload, _expected, capability in state["calls"]
+    )
+    assert all(method != "POST" for method, *_rest in state["calls"])

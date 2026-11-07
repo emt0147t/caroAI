@@ -1,5 +1,7 @@
 # CaroAI Phase C — AI and API/PostgreSQL Performance Evidence
 
+> **Historical evidence note:** This report describes source SHA `8ca52e0` and predates the QA endpoint security follow-up. Its benchmark results remain historical evidence for that source. The current QA endpoint controls, environment variables, and deployment status are documented in [Production QA Acceptance Security](../../docs/operations/qa-acceptance-security.md); this report is not evidence that those follow-up controls have been deployed or exercised live.
+
 **Benchmark source SHA:** `8ca52e0ed4a5a2ba4546f94978dcb0c1fb06339f`  
 **Production baseline SHA:** `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`  
 **Date:** 2026-11-07 (Asia/Bangkok)  

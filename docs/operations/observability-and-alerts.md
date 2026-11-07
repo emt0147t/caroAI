@@ -74,8 +74,10 @@ The admission guard is process-local. It is appropriate as a small first back-pr
 2. For slow PvAI requests, compare AI search duration/nodes/branching with SQL statement, connection-hold, and transaction histograms. Low row-lock query time with high AI time points to search/CPU contention; long connection hold/transaction duration points to transaction-boundary or DB occupancy.
 3. Check Render CPU, memory, instance count and platform HTTP P95. Do not run a load test against production to reproduce an alert.
 4. If the IMPOSSIBLE guard is active, check admission rejection rate and HTTP 429 volume. Increase capacity only after reviewing measured CPU/memory headroom.
-5. If QA acceptance fails, first inspect whether the runner reports a cleanup failure. The runner prints its run capability only when cleanup fails; invoke the same `DELETE /api/qa/runs` with `X-CaroAI-QA-Run-ID` set to that exact capability. Do not delete unrelated games manually.
+5. If QA acceptance fails, consult [Production QA Acceptance Security](qa-acceptance-security.md). The runner never prints its capability. Any recovery must use a fresh authorized capability and the exact run ID; the run ID alone is not an authorization credential.
 6. Keep the two-second Phase A/Phase B reference provisional until the team explicitly accepts an SLO and measures a representative production traffic distribution.
+
+QA router opt-in, run capability authentication, quota persistence, and process-local limits are documented in [Production QA Acceptance Security](qa-acceptance-security.md).
 
 ## Evidence still required
 

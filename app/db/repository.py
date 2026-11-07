@@ -7,13 +7,15 @@ from threading import RLock
 from typing import Iterator
 from uuid import uuid4
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import case, delete, func, select
+from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.db.models import Game as GameRecord
 from app.db.models import GameAnalysis
 from app.db.models import Move as PersistedMove
+from app.db.models import QARunUsage
 from app.domain.game_rules import GameRules, InvalidMoveError
 from app.domain.game_state import GameMode, GameState, GameStatus, Move
 
@@ -24,6 +26,10 @@ class RepositoryGameNotFoundError(LookupError):
 
 class GamePersistenceError(RuntimeError):
     """Raised when a persisted game cannot be read or written consistently."""
+
+
+class QARunLimitExceededError(RuntimeError):
+    """Raised when a QA run has consumed its deployment-wide game quota."""
 
 
 @dataclass(frozen=True)
@@ -88,8 +94,52 @@ class SQLAlchemyGameUnitOfWork:
         self._loaded_records: dict[str, GameRecord] = {}
 
     def create_game(
-        self, mode: GameMode, *, qa_run_id: str | None = None
+        self,
+        mode: GameMode,
+        *,
+        qa_run_id: str | None = None,
+        qa_max_games: int | None = None,
+        qa_expires_at: int | None = None,
     ) -> str:
+        if qa_run_id is not None and qa_max_games is not None:
+            if qa_expires_at is None:
+                raise ValueError("QA quota requires the capability expiry")
+            if self.session.bind.dialect.name != "postgresql":
+                raise RuntimeError("QA creation quota requires PostgreSQL")
+            now = int(datetime.now(timezone.utc).timestamp())
+            self.session.execute(
+                delete(QARunUsage).where(QARunUsage.expires_at <= now)
+            )
+            quota = (
+                postgres_insert(QARunUsage)
+                .values(
+                    qa_run_id=qa_run_id,
+                    games_created=1,
+                    expires_at=qa_expires_at,
+                )
+                .on_conflict_do_update(
+                    index_elements=[QARunUsage.qa_run_id],
+                    set_={
+                        "games_created": case(
+                            (QARunUsage.expires_at <= now, 1),
+                            else_=QARunUsage.games_created + 1,
+                        ),
+                        "expires_at": func.greatest(
+                            QARunUsage.expires_at, qa_expires_at
+                        ),
+                    },
+                    where=(
+                        (QARunUsage.expires_at <= now)
+                        | (QARunUsage.games_created < qa_max_games)
+                    ),
+                )
+                .returning(QARunUsage.games_created)
+            )
+            if self.session.execute(quota).scalar_one_or_none() is None:
+                raise QARunLimitExceededError(
+                    "This QA run has reached its game creation limit."
+                )
+
         public_id = str(uuid4())
         record = GameRecord(
             public_id=public_id,
@@ -260,15 +310,36 @@ class InMemoryGameUnitOfWork:
         started_at: dict[str, datetime],
         ended_at: dict[str, datetime],
         qa_run_ids: dict[str, str],
+        qa_run_usage: dict[str, tuple[int, int]],
     ) -> None:
         self._games = games
         self._started_at = started_at
         self._ended_at = ended_at
         self._qa_run_ids = qa_run_ids
+        self._qa_run_usage = qa_run_usage
 
     def create_game(
-        self, mode: GameMode, *, qa_run_id: str | None = None
+        self,
+        mode: GameMode,
+        *,
+        qa_run_id: str | None = None,
+        qa_max_games: int | None = None,
+        qa_expires_at: int | None = None,
     ) -> str:
+        if qa_run_id is not None and qa_max_games is not None:
+            if qa_expires_at is None:
+                raise ValueError("QA quota requires the capability expiry")
+            count, prior_expiry = self._qa_run_usage.get(qa_run_id, (0, 0))
+            if prior_expiry <= int(datetime.now(timezone.utc).timestamp()):
+                count = 0
+            if count >= qa_max_games:
+                raise QARunLimitExceededError(
+                    "This QA run has reached its game creation limit."
+                )
+            self._qa_run_usage[qa_run_id] = (
+                count + 1,
+                max(prior_expiry, qa_expires_at),
+            )
         game_id = str(uuid4())
         self._games[game_id] = GameState(mode=mode)
         self._started_at[game_id] = datetime.now(timezone.utc)
@@ -345,6 +416,7 @@ class InMemoryGameRepository:
         self._started_at: dict[str, datetime] = {}
         self._ended_at: dict[str, datetime] = {}
         self._qa_run_ids: dict[str, str] = {}
+        self._qa_run_usage: dict[str, tuple[int, int]] = {}
         self._lock = RLock()
 
     @contextmanager
@@ -354,10 +426,12 @@ class InMemoryGameRepository:
             started_at_copy = deepcopy(self._started_at)
             ended_at_copy = deepcopy(self._ended_at)
             qa_run_ids_copy = deepcopy(self._qa_run_ids)
+            qa_run_usage_copy = deepcopy(self._qa_run_usage)
             try:
                 yield InMemoryGameUnitOfWork(
                     working_copy, started_at_copy, ended_at_copy,
                     qa_run_ids_copy,
+                    qa_run_usage_copy,
                 )
             except Exception:
                 raise
@@ -366,3 +440,4 @@ class InMemoryGameRepository:
                 self._started_at = started_at_copy
                 self._ended_at = ended_at_copy
                 self._qa_run_ids = qa_run_ids_copy
+                self._qa_run_usage = qa_run_usage_copy

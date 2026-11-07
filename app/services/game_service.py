@@ -45,19 +45,39 @@ class GameService:
         )
 
     def create_game_with_state(
-        self, mode: GameMode, *, qa_run_id: str | None = None
+        self,
+        mode: GameMode,
+        *,
+        qa_run_id: str | None = None,
+        qa_max_games: int | None = None,
+        qa_expires_at: int | None = None,
     ) -> tuple[str, GameState]:
         """Create a game; QA tagging is only accepted by the dedicated QA route."""
         with self._repository.transaction() as uow:
-            game_id = uow.create_game(mode, qa_run_id=qa_run_id)
+            game_id = uow.create_game(
+                mode,
+                qa_run_id=qa_run_id,
+                qa_max_games=qa_max_games,
+                qa_expires_at=qa_expires_at,
+            )
             state = uow.get_game_state(game_id)
             return game_id, state
 
     def create_game(
-        self, mode: GameMode, *, qa_run_id: str | None = None
+        self,
+        mode: GameMode,
+        *,
+        qa_run_id: str | None = None,
+        qa_max_games: int | None = None,
+        qa_expires_at: int | None = None,
     ) -> str:
         """Create a game and return its public identifier."""
-        game_id, _state = self.create_game_with_state(mode, qa_run_id=qa_run_id)
+        game_id, _state = self.create_game_with_state(
+            mode,
+            qa_run_id=qa_run_id,
+            qa_max_games=qa_max_games,
+            qa_expires_at=qa_expires_at,
+        )
         return game_id
 
     def delete_qa_run(self, qa_run_id: str) -> list[str]:

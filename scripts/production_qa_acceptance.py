@@ -7,12 +7,15 @@ the authoritative API and history reads, and deletes only its own run's games.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import secrets
 import sys
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+
+from app.api.qa_security import create_qa_capability
 
 
 TIMEOUT_SECONDS = 20
@@ -28,11 +31,16 @@ def request_json(
     path: str,
     *,
     run_id: str,
+    capability: str,
     payload: dict | None = None,
     expected_status: tuple[int, ...] = (200,),
 ) -> tuple[int, dict]:
     body = None if payload is None else json.dumps(payload).encode("utf-8")
-    headers = {"X-CaroAI-QA-Run-ID": run_id, "Accept": "application/json"}
+    headers = {
+        "X-CaroAI-QA-Run-ID": run_id,
+        "X-CaroAI-QA-Capability": capability,
+        "Accept": "application/json",
+    }
     if body is not None:
         headers["Content-Type"] = "application/json"
     request = Request(
@@ -58,21 +66,23 @@ def request_json(
             f"{method} {path} returned non-JSON data (HTTP {status})"
         ) from exc
     if status not in expected_status:
-        detail = parsed.get("detail", "no detail") if isinstance(parsed, dict) else "invalid body"
         raise AcceptanceError(
-            f"{method} {path} expected {expected_status}, received HTTP {status}: {detail}"
+            f"{method} {path} expected {expected_status}, received HTTP {status}"
         )
     if not isinstance(parsed, dict):
         raise AcceptanceError(f"{method} {path} returned a non-object JSON value")
     return status, parsed
 
 
-def create_qa_game(base_url: str, run_id: str, mode: str) -> str:
+def create_qa_game(
+    base_url: str, run_id: str, capability: str, mode: str
+) -> str:
     _status, payload = request_json(
         base_url,
         "POST",
         "/api/qa/games",
         run_id=run_id,
+        capability=capability,
         payload={"mode": mode},
         expected_status=(201,),
     )
@@ -84,7 +94,9 @@ def create_qa_game(base_url: str, run_id: str, mode: str) -> str:
     return game_id
 
 
-def play_pvp_win(base_url: str, run_id: str, game_id: str) -> dict[str, object]:
+def play_pvp_win(
+    base_url: str, run_id: str, capability: str, game_id: str
+) -> dict[str, object]:
     # X completes a horizontal five; O replies in a separate row.
     moves = [
         (0, 0), (1, 0),
@@ -100,6 +112,7 @@ def play_pvp_win(base_url: str, run_id: str, game_id: str) -> dict[str, object]:
             "POST",
             f"/api/games/{game_id}/moves",
             run_id=run_id,
+            capability=capability,
             payload={"row": row, "col": col},
         )
     game = last.get("game", {})
@@ -118,12 +131,15 @@ def play_pvp_win(base_url: str, run_id: str, game_id: str) -> dict[str, object]:
     }
 
 
-def play_pvai_turn(base_url: str, run_id: str, game_id: str) -> dict:
+def play_pvai_turn(
+    base_url: str, run_id: str, capability: str, game_id: str
+) -> dict:
     _status, human = request_json(
         base_url,
         "POST",
         f"/api/games/{game_id}/moves",
         run_id=run_id,
+        capability=capability,
         payload={"row": 7, "col": 7},
     )
     if human.get("game", {}).get("current_player") != "O":
@@ -134,6 +150,7 @@ def play_pvai_turn(base_url: str, run_id: str, game_id: str) -> dict:
         "POST",
         f"/api/games/{game_id}/ai-move",
         run_id=run_id,
+        capability=capability,
         payload={"difficulty": "medium"},
     )
     move = ai.get("move", {})
@@ -163,11 +180,18 @@ def play_pvai_turn(base_url: str, run_id: str, game_id: str) -> dict:
 
 
 def verify_fresh_reads_and_history(
-    base_url: str, run_id: str, expected_states: dict[str, dict]
+    base_url: str,
+    run_id: str,
+    capability: str,
+    expected_states: dict[str, dict],
 ) -> None:
     for game_id, expected in expected_states.items():
         _status, detail = request_json(
-            base_url, "GET", f"/api/games/{game_id}", run_id=run_id
+            base_url,
+            "GET",
+            f"/api/games/{game_id}",
+            run_id=run_id,
+            capability=capability,
         )
         if detail.get("id") != game_id:
             raise AcceptanceError("Fresh game-detail read returned a different game")
@@ -183,6 +207,7 @@ def verify_fresh_reads_and_history(
         "GET",
         "/api/history?limit=100&offset=0",
         run_id=run_id,
+        capability=capability,
     )
     records = {
         item.get("id"): item
@@ -203,23 +228,31 @@ def verify_fresh_reads_and_history(
                 )
 
 
-def cleanup_and_verify(base_url: str, run_id: str, game_ids: list[str]) -> None:
+def cleanup_and_verify(
+    base_url: str,
+    run_id: str,
+    capability: str,
+    game_ids: list[str] | None,
+) -> None:
     _status, result = request_json(
         base_url,
         "DELETE",
         "/api/qa/runs",
         run_id=run_id,
+        capability=capability,
     )
     deleted_ids = set(result.get("deleted_game_ids", []))
-    if not set(game_ids).issubset(deleted_ids):
+    expected_ids = deleted_ids if game_ids is None else set(game_ids)
+    if not expected_ids.issubset(deleted_ids):
         raise AcceptanceError("QA cleanup did not report all games created by this run")
 
-    for game_id in game_ids:
+    for game_id in expected_ids:
         request_json(
             base_url,
             "GET",
             f"/api/games/{game_id}",
             run_id=run_id,
+            capability=capability,
             expected_status=(404,),
         )
 
@@ -228,33 +261,61 @@ def cleanup_and_verify(base_url: str, run_id: str, game_ids: list[str]) -> None:
         "GET",
         "/api/history?limit=100&offset=0",
         run_id=run_id,
+        capability=capability,
     )
     history_ids = {item.get("id") for item in history.get("items", [])}
-    if history_ids.intersection(game_ids):
+    if history_ids.intersection(expected_ids):
         raise AcceptanceError("Cleaned QA games are still visible in game history")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--cleanup-run-id",
+        help="retry cleanup for one exact run ID without creating new QA games",
+    )
+    arguments = parser.parse_args(argv)
+
     base_url = os.getenv("CAROAI_PUBLIC_URL", "").rstrip("/")
     if not base_url.startswith("https://"):
         raise SystemExit("CAROAI_PUBLIC_URL must be a configured public HTTPS URL")
 
-    run_id = secrets.token_hex(16)
+    secret = os.getenv("CAROAI_QA_HMAC_SECRET", "").encode("utf-8")
+    if len(secret) < 32:
+        raise SystemExit("CAROAI_QA_HMAC_SECRET must contain at least 32 bytes")
+
+    run_id = (
+        secrets.token_hex(16)
+        if arguments.cleanup_run_id is None
+        else arguments.cleanup_run_id
+    )
+    capability = create_qa_capability(run_id, secret)
+
+    if arguments.cleanup_run_id is not None:
+        cleanup_and_verify(base_url, run_id, capability, None)
+        print(f"Production QA recovery cleanup verified for run {run_id}.")
+        return 0
+
     game_ids: list[str] = []
     primary_error = None
     cleanup_error = None
 
     try:
-        pvp_id = create_qa_game(base_url, run_id, "HUMAN_VS_HUMAN")
+        pvp_id = create_qa_game(
+            base_url, run_id, capability, "HUMAN_VS_HUMAN"
+        )
         game_ids.append(pvp_id)
-        pvai_id = create_qa_game(base_url, run_id, "HUMAN_VS_AI")
+        pvai_id = create_qa_game(
+            base_url, run_id, capability, "HUMAN_VS_AI"
+        )
         game_ids.append(pvai_id)
 
-        pvp_expected = play_pvp_win(base_url, run_id, pvp_id)
-        pvai_expected = play_pvai_turn(base_url, run_id, pvai_id)
+        pvp_expected = play_pvp_win(base_url, run_id, capability, pvp_id)
+        pvai_expected = play_pvai_turn(base_url, run_id, capability, pvai_id)
         verify_fresh_reads_and_history(
             base_url,
             run_id,
+            capability,
             {pvp_id: pvp_expected, pvai_id: pvai_expected},
         )
         print("Production gameplay acceptance passed: PvP win, PvAI move, fresh reads and history.")
@@ -263,16 +324,15 @@ def main() -> int:
     finally:
         try:
             # Cleanup is required even when a gameplay assertion fails halfway.
-            cleanup_and_verify(base_url, run_id, game_ids)
+            cleanup_and_verify(base_url, run_id, capability, game_ids)
             print("Production QA cleanup verified: run-scoped records deleted.")
         except Exception as exc:
             cleanup_error = exc
 
     if cleanup_error is not None:
-        # The capability is printed only when an operator needs it for exact-run recovery.
         print(
             f"CRITICAL: QA cleanup failed ({cleanup_error}). "
-            f"Run capability for narrow cleanup recovery: {run_id}",
+            f"Run ID for operator-assisted cleanup: {run_id}",
             file=sys.stderr,
         )
         return 2

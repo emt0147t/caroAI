@@ -1,5 +1,7 @@
 # Phase C & Production Hardening — Design
 
+> **Historical design:** The original run-ID-only QA authentication proposal below is superseded by the follow-up implementation described in [Production QA Acceptance Security](../../operations/qa-acceptance-security.md). A run ID scopes cleanup but is not caller authentication.
+
 **Date:** 2026-11-06  
 **Baseline:** `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`  
 **Production service:** `srv-dbkd2dflk1mc73fd2ukg`
