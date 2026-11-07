@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
 import time
+from pathlib import Path
 
 from app.api.qa_security import verify_capability
 from scripts import production_qa_acceptance as qa
@@ -223,3 +226,18 @@ def test_production_acceptance_can_retry_exact_run_cleanup(monkeypatch, capsys):
         for _method, _path, _payload, _expected, capability in state["calls"]
     )
     assert all(method != "POST" for method, *_rest in state["calls"])
+
+
+def test_production_acceptance_script_help_works_outside_repo_without_pythonpath(tmp_path):
+    script_path = Path(qa.__file__).resolve()
+    result = subprocess.run(
+        [sys.executable, "-I", str(script_path), "--help"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=15,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "--cleanup-run-id" in result.stdout
