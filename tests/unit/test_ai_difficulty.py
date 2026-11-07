@@ -7,11 +7,14 @@ Từ engine.py (source thực tế):
     DIFFICULTY_CONFIG = {
         "EASY":   {"depth": 1, "candidate_limit": 6},
         "MEDIUM": {"depth": 2, "candidate_limit": 10},
-        "HARD":   {"depth": 3, "candidate_limit": 14},
-        "IMPOSSIBLE": {"depth": 4, "candidate_limit": 20},
+        "HARD": {"depth": 5, "candidate_limit": 8},
+        "IMPOSSIBLE": {"depth": 8, "candidate_limit": 10},
     }
     diff_key = difficulty.upper()
     config = DIFFICULTY_CONFIG.get(diff_key, DIFFICULTY_CONFIG["MEDIUM"])
+
+HARD và IMPOSSIBLE dùng iterative deepening, Alpha-Beta, transposition table,
+threat scoring và ngân sách thời gian/số nút riêng.
 
 Fallback: giá trị không hợp lệ → MEDIUM (không raise exception).
 """
@@ -50,7 +53,7 @@ def test_difficulty_config_has_hard():
 
 
 def test_difficulty_config_no_extra_keys():
-    """Contract chỉ định nghĩa 3 mức độ."""
+    """Contract chỉ định nghĩa đúng bốn mức độ."""
     assert set(DIFFICULTY_CONFIG.keys()) == {"EASY", "MEDIUM", "HARD", "IMPOSSIBLE"}
 
 
@@ -175,3 +178,30 @@ def test_impossible_depth_and_candidate_limit_exceed_hard():
     """Impossible phải tìm sâu hơn và xét nhiều ứng viên hơn HARD."""
     assert DIFFICULTY_CONFIG["IMPOSSIBLE"]["depth"] > DIFFICULTY_CONFIG["HARD"]["depth"]
     assert DIFFICULTY_CONFIG["IMPOSSIBLE"]["candidate_limit"] > DIFFICULTY_CONFIG["HARD"]["candidate_limit"]
+
+
+@pytest.mark.parametrize("diff", ["HARD", "IMPOSSIBLE"])
+def test_strong_difficulty_has_search_budgets(diff):
+    config = DIFFICULTY_CONFIG[diff]
+    assert config["time_budget_ms"] > 0
+    assert config["node_budget"] > 0
+    assert config["diversify"] is True
+
+
+def test_strong_difficulty_depth_increases():
+    assert DIFFICULTY_CONFIG["HARD"]["depth"] > DIFFICULTY_CONFIG["MEDIUM"]["depth"]
+    assert DIFFICULTY_CONFIG["IMPOSSIBLE"]["depth"] > DIFFICULTY_CONFIG["HARD"]["depth"]
+
+
+def test_impossible_time_budget_can_be_overridden(monkeypatch):
+    monkeypatch.setenv("CAROAI_IMPOSSIBLE_TIME_BUDGET_MS", "900")
+    result = get_ai_move(
+        base_board(), ai_player=PLAYER_X, difficulty="impossible", time_budget_ms=25
+    )
+    assert result["elapsed_ms"] < 200
+
+
+def test_impossible_rejects_non_numeric_environment_budget(monkeypatch):
+    monkeypatch.setenv("CAROAI_IMPOSSIBLE_TIME_BUDGET_MS", "not-a-number")
+    with pytest.raises(ValueError, match="must be numeric"):
+        get_ai_move(base_board(), ai_player=PLAYER_X, difficulty="impossible")
