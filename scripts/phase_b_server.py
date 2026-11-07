@@ -59,7 +59,8 @@ class BenchmarkMetricsMiddleware:
             "api_server_ms": None,
             "engine_search_ms": None,
             "row_lock_query_ms": None,
-            "transaction_duration_ms": None,
+            "transaction_duration_ms": 0.0,
+            "transaction_count": 0,
             "db_connection_hold_ms": 0.0,
             "db_backend_pids": [],
             "http_status": None,
@@ -147,7 +148,11 @@ def _transaction_end(session, transaction):
         if metrics is not None:
             started = metrics.pop("_transaction_started_ns", None)
             if started is not None:
-                metrics["transaction_duration_ms"] = (time.perf_counter_ns() - started) / 1e6
+                elapsed_ms = (time.perf_counter_ns() - started) / 1e6
+                metrics["transaction_duration_ms"] = (
+                    metrics.get("transaction_duration_ms", 0.0) + elapsed_ms
+                )
+                metrics["transaction_count"] = metrics.get("transaction_count", 0) + 1
 
 
 run_id = os.environ.get("CAROAI_BENCHMARK_RUN_ID", "phase-b")

@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.api.dependencies import get_game_service
-from app.db.models import Base, Game, Move
+from app.db.models import Base, Game, GameAnalysis, Move
 from app.db.repository import (
     GamePersistenceError,
     SQLAlchemyGameRepository,
@@ -422,3 +422,47 @@ def test_draw_status_and_all_moves_persist_across_sessions(database):
         assert record.result == GameStatus.DRAW.value
         assert record.ended_at is not None
         assert move_count == size * size
+
+
+def test_qa_cleanup_deletes_only_tagged_game_and_all_dependents(database):
+    _engine, session_factory = database
+    qa_run_id = "a" * 32
+    other_run_id = "b" * 32
+    with session_factory() as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        qa_game_id = service.create_game(
+            GameMode.HUMAN_VS_HUMAN, qa_run_id=qa_run_id
+        )
+        other_game_id = service.create_game(
+            GameMode.HUMAN_VS_HUMAN, qa_run_id=other_run_id
+        )
+        ordinary_game_id = service.create_game(GameMode.HUMAN_VS_HUMAN)
+        service.make_move(qa_game_id, 0, 0)
+        service.make_move(other_game_id, 1, 1)
+        service.make_move(ordinary_game_id, 2, 2)
+
+        qa_record = session.query(Game).filter_by(public_id=qa_game_id).one()
+        qa_move = session.scalars(
+            select(Move).where(Move.game_id == qa_record.id)
+        ).one()
+        session.add(GameAnalysis(
+            game_id=qa_record.id,
+            move_id=qa_move.id,
+            best_move_row=0,
+            best_move_col=1,
+        ))
+        session.commit()
+
+    with session_factory() as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        deleted_ids = service.delete_qa_run(qa_run_id)
+        assert deleted_ids == [qa_game_id]
+
+    with session_factory() as session:
+        assert session.query(Game).filter_by(public_id=qa_game_id).count() == 0
+        assert session.query(Game).filter_by(public_id=other_game_id).count() == 1
+        assert session.query(Game).filter_by(public_id=ordinary_game_id).count() == 1
+        assert session.query(GameAnalysis).count() == 0
+        remaining_moves = session.scalars(select(Move)).all()
+        assert len(remaining_moves) == 2
+        assert {move.row for move in remaining_moves} == {1, 2}

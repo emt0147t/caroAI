@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.ai.admission import AIAdmissionRejectedError
 from app.api.dependencies import get_game_service
 from app.db.repository import GamePersistenceError
 from app.domain.game_rules import InvalidMoveError
@@ -14,6 +15,7 @@ from app.schemas.game import (
 from app.services.game_service import (
     GameNotFoundError,
     GameService,
+    GameStateChangedError,
     InvalidAIMoveError,
 )
 
@@ -114,6 +116,14 @@ def make_ai_move(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except InvalidAIMoveError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except GameStateChangedError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except AIAdmissionRejectedError as exc:
+        raise HTTPException(
+            status_code=429,
+            detail=str(exc),
+            headers={"Retry-After": "1"},
+        ) from exc
     except GamePersistenceError as exc:
         raise _storage_unavailable(exc) from exc
 

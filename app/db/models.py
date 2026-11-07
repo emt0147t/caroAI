@@ -56,6 +56,8 @@ class Game(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     ended_at = Column(DateTime(timezone=True), nullable=True)
+    # Non-null only for explicitly tagged production acceptance games.
+    qa_run_id = Column(String(32), nullable=True, index=True)
 
     moves = relationship("Move", back_populates="game")
     analyses = relationship("GameAnalysis", back_populates="game")
@@ -63,6 +65,19 @@ class Game(Base):
     # TODO(M1): Confirm enum enforcement strategy and allowed mode/status values.
     # TODO(M1/M4): Migrate existing rows to populated public_id values before
     # making this column required in any already-provisioned database.
+
+
+class QARunUsage(Base):
+    """Deployment-wide creation quota retained through capability expiry."""
+
+    __tablename__ = "qa_run_usage"
+    __table_args__ = (
+        CheckConstraint("games_created >= 0", name="ck_qa_run_usage_games_nonnegative"),
+    )
+
+    qa_run_id = Column(String(32), primary_key=True)
+    games_created = Column(Integer, nullable=False)
+    expires_at = Column(BigInteger, nullable=False, index=True)
 
 
 class Move(Base):

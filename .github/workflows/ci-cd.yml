@@ -308,6 +308,8 @@ jobs:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
           PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
+          QA_ENABLED: ${{ vars.CAROAI_QA_ENABLED }}
+          QA_HMAC_SECRET: ${{ secrets.CAROAI_QA_HMAC_SECRET }}
         run: |
           test -n "$DOCKERHUB_USERNAME" || { echo "Missing production Environment secret DOCKERHUB_USERNAME"; exit 1; }
           test -n "$DOCKERHUB_TOKEN" || { echo "Missing production Environment secret DOCKERHUB_TOKEN"; exit 1; }
@@ -315,6 +317,12 @@ jobs:
           test -n "$RENDER_API_KEY" || { echo "Missing production Environment secret RENDER_API_KEY"; exit 1; }
           test -n "$RENDER_SERVICE_ID" || { echo "Missing production Environment secret RENDER_SERVICE_ID"; exit 1; }
           test -n "$PUBLIC_URL" || { echo "Missing production Environment variable CAROAI_PUBLIC_URL"; exit 1; }
+          test "$QA_ENABLED" = "true" || { echo "Production Environment variable CAROAI_QA_ENABLED must be true for post-deploy acceptance"; exit 1; }
+          python - <<'PY'
+          import os
+          if len(os.environ["QA_HMAC_SECRET"].encode("utf-8")) < 32:
+              raise SystemExit("CAROAI_QA_HMAC_SECRET must contain at least 32 bytes")
+          PY
           python - <<'PY'
           import ipaddress
           import os
@@ -454,3 +462,9 @@ jobs:
           check_endpoint "/api/history" "History API JSON endpoint"
           check_endpoint "/tokens.css" "CSS design tokens asset"
           echo "Production verification passed using GET-only read-only smoke tests."
+      - name: Verify production PvP/PvAI gameplay and clean scoped QA records
+        timeout-minutes: 10
+        env:
+          CAROAI_PUBLIC_URL: ${{ vars.CAROAI_PUBLIC_URL }}
+          CAROAI_QA_HMAC_SECRET: ${{ secrets.CAROAI_QA_HMAC_SECRET }}
+        run: python scripts/production_qa_acceptance.py

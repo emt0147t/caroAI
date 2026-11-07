@@ -6,16 +6,27 @@ unless the operator explicitly confirms the database is test-only.
 
 import os
 import sys
+import time
 import warnings
+from concurrent.futures import ThreadPoolExecutor
 from uuid import uuid4
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
-from app.db.models import Base, Game, GameAnalysis, Move
+import scripts.production_qa_acceptance as production_qa
+
+from app.api.dependencies import get_game_service
+from app.main import create_app
+
+from app.db.models import Base, Game, GameAnalysis, Move, QARunUsage
+from app.db.repository import QARunLimitExceededError, SQLAlchemyGameRepository
 from app.db.testing import validate_disposable_postgres_target
+from app.domain.game_state import GameMode
+from app.services.game_service import GameService
 
 
 @pytest.fixture
@@ -182,3 +193,257 @@ def test_constraint_failure_rolls_back_game_and_prior_move(postgres_engine):
         assert session.scalar(
             select(func.count()).select_from(Move).where(Move.game_id == game_id)
         ) == 0
+
+
+def test_qa_cleanup_is_run_scoped_and_removes_postgres_dependents(
+    postgres_engine,
+):
+    qa_run_id = "a" * 32
+    other_run_id = "b" * 32
+
+    with Session(postgres_engine) as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        qa_game_id = service.create_game(
+            GameMode.HUMAN_VS_HUMAN, qa_run_id=qa_run_id
+        )
+        other_game_id = service.create_game(
+            GameMode.HUMAN_VS_HUMAN, qa_run_id=other_run_id
+        )
+        ordinary_game_id = service.create_game(GameMode.HUMAN_VS_HUMAN)
+
+        service.make_move(qa_game_id, 0, 0)
+        service.make_move(other_game_id, 1, 1)
+        service.make_move(ordinary_game_id, 2, 2)
+
+        qa_record = session.query(Game).filter_by(public_id=qa_game_id).one()
+        qa_internal_id = qa_record.id
+        qa_move = session.scalars(
+            select(Move).where(Move.game_id == qa_internal_id)
+        ).one()
+        session.add(
+            GameAnalysis(
+                game_id=qa_internal_id,
+                move_id=qa_move.id,
+                best_move_row=0,
+                best_move_col=1,
+            )
+        )
+        session.commit()
+
+    with Session(postgres_engine) as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        deleted_ids = service.delete_qa_run(qa_run_id)
+        repeated_cleanup = service.delete_qa_run(qa_run_id)
+
+    assert deleted_ids == [qa_game_id]
+    assert repeated_cleanup == []
+
+    with Session(postgres_engine) as session:
+        assert session.query(Game).filter_by(public_id=qa_game_id).count() == 0
+        assert session.query(Game).filter_by(public_id=other_game_id).count() == 1
+        assert session.query(Game).filter_by(public_id=ordinary_game_id).count() == 1
+
+        remaining_games = session.scalars(
+            select(Game).where(
+                Game.public_id.in_([other_game_id, ordinary_game_id])
+            )
+        ).all()
+        remaining_internal_ids = {record.id for record in remaining_games}
+        assert len(remaining_internal_ids) == 2
+        assert session.scalar(
+            select(func.count())
+            .select_from(GameAnalysis)
+            .where(GameAnalysis.game_id == qa_internal_id)
+        ) == 0
+        assert session.scalar(
+            select(func.count()).select_from(Move)
+            .where(Move.game_id == qa_internal_id)
+        ) == 0
+        assert session.scalar(
+            select(func.count()).select_from(Move)
+            .where(Move.game_id.in_(remaining_internal_ids))
+        ) == 2
+
+
+def test_qa_creation_quota_is_atomic_across_sessions_and_survives_cleanup(
+    postgres_engine,
+):
+    run_id = uuid4().hex
+    expiry = int(time.time()) + 300
+
+    def create_qa_game():
+        with Session(postgres_engine) as session:
+            service = GameService(SQLAlchemyGameRepository(session))
+            try:
+                return service.create_game(
+                    GameMode.HUMAN_VS_HUMAN,
+                    qa_run_id=run_id,
+                    qa_max_games=2,
+                    qa_expires_at=expiry,
+                )
+            except QARunLimitExceededError:
+                return None
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        results = list(executor.map(lambda _index: create_qa_game(), range(4)))
+
+    game_ids = [game_id for game_id in results if game_id is not None]
+    assert len(game_ids) == 2
+    assert results.count(None) == 2
+
+    with Session(postgres_engine) as session:
+        service = GameService(SQLAlchemyGameRepository(session))
+        deleted = service.delete_qa_run(run_id)
+        assert set(deleted) == set(game_ids)
+        with pytest.raises(QARunLimitExceededError):
+            service.create_game(
+                GameMode.HUMAN_VS_HUMAN,
+                qa_run_id=run_id,
+                qa_max_games=2,
+                qa_expires_at=expiry,
+            )
+        usage = session.get(QARunUsage, run_id)
+        assert usage.games_created == 2
+
+
+def test_production_qa_runner_over_real_postgres_api_and_exact_run_cleanup(
+    postgres_engine, monkeypatch, capsys
+):
+    """Exercise the production runner through FastAPI and disposable PostgreSQL."""
+    secret = "s" * 32
+    monkeypatch.setenv("CAROAI_QA_ENABLED", "true")
+    monkeypatch.setenv("CAROAI_QA_HMAC_SECRET", secret)
+    application = create_app()
+    session_factory = sessionmaker(
+        bind=postgres_engine,
+        autoflush=False,
+        expire_on_commit=False,
+    )
+
+    def postgres_game_service():
+        with session_factory() as session:
+            yield GameService(SQLAlchemyGameRepository(session))
+
+    previous_override = application.dependency_overrides.get(get_game_service)
+    application.dependency_overrides[get_game_service] = postgres_game_service
+    other_run_id = uuid4().hex
+    generated_run_ids = []
+
+    def generate_run_token(_size):
+        token = uuid4().hex
+        generated_run_ids.append(token)
+        return token
+
+    monkeypatch.setenv("CAROAI_PUBLIC_URL", "https://caroai.example")
+    monkeypatch.setenv("CAROAI_QA_HMAC_SECRET", secret)
+    monkeypatch.setattr(production_qa.secrets, "token_hex", generate_run_token)
+
+    try:
+        with TestClient(application) as client:
+            from app.api.qa_security import capability_for_run
+
+            other_capability = capability_for_run(
+                other_run_id, int(time.time()) + 60, secret.encode()
+            )
+            other_created = client.post(
+                "/api/qa/games",
+                headers={
+                    "X-CaroAI-QA-Run-ID": other_run_id,
+                    "X-CaroAI-QA-Capability": other_capability,
+                },
+                json={"mode": "HUMAN_VS_HUMAN"},
+            )
+            assert other_created.status_code == 201
+            other_game_id = other_created.json()["id"]
+            other_move = client.post(
+                f"/api/games/{other_game_id}/moves",
+                json={"row": 2, "col": 3},
+            )
+            assert other_move.status_code == 200
+
+            ordinary_created = client.post(
+                "/api/games", json={"mode": "HUMAN_VS_HUMAN"}
+            )
+            assert ordinary_created.status_code == 201
+            ordinary_game_id = ordinary_created.json()["id"]
+
+            def call_real_api(
+                base_url,
+                method,
+                path,
+                *,
+                run_id,
+                capability,
+                payload=None,
+                expected_status=(200,),
+            ):
+                response = client.request(
+                    method,
+                    base_url.rstrip("/") + path,
+                    headers={
+                        "X-CaroAI-QA-Run-ID": run_id,
+                        "X-CaroAI-QA-Capability": capability,
+                    },
+                    json=payload,
+                )
+                try:
+                    body = response.json()
+                except ValueError as exc:
+                    raise production_qa.AcceptanceError(
+                        f"{method} {path} returned non-JSON data "
+                        f"(HTTP {response.status_code})"
+                    ) from exc
+                if response.status_code not in expected_status:
+                    detail = (
+                        body.get("detail", "no detail")
+                        if isinstance(body, dict)
+                        else "invalid body"
+                    )
+                    raise production_qa.AcceptanceError(
+                        f"{method} {path} expected {expected_status}, "
+                        f"received HTTP {response.status_code}: {detail}"
+                    )
+                if not isinstance(body, dict):
+                    raise production_qa.AcceptanceError(
+                        f"{method} {path} returned a non-object JSON value"
+                    )
+                return response.status_code, body
+
+            monkeypatch.setattr(
+                production_qa, "request_json", call_real_api
+            )
+            assert production_qa.main([]) == 0
+
+            # The runner's own PvP/PvAI rows are deleted, while a second run
+            # and a normal untagged game remain readable.
+            assert client.get(f"/api/games/{other_game_id}").status_code == 200
+            assert client.get(f"/api/games/{ordinary_game_id}").status_code == 200
+            history = client.get("/api/history?limit=100&offset=0")
+            assert history.status_code == 200
+            history_ids = {item["id"] for item in history.json()["items"]}
+            assert other_game_id in history_ids
+            assert ordinary_game_id in history_ids
+
+            other_cleanup = client.delete(
+                "/api/qa/runs",
+                headers={
+                    "X-CaroAI-QA-Run-ID": other_run_id,
+                    "X-CaroAI-QA-Capability": other_capability,
+                },
+            )
+            assert other_cleanup.status_code == 200
+            assert other_cleanup.json()["deleted_count"] == 1
+            assert other_cleanup.json()["deleted_game_ids"] == [other_game_id]
+            assert client.get(f"/api/games/{other_game_id}").status_code == 404
+
+    finally:
+        if previous_override is None:
+            application.dependency_overrides.pop(get_game_service, None)
+        else:
+            application.dependency_overrides[get_game_service] = previous_override
+
+    output = capsys.readouterr()
+    assert "Production gameplay acceptance passed" in output.out
+    assert "Production QA cleanup verified" in output.out
+    assert generated_run_ids
+    assert all(token not in output.out + output.err for token in generated_run_ids)
