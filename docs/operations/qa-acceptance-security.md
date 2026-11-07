@@ -11,7 +11,7 @@ Configure these values in both the application runtime and the protected GitHub 
 | `CAROAI_QA_ENABLED` | Runtime environment variable and GitHub Environment variable | Exact value `true` to enable QA routes. Missing, false, or any other value keeps them disabled. |
 | `CAROAI_QA_HMAC_SECRET` | Runtime environment secret and GitHub Environment secret | At least 32 UTF-8 bytes of operator-generated random secret material. The value in the application runtime and GitHub Environment must match. Never store the value in the repository or print it in logs. |
 
-The release workflow fails its pre-deployment configuration check unless the GitHub Environment has QA enabled and a sufficiently long HMAC secret. The application must also have the matching values configured before the post-deployment acceptance runner can authenticate.
+The release workflow fails its pre-deployment configuration check unless the GitHub Environment has QA enabled and a sufficiently long HMAC secret. The application must also have the matching values configured before the post-deployment acceptance runner can authenticate. Before triggering the production image deploy, the approved release workflow synchronizes `CAROAI_QA_ENABLED` and `CAROAI_QA_HMAC_SECRET` from the protected GitHub `production` Environment into the Render service-level environment variables. This keeps the runtime and runner on the same values without printing either secret or replacing unrelated service variables.
 
 ## Request authentication and scope
 

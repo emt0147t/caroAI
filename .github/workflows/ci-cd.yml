@@ -387,6 +387,68 @@ jobs:
           echo "### Production Release Artifacts" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Image Full SHA:** \`${IMAGE_NAME}:${GITHUB_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Image Digest:** \`${IMAGE_DIGEST}\`" >> "$GITHUB_STEP_SUMMARY"
+      - name: Synchronize production QA configuration to Render
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          QA_ENABLED: ${{ vars.CAROAI_QA_ENABLED }}
+          QA_HMAC_SECRET: ${{ secrets.CAROAI_QA_HMAC_SECRET }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from urllib.error import HTTPError, URLError
+          from urllib.parse import quote
+          from urllib.request import Request, urlopen
+
+          service_id = os.environ["RENDER_SERVICE_ID"]
+          api_key = os.environ["RENDER_API_KEY"]
+          qa_enabled = os.environ["QA_ENABLED"]
+          hmac_secret = os.environ["QA_HMAC_SECRET"]
+
+          if not service_id or not api_key:
+              raise SystemExit("Missing Render service ID or API key")
+          if qa_enabled != "true":
+              raise SystemExit("Production CAROAI_QA_ENABLED must be exactly true")
+          if len(hmac_secret.encode("utf-8")) < 32:
+              raise SystemExit("CAROAI_QA_HMAC_SECRET must contain at least 32 bytes")
+
+          variables = {
+              "CAROAI_QA_ENABLED": qa_enabled,
+              "CAROAI_QA_HMAC_SECRET": hmac_secret,
+          }
+          for key, value in variables.items():
+              url = (
+                  "https://api.render.com/v1/services/"
+                  f"{quote(service_id, safe='')}/env-vars/{quote(key, safe='')}"
+              )
+              request = Request(
+                  url,
+                  data=json.dumps({"value": value}).encode("utf-8"),
+                  headers={
+                      "Authorization": f"Bearer {api_key}",
+                      "Accept": "application/json",
+                      "Content-Type": "application/json",
+                  },
+                  method="PUT",
+              )
+              try:
+                  with urlopen(request, timeout=20) as response:
+                      if response.status != 200:
+                          raise SystemExit(
+                              f"Render rejected {key} synchronization "
+                              f"(HTTP {response.status})"
+                          )
+              except HTTPError as exc:
+                  raise SystemExit(
+                      f"Render rejected {key} synchronization (HTTP {exc.code})"
+                  ) from None
+              except URLError:
+                  raise SystemExit(
+                      f"Network error while synchronizing {key} to Render"
+                  ) from None
+              print(f"Synchronized Render runtime variable: {key}")
+          PY
       - name: Trigger Render deployment for exact full-SHA image
         id: render-deploy
         env:
