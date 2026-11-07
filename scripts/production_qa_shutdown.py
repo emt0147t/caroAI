@@ -86,7 +86,7 @@ def _disable_qa_flag(service_id: str, api_key: str) -> None:
         method="PUT",
     )
     _require_status(request, 200, "Render QA-disable configuration update")
-    print("Render service variable CAROAI_QA_ENABLED set to false.")
+    print("Render service variable CAROAI_QA_ENABLED=false.")
 
 
 def _trigger_exact_image_deploy(deploy_hook: str, image_ref: str) -> str:
