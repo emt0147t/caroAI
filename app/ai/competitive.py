@@ -270,8 +270,9 @@ def _root(pos, player, depth, context):
         context.stats.expanded_candidates += 1
         old = pos.play(move, player)
         try:
-            # Full root windows keep ties exact and independent of root ordering.
-            score = -_search(pos, 3 - player, depth - 1, context.policy.extensions, -INF, INF, 1, context)
+            # A later child only needs to prove it beats the current root best.
+            # Refuted bounds never replace it; equal scores keep stable ordering.
+            score = -_search(pos, 3 - player, depth - 1, context.policy.extensions, -INF, -best, 1, context)
         finally:
             pos.undo(move, player, old)
         if score > best:

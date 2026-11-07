@@ -198,3 +198,22 @@ def test_invalid_budget_rejected(budget):
 def test_full_board_has_controlled_error():
     with pytest.raises(ValueError, match='No legal candidate'):
         choose_move([[1] * 15 for _ in range(15)], 2, POLICIES['HARD'])
+
+
+def test_root_alpha_window_agrees_with_independent_full_window_enumeration():
+    pos = Position(quiet_board())
+    ctx = context()
+    move, score = _root(pos, 1, 3, ctx)
+    full = []
+    reference = context(use_tt=False)
+    for candidate in _ordered(pos, 1, reference):
+        old = pos.play(candidate, 1)
+        try:
+            value = -_search(pos, 2, 2, reference.policy.extensions, -INF, INF, 1, reference)
+            full.append((candidate, value))
+        finally:
+            pos.undo(candidate, 1, old)
+    best = max(value for _, value in full)
+    assert score == best
+    assert move == next(candidate for candidate, value in full if value == best)
+    assert ctx.stats.nodes <= reference.stats.nodes
