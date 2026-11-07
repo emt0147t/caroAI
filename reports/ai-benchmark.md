@@ -1,5 +1,83 @@
+# CaroAI — Current Benchmark Evidence Index (2026-11-07)
 
-# CaroAI Phase 4 — M2 AI Regression and Benchmark Evidence
+**Production baseline:** `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`  
+**Production deployment:** `dep-dbn02vrncjis73am3dhg`, live on Render  
+**Important:** Phase C measurements below were collected on a feature branch / disposable PostgreSQL runner. They do not represent production traffic and the Phase C code is not deployed.
+
+## Current evidence
+
+| Phase | Evidence | Result | Scope |
+|---|---|---|---|
+| Phase A — controlled Minimax | [Workflow #42237743095](https://github.com/emt0147t/caroAI/actions/runs/42237743095) | 1,320 measured calls, 0 failures | 11 fixtures × 4 difficulties × 30 trials; Ubuntu 24.04 / Python 3.11 |
+| Phase B — API/PostgreSQL Windows review | `phaseb-20261106T140340Z-980e7124`; [review note](benchmark-phase-b/PYTHON311-WINDOWS-REVIEW.md) | Qualified historical evidence; 2,401 correctness checks reported, 0 failures | Windows 10 / Python 3.11.9 / PostgreSQL 15.19; exact original source files were not recovered |
+| Phase C — Minimax counters and latency | [Workflow #42267880120](https://github.com/emt0147t/caroAI/actions/runs/42267880120) | PASS | Source SHA `8ca52e0ed4a5a2ba4546f94978dcb0c1fb06339f`; 1,320 measured calls, 0 failures |
+| Phase C — API/PostgreSQL transaction boundary | [Workflow #42267879898](https://github.com/emt0147t/caroAI/actions/runs/42267879898) | PASS | Disposable PostgreSQL 15.19; 721 correctness checks, 0 failures |
+| Phase C — CI / browser E2E | [CI #42267890333](https://github.com/emt0147t/caroAI/actions/runs/42267890333); [E2E #42267890323](https://github.com/emt0147t/caroAI/actions/runs/42267890323) | PASS | Candidate branch only; production release job skipped |
+
+### Phase B Python 3.11 — qualified historical evidence
+
+The preserved run artifacts report **2,401 database correctness checks and 0 failures**. Forensic review could not recover the exact original benchmark harness or PostgreSQL instrumentation: the recorded SHA-256 hashes did not match any available Git blob, including unreachable objects, or the available committed/current copies. The run is useful as qualified historical evidence, but its exact source snapshot cannot be attributed and the benchmark must not be described as fully reproducible.
+
+The preserved Phase B CSV schemas do not contain a `transaction_count` column. Do not claim that `transaction_count` was measured in this Phase B run. Later instrumentation changes that add a transaction count do not establish what the unrecovered Phase B source measured.
+
+## Phase A controlled benchmark — corrected search-only interpretation
+
+Five of the 11 fixtures take root tactical shortcuts (immediate win or forced block) and must not be treated as representative recursive-search samples. On the six fixtures that exercise recursive search, the 180 samples per difficulty produced:
+
+| Difficulty | Search P50 (ms) | Search P95 (ms) | Max (ms) |
+|---|---:|---:|---:|
+| EASY | 6.23 | 12.77 | 12.98 |
+| MEDIUM | 29.25 | 61.73 | 65.28 |
+| HARD | 235.82 | 523.46 | 527.77 |
+| IMPOSSIBLE | 1,110.04 | 2,254.37 | 2,275.30 |
+
+The worst IMPOSSIBLE fixture was `mid_game_spread`, with 109 root candidates and P95 approximately 2,271 ms. These are fixed-fixture hosted-runner measurements, not a production traffic percentile or an adopted SLO.
+
+## Phase C controlled search metrics
+
+The Phase C report records node count, average branching factor, alpha-beta pruning and candidate-cap pruning separately. On six true recursive-search fixtures:
+
+| Difficulty | Mean nodes | Mean branching factor | Alpha-beta pruned | Candidate-cap pruned | Search P95 (ms) |
+|---|---:|---:|---:|---:|---:|
+| EASY | 7 | 6.00 | 0.0% | 88.6% | 12.76 |
+| MEDIUM | 35 | 10.00 | 69.6% | 83.2% | 62.36 |
+| HARD | 312 | 14.00 | 53.8% | 77.8% | 523.09 |
+| IMPOSSIBLE | 1,576 | 20.00 | 80.5% | 71.1% | 2,277.00 |
+
+IMPOSSIBLE by-fixture P95: `demo_midgame_search` 563 ms; `opening_two_stones` 983 ms; `opening_six_stones` 795 ms; `mid_game_spread` 2,310 ms; `edge_midgame` 1,656 ms; `dense_midgame_34_stones` 1,273 ms.
+
+## Time-budget experiment — no production default adopted
+
+| IMPOSSIBLE variant | Search P50 (ms) | Search P95 (ms) | Max (ms) | Timeouts |
+|---|---:|---:|---:|---:|
+| No budget | 867.4 | 1,730.7 | 1,742.6 | 0 |
+| 1,500 ms budget | 585.4 | 1,156.1 | 1,167.0 | 0 |
+| 2,000 ms budget | 1,125.1 | 2,000.5 | 2,000.6 | 30 |
+
+The runs used separate hosted runners; latency differences are not evidence of a budget-induced speedup. The 1,500 ms budget was not reached. All 30 `mid_game_spread` samples reached the 2,000 ms budget and returned a deterministic legal fallback. Because strategic quality of that interrupted fallback has no independent oracle, neither a time budget nor a concurrency limit is enabled by default.
+
+## Phase C API/PostgreSQL transaction-boundary results
+
+Single request / IMPOSSIBLE: API P95 581 ms; engine P95 573 ms; summed transaction-duration P95 5.9 ms; DB connection-hold P95 5.9 ms.
+
+Two concurrent IMPOSSIBLE requests on different games: API P95 1,170 ms; engine P95 1,146 ms; transaction-duration and connection-hold P95 approximately 45.7 ms; no PostgreSQL row-lock wait was sampled.
+
+Two concurrent IMPOSSIBLE requests on the same game: API P95 1,151 ms; engine P95 1,136 ms; transaction-duration and connection-hold P95 approximately 35.2 ms. The request against a stale snapshot is rejected with HTTP 409 after locked state revalidation. This is expected concurrency control, not an unhandled server error.
+
+The benchmark used one API worker and disposable PostgreSQL 15.19. It does not establish multiple-worker behavior, isolate Python GIL effects, or prove production P95. PostgreSQL lock monitoring used 10 ms sampling, and pool checkout wait was not directly instrumented.
+
+## Phase C implementation status and links
+
+Detailed Phase C report: [PHASE_C_BENCHMARK_REPORT.md](https://github.com/emt0147t/caroAI/blob/feat/phase-c-ai-observability-qa-20261106/reports/benchmark-phase-c/PHASE_C_BENCHMARK_REPORT.md).
+
+Phase C source branch: `feat/phase-c-ai-observability-qa-20261106`; tested runtime source SHA: `8ca52e0ed4a5a2ba4546f94978dcb0c1fb06339f`. Phase C [PR #60](https://github.com/emt0147t/caroAI/pull/60) and follow-up PostgreSQL integration-test [PR #62](https://github.com/emt0147t/caroAI/pull/62) are merged into `develop`; PR #62 merged at `3d38d4c47ed16e788e99b4836e6157dd5ecc5dcd`. The PostgreSQL-backed acceptance integration test is complete in `develop`. Phase C is not promoted to `main` or deployed, and live production PvP/PvAI acceptance remains pending.
+
+**Performance objective:** 2,000 ms remains a proposed engineering reference, not an adopted SLO. Do not present hosted-runner numbers as a production guarantee.
+
+---
+
+
+# Historical record — CaroAI Phase 4 M2 AI Regression and Benchmark Evidence
 
 **Overall status: PARTIAL — Windows evidence and local regression validation complete; Linux/Docker evidence pending. M1 clarified that p95 ≤ 2,000 ms is a proposed performance target, not an adopted SLO.**
 
