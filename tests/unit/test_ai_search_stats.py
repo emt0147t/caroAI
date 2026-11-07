@@ -78,7 +78,7 @@ def test_mandatory_root_forced_block_is_not_lost_to_zero_budget():
     board = empty_board()
     for col in range(3, 7):
         board[7][col] = 1
-    board[0][0] = 2
+    board[7][2] = 2  # One unique winning endpoint, not an already-lost open four.
 
     result = get_ai_move(
         board, ai_player=2, difficulty="impossible", time_budget_ms=0

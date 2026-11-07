@@ -46,5 +46,5 @@ def test_intervals_cover_known_counts_and_pairing():
 
 def test_opening_protocol_is_seeded_and_varied():
     assert opening(77) == opening(77)
-    assert len({tuple(opening(seed)) for seed in range(100)}) >= 20
-    assert all(len(set(opening(seed))) == 2 for seed in range(100))
+    assert len({tuple(opening(seed)) for seed in range(100)}) >= 80
+    assert all(len(set(opening(seed))) == len(opening(seed)) for seed in range(100))

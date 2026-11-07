@@ -11,6 +11,23 @@ BASELINE_SHA = 'b848a0e6a527b7ef3f1efa421971c356543fbc17'
 BASELINE_CONFIG = {'EASY': (1, 6), 'MEDIUM': (2, 10), 'HARD': (3, 14), 'IMPOSSIBLE': (4, 20)}
 
 
+def verify_baseline():
+    """Fail closed if an experiment would silently use a modified baseline."""
+    import hashlib
+    from pathlib import Path
+    import subprocess
+    root = Path(__file__).resolve().parents[2]
+    checksums = {}
+    for name in ('minimax.py', 'evaluator.py', 'move_generator.py'):
+        path = 'app/ai/' + name
+        expected = subprocess.check_output(['git', 'show', BASELINE_SHA + ':' + path], cwd=root)
+        actual = (root / path).read_bytes()
+        if actual != expected:
+            raise ValueError('baseline source mismatch: ' + path)
+        checksums[path] = hashlib.sha256(actual).hexdigest()
+    return checksums
+
+
 def baseline(board, player, difficulty, budget_ms, seed=0):
     """Exact baseline minimax policy; explicit evaluation budget may override default."""
     started = perf_counter()

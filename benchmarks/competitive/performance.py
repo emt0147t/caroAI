@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from time import perf_counter
 
-from benchmarks.competitive.adapters import baseline, candidate
+from benchmarks.competitive.adapters import baseline, candidate, verify_baseline
 from benchmarks.competitive.metrics import percentile, provenance
 from scripts.benchmark_ai_sprint3 import build_fixtures
 
@@ -24,6 +24,7 @@ def trial(adapter, fixture, level, budget):
 
 
 def run(args):
+    baseline_hashes = verify_baseline()
     raw, groups = [], []
     fixtures = build_fixtures()
     empty = [[0] * 15 for _ in range(15)]
@@ -57,7 +58,7 @@ def run(args):
     output.parent.mkdir(parents=True, exist_ok=True)
     output.with_suffix('.jsonl').write_text(''.join(json.dumps(r) + '\n' for r in raw))
     output.write_text(json.dumps({'environment': provenance(Path(__file__).resolve().parents[2]),
-                                 'protocol': vars(args), 'groups': groups,
+                                 'protocol': vars(args), 'groups': groups, 'baseline_files_sha256': baseline_hashes,
                                  'scope': 'In-process engine threads, not network API or production latency.'}, indent=2) + '\n')
 
 

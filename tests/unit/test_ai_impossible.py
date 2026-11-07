@@ -12,33 +12,23 @@ def empty_board():
     return [[EMPTY] * BOARD_SIZE for _ in range(BOARD_SIZE)]
 
 
-def test_impossible_uses_extended_search_budget(monkeypatch):
-    """Engine must route IMPOSSIBLE to depth 4 / candidate limit 20."""
+def test_impossible_routes_to_distinct_competitive_policy(monkeypatch):
     board = empty_board()
     board[7][7] = PLAYER_O
     captured = {}
 
-    def fake_find_best_move(
-        board, ai_player, depth, candidate_limit, stats=None, time_budget_ms=None
-    ):
-        captured.update(
-            ai_player=ai_player,
-            depth=depth,
-            candidate_limit=candidate_limit,
-        )
-        return (7, 8), 123
+    def fake_search(board, player, policy, *, time_budget_ms=None):
+        captured.update(player=player, policy=policy, time_budget_ms=time_budget_ms)
+        return {"row": 7, "col": 8, "score": 123, "search_stats": {"depth": 3}}
 
-    monkeypatch.setattr(engine, "find_best_move", fake_find_best_move)
-
+    monkeypatch.setattr(engine, "choose_move", fake_search)
     result = engine.get_ai_move(board, ai_player=PLAYER_X, difficulty="ImPoSsIbLe")
-
-    assert captured == {
-        "ai_player": PLAYER_X,
-        "depth": 4,
-        "candidate_limit": 20,
-    }
-    assert result["row"] == 7
-    assert result["col"] == 8
+    assert captured["player"] == PLAYER_X
+    assert captured["policy"] == engine.POLICIES["IMPOSSIBLE"]
+    assert captured["policy"].proof_depth > engine.POLICIES["HARD"].proof_depth
+    assert captured["policy"].extensions > engine.POLICIES["HARD"].extensions
+    assert captured["policy"].radius > engine.POLICIES["HARD"].radius
+    assert (result["row"], result["col"]) == (7, 8)
 
 
 def test_impossible_takes_an_immediate_win():
