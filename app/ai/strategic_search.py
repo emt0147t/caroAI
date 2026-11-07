@@ -429,7 +429,7 @@ def _root_search(
     return scores
 
 
-def find_strategic_move(
+def find_strategic_move(  # noqa: C901
     board: List[List[int]],
     ai_player: int,
     *,
