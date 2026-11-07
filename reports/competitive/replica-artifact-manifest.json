@@ -1,0 +1,132 @@
+{
+  "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+  "workflow_run_id": 42365889564,
+  "pooling": "Repeat of the same seed/opening set; do not pool as new independent openings.",
+  "artifacts": [
+    {
+      "id": 13572550144,
+      "archive_sha256": "036befd0402405b7789fb635b7dfb663569aeba23bbf4802467371b2b2d63822",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "files": [
+        "hard-baseline-default.json",
+        "hard-baseline-default.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13572550144"
+    },
+    {
+      "id": 13572310565,
+      "archive_sha256": "0f20455cb36ecfd773ab3bcb96de96d0fd15376fb41b50a924d5d9038354f141",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "files": [
+        "hard-medium-default.json",
+        "hard-medium-default.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13572310565"
+    },
+    {
+      "id": 13572225459,
+      "archive_sha256": "e620d0913409222689769401c7e37ed59acbd4e8772bcd2c1678e2f04570d983",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "files": [
+        "engine-default.json",
+        "engine-screen25-contention.json",
+        "engine-default.jsonl",
+        "engine-screen25-contention.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13572225459"
+    },
+    {
+      "id": 13571965537,
+      "archive_sha256": "188111d6bd679f6fdc871285199e619e6821365b114c6fd5a8e2fc5dadf047f0",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "files": [
+        "hard-medium-screen25.json",
+        "hard-medium-screen25.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13571965537"
+    },
+    {
+      "id": 13571928386,
+      "archive_sha256": "19046791c54977d645f6c892bae3d3eb9f1bdb9b1d406cc97ec427a10a2a3e4d",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "files": [
+        "impossible-hard-default.json",
+        "impossible-hard-default.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13571928386"
+    },
+    {
+      "id": 13571920975,
+      "archive_sha256": "a71cbe0d36961d11bad71f4994b3669e5ac5fb6ac9c18d887f64a9b85aaed127",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "files": [
+        "impossible-hard-screen25.json",
+        "impossible-hard-screen25.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13571920975"
+    },
+    {
+      "id": 13571897296,
+      "archive_sha256": "9556ffa8c4afb23a1870766355dccc54b06edfcb1e926de4f355370521671542",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "files": [
+        "impossible-greedy-default.json",
+        "impossible-greedy-default.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13571897296"
+    },
+    {
+      "id": 13571623557,
+      "archive_sha256": "2d213f18031ce5f2f1f1f5f89dbe0f211a7822d50d7a7c5edd5997f862aeb8a3",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "files": [
+        "api-requests.csv",
+        "benchmark-summary.json",
+        "benchmark-report.md",
+        "correctness-checks.json",
+        "environment.json",
+        "postgres-observations.csv",
+        "server-metrics.csv",
+        "server-metrics.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13571623557"
+    },
+    {
+      "id": 13571294817,
+      "archive_sha256": "8a221a8f493de267bdcc4c7c5df248db7a4f3805d8d8581215413d0f5e32a8db",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "files": [
+        "medium-easy-default.json",
+        "medium-easy-default.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13571294817"
+    },
+    {
+      "id": 13570983608,
+      "archive_sha256": "6d67889f98855e4ce7324401c792f48d5c186f6a3e263b0f18087e98908278f5",
+      "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+      "workflow_run_id": 42365889564,
+      "files": [
+        "medium-easy-screen25.json",
+        "medium-easy-screen25.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13570983608"
+    }
+  ],
+  "retention_days": 30,
+  "independent_replay": {
+    "source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+    "complete_games": 1800,
+    "legal_logged_moves": 42497,
+    "failures": 0
+  }
+}

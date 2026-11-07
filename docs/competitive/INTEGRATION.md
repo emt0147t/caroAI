@@ -30,9 +30,11 @@ A 25ms result is screening, not default-policy difficulty progression evidence.
 If intervals cannot distinguish levels, increase independent opening samples and
 retain PARTIAL rather than claiming monotonic strength. Self-play is only one group.
 
-Initial acceptance status: local correctness/lint PASS; full CI and new raw experiments
-PENDING. Default-policy adjacent-level tournaments, a stronger published external
-reference engine, human play tests and production candidate latency remain PARTIAL.
+Current correctness/lint, PostgreSQL acceptance, Browser E2E, secret scan and Docker
+build are PASS on the tested integration head. Frozen-SHA default-policy adjacent-level
+tournaments and performance artifacts exist; current results and remaining gates
+are in [REVIEW.md](../../reports/competitive/REVIEW.md). A stronger published external
+reference engine, human play tests and production candidate latency remain unmeasured.
 The tactical-greedy reference is independent in decision policy, not a published
 strong-engine benchmark. Broader VCT/multilayer tactical coverage remains future work.
 All PRs remain draft. Merge and production deploy require explicit user authorization.
@@ -43,4 +45,7 @@ unavoidable open-four loss. HARD's short proof search addresses the newly expose
 three-attack miss; IMPOSSIBLE retains longer proofs and wider/deeper tactical search.
 Engine measurements include an excluded warm-up, mandatory-root/optional-search
 separation, shortcut-stratified latency and truthful legacy fallback counts. A new
-head cancels superseded evidence jobs; incomplete logs never count as full games.
+runtime-changing head cancels superseded jobs of the same benchmark group. A
+preflight compares the previous head to the new head so report-only changes preserve
+active evidence and skip heavy jobs. Workflow infrastructure/matrix changes can be
+measured with workflow_dispatch. Incomplete logs never count as accepted tournaments.

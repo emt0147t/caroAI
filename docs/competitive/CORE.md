@@ -29,9 +29,12 @@ PR 66 extension-alias regression, safe interruption of all internal state, immut
 inputs, deterministic complete searches, concurrent request isolation, zero budget,
 forced loss and a domain-rule verified continuous-four certificate.
 
-Strength and latency acceptance remain PARTIAL until tournament and performance
-artifacts on a frozen commit exist. The small corpus is an initial regression suite,
-not proof that its tactics represent the full distribution of human games.
+The counts above describe the initial M1 checkpoint. Integration expanded the
+corpus to 240 color/symmetry variants across both strong levels; the full local
+suite passed 829 tests with 14 PostgreSQL skips covered by dedicated CI. Frozen
+tournament/performance results and current acceptance are in
+[REVIEW.md](../../reports/competitive/REVIEW.md). The composed corpus does not prove
+that its tactics represent the full distribution of human games.
 
 The follow-up preserves root alpha bounds between siblings and restricts horizon
 extensions to independently verified forcing moves or mandatory replies, with a

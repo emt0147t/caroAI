@@ -47,7 +47,7 @@ Mỗi nhóm đầu có 200 ván hoàn tất; IMPOSSIBLE–HARD ở 25 ms tăng l
 | HARD–MEDIUM | 25 ms | 165 / 0 / 35 | 82.5% | 76.6–87.1% | 76.9–87.4% |
 | IMPOSSIBLE–HARD | 25 ms | 211 / 0 / 189 | 52.8% | 47.9–57.6% | 46.0–55.7% |
 
-Wilson tính trên chỉ báo thắng của từng ván; các ván đổi màu có tương quan. Bootstrap resample **các khai cuộc riêng biệt**, với score trung bình của từng opening cluster (thắng=1, hòa=0, thua=0); đây là estimand cân bằng theo opening, có thể khác tỷ lệ game gộp. CI là mô tả cho tập phân phối khai cuộc này, không phải xác suất thắng mọi người chơi.
+Wilson tính trên chỉ báo thắng của từng ván; các ván đổi màu có tương quan. Bootstrap resample **các khai cuộc riêng biệt**, với score trung bình của từng opening cluster (thắng=1, hòa=0,5, thua=0); đây là estimand cân bằng theo opening, có thể khác tỷ lệ game gộp. CI là mô tả cho tập phân phối khai cuộc này, không phải xác suất thắng mọi người chơi.
 
 Tỷ lệ thắng còn lệch theo màu: HARD–baseline HARD thắng 86/100 khi là X, 46/100 khi là O; IMPOSSIBLE–HARD lần lượt 81/100 và 40/100. Vì vậy phải giữ paired colors và cần đánh thử vai AI đi sau như production.
 
@@ -93,9 +93,9 @@ API c=8 cho thấy engine có thể vượt clock 700 ms do tranh chấp schedul
 | M3 strength/performance | #70 + artifacts | PARTIAL | Chờ IMPOSSIBLE–baseline; stress 25 ms progression chưa phân biệt được |
 | M4 release | Chưa thực hiện | BLOCKED | Review người thật, đánh thử, xác nhận capacity/SLO, và cho phép rõ ràng trước merge/deploy |
 
-- [CaroAI CI #42363497786](https://github.com/emt0147t/caroAI/actions/runs/42363497786): Python/lint, PostgreSQL acceptance, persistence, frontend regression, secret scan và Docker build PASS; release job skipped.
-- [Browser E2E #42363497755](https://github.com/emt0147t/caroAI/actions/runs/42363497755): PASS, gồm visual regression.
-- [Competitive evidence #42363497808](https://github.com/emt0147t/caroAI/actions/runs/42363497808): xem trạng thái từng nhóm; không đồng nhất CI xanh với strength đã đạt.
+- [CaroAI CI #42367773080](https://github.com/emt0147t/caroAI/actions/runs/42367773080) trên head `ed51afd8`: Python/lint, PostgreSQL acceptance, persistence, frontend regression, secret scan và Docker build PASS; release job skipped.
+- [Browser E2E #42367773121](https://github.com/emt0147t/caroAI/actions/runs/42367773121) trên head `ed51afd8`: PASS, gồm visual regression.
+- [Competitive evidence ban đầu #42363497808](https://github.com/emt0147t/caroAI/actions/runs/42363497808): 8 nhóm hoàn tất, nhóm cuối bị hủy ở 94 ván và không được tính; lượt thay thế [#42365889564](https://github.com/emt0147t/caroAI/actions/runs/42365889564) chạy cùng byte runtime. Không đồng nhất CI xanh với strength đã đạt.
 
 Tiêu chí quyết định tiếp theo: chỉ kết luận candidate mạnh hơn baseline/level trước khi kết quả mặc định và CI ủng hộ; tăng tập khai cuộc khi chưa phân biệt được, hoặc giữ PARTIAL. Không sửa nhãn để che việc chưa đạt. Chưa triển khai Replay/Hint/Multiplayer; validator ở đây chỉ dùng nhật ký thật để kiểm chứng tournament.
 
@@ -117,5 +117,62 @@ external Plus Jakarta Sans font to Google Fonts commit
 in test pages only. Product CSS/fonts and comparator thresholds stay unchanged.
 Local repeated captures: 12/12 identical comparisons (0% diff); deliberate mutation,
 dimension mismatch and missing-image checks still fail as expected (4/4 checks).
-New CI verification remains pending until its run completes. Cached font/test
+CI verification PASS: Browser E2E run [42367773121](https://github.com/emt0147t/caroAI/actions/runs/42367773121) on `ed51afd87e62442598105580a361b0676673c100`; regular CI [42367773080](https://github.com/emt0147t/caroAI/actions/runs/42367773080) also PASS. Cached font/test
 artifacts are excluded from Git and Docker build context.
+
+## 7. Lượt lặp lại và độ nhạy môi trường
+
+Lượt chạy [42365889564](https://github.com/emt0147t/caroAI/actions/runs/42365889564)
+ở source `2e9f869694953c2dcde75eb213cde79ab6da2574` dùng **cùng byte app,
+benchmarks, scripts, frontend** với source thử ban đầu `14abd856`; chỉ report khác.
+Git tree hashes và kết quả đối chiếu nằm trong [replication-summary.json](replication-summary.json).
+Từng cặp vẫn đấu cùng host/runtime; runner giữa các nhóm/lượt có thể khác CPU.
+Các package và baseline hashes được đối chiếu. Đây là lặp lại cùng seeds/openings,
+không cộng gộp thành mẫu khai cuộc độc lập mới hoặc chọn lượt có kết quả đẹp hơn.
+
+| Nhóm | Ván/lượt | W / D / L ban đầu | W / D / L lặp lại | Wilson 95% lặp lại | Bootstrap opening 95% lặp lại |
+|---|---:|---:|---:|---:|---:|
+| hard-baseline-default | 200 | 132 / 0 / 68 | 134 / 0 / 66 | 60.2–73.1% | 61.5–73.1% |
+| hard-medium-default | 200 | 166 / 0 / 34 | 165 / 0 / 35 | 76.6–87.1% | 76.4–86.8% |
+| hard-medium-screen25 | 200 | 165 / 0 / 35 | 164 / 0 / 36 | 76.1–86.7% | 75.8–86.8% |
+| impossible-greedy-default | 200 | 189 / 0 / 11 | 181 / 0 / 19 | 85.6–93.8% | 86.8–95.1% |
+| impossible-hard-default | 200 | 121 / 1 / 78 | 127 / 0 / 73 | 56.6–69.9% | 57.4–69.2% |
+| impossible-hard-screen25 | 400 | 211 / 0 / 189 | 182 / 0 / 218 | 40.7–50.4% | 42.4–52.0% |
+| medium-easy-default | 200 | 138 / 1 / 61 | 138 / 1 / 61 | 62.3–75.0% | 63.7–75.3% |
+| medium-easy-screen25 | 200 | 104 / 0 / 96 | 11 / 0 / 189 | 3.1–9.6% | 2.7–9.3% |
+
+Preset mặc định giữ được hướng kết quả trong các nhóm đã có hai lượt hoàn tất.
+Ở **25 ms**, MEDIUM–EASY giảm từ 104/200 xuống **11/200 thắng**. MEDIUM giữ legacy
+depth-2: deadline nhỏ trên runner chậm hơn có thể bỏ tiến độ rồi chọn fallback gần
+trung tâm. Đây là stress regression của preset dùng override 25 ms, không được
+che bằng tỷ lệ mặc định. IMPOSSIBLE–HARD có 400 ván mỗi lượt nhưng Wilson và
+opening-bootstrap vẫn cắt 50%; hướng W/L thay đổi giữa hai lượt. Vì vậy progression
+ở 25 ms = **PARTIAL / không đạt bằng chứng thứ bậc ổn định**; không tiếp tục tăng mẫu
+chỉ để tìm ra một kết quả thuận lợi. EASY/MEDIUM cần nghiên cứu deadline và fallback
+riêng nếu sản phẩm muốn hỗ trợ ngân sách rất ngắn.
+
+Lượt performance lặp lại cũng đo baseline/candidate trong cùng process/host:
+HARD p95 **454,06 → 250,13 ms**, IMPOSSIBLE **1966,77 → 700,38 ms**; fallback=0/120
+cho mỗi mức mạnh. HARD dừng theo deadline 7/120, IMPOSSIBLE 50/120. Không dùng
+chênh lệch giữa hai runner làm speedup. API lặp lại có **801/801** correctness checks,
+không invalid success/unexpected error; IMPOSSIBLE p95 c1/2/4/8 lần lượt
+**709,8 / 721,2 / 1089,5 / 1128,0 ms**, max c8 **1599,7 ms**. Deadline engine vẫn
+không phải API SLO. Summary đầy đủ nằm trong [replica/](replica/), raw ZIP và digest
+trong [replica-artifact-manifest.json](replica-artifact-manifest.json).
+
+## 8. Chứng chỉ chiến thuật và giới hạn nghiệm thu
+
+[forcing-certificate.json](forcing-certificate.json) ghi hai lịch sử khai cuộc hợp lệ,
+14/15 ply cho hai màu, rồi chuỗi `(7,7) → ép chặn (7,8) → (8,8) → ép chặn (9,9)
+→ (8,7)` tạo hai ô thắng `(8,6)` và `(8,11)`. Nhật ký được luật domain kiểm tra đến
+terminal win. Cả baseline lẫn candidate tìm được nước đầu `(7,7)` ở thế cân bằng
+này; không dùng nó để tuyên bố baseline bỏ lỡ hay cộng vào số ván tournament.
+Thế composed chain-3 ở corpus mục 2 là một fixture khác. Probe phòng thủ nhiều lớp
+ở [multilayer-defense-probe.json](multilayer-defense-probe.json) cũng là kiểm tra bổ
+sung, không phải tournament.
+
+Chưa có thử nghiệm với người chơi mới để kết luận EASY dễ hoặc MEDIUM cân bằng;
+chưa có đối thủ Gomoku công bố mạnh, VCT đầy đủ hoặc bằng chứng perfect play.
+Production candidate latency và capacity trên Render chưa đo; production vẫn chạy
+baseline. Các giới hạn này giữ trạng thái PARTIAL/BLOCKED cho phát hành, dù regression
+và pipeline xanh. Replay/Hint/Multiplayer chưa được triển khai.

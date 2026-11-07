@@ -1,0 +1,318 @@
+{
+  "original_source_sha": "14abd856492f0ff2a5daf61968f8463aa3a39aae",
+  "replica_source_sha": "2e9f869694953c2dcde75eb213cde79ab6da2574",
+  "replica_workflow_run_id": 42365889564,
+  "pooling": "Not pooled: same seed/opening set repeated on another recorded runner.",
+  "runtime_git_trees": {
+    "app": "f40b25475d2b293542b78e8d87e008294d8d1418",
+    "benchmarks": "46c8e0efd9cebce651e6a2ed2428c716143a54c8",
+    "scripts": "82c614b3facc3833b4ce7890a71a11dc77ce1479",
+    "frontend": "775f06d747885fa541a9dfd64caa68bf1bd51a8d"
+  },
+  "comparisons": [
+    {
+      "comparison": "hard-baseline-default",
+      "games_per_run": 200,
+      "original_wdl": [
+        132,
+        0,
+        68
+      ],
+      "replica_wdl": [
+        134,
+        0,
+        66
+      ],
+      "replica_win_rate_wilson95": [
+        0.602166847737769,
+        0.7314257412939605
+      ],
+      "replica_score_opening_bootstrap95": [
+        0.6153846153846154,
+        0.7307692307692307
+      ],
+      "original_cpu": "AMD EPYC 9V45 96-Core Processor",
+      "replica_cpu": "AMD EPYC 7763 64-Core Processor",
+      "python": "3.11.18",
+      "artifact_id": 13572550144,
+      "archive_sha256": "036befd0402405b7789fb635b7dfb663569aeba23bbf4802467371b2b2d63822",
+      "artifact_url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13572550144",
+      "candidate_missed_win": {
+        "misses": 0,
+        "opportunities": 134,
+        "rate": 0.0
+      },
+      "candidate_missed_block": {
+        "misses": 0,
+        "opportunities": 491,
+        "rate": 0.0
+      }
+    },
+    {
+      "comparison": "hard-medium-default",
+      "games_per_run": 200,
+      "original_wdl": [
+        166,
+        0,
+        34
+      ],
+      "replica_wdl": [
+        165,
+        0,
+        35
+      ],
+      "replica_win_rate_wilson95": [
+        0.7663556885175099,
+        0.8713948493372666
+      ],
+      "replica_score_opening_bootstrap95": [
+        0.7637362637362637,
+        0.8681318681318682
+      ],
+      "original_cpu": "AMD EPYC 7763 64-Core Processor",
+      "replica_cpu": "AMD EPYC 7763 64-Core Processor",
+      "python": "3.11.18",
+      "artifact_id": 13572310565,
+      "archive_sha256": "0f20455cb36ecfd773ab3bcb96de96d0fd15376fb41b50a924d5d9038354f141",
+      "artifact_url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13572310565",
+      "candidate_missed_win": {
+        "misses": 0,
+        "opportunities": 165,
+        "rate": 0.0
+      },
+      "candidate_missed_block": {
+        "misses": 0,
+        "opportunities": 364,
+        "rate": 0.0
+      }
+    },
+    {
+      "comparison": "hard-medium-screen25",
+      "games_per_run": 200,
+      "original_wdl": [
+        165,
+        0,
+        35
+      ],
+      "replica_wdl": [
+        164,
+        0,
+        36
+      ],
+      "replica_win_rate_wilson95": [
+        0.7608852497127511,
+        0.8670537414057983
+      ],
+      "replica_score_opening_bootstrap95": [
+        0.7582417582417582,
+        0.8681318681318682
+      ],
+      "original_cpu": "AMD EPYC 9V74 80-Core Processor",
+      "replica_cpu": "AMD EPYC 9V74 80-Core Processor",
+      "python": "3.11.18",
+      "artifact_id": 13571965537,
+      "archive_sha256": "188111d6bd679f6fdc871285199e619e6821365b114c6fd5a8e2fc5dadf047f0",
+      "artifact_url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13571965537",
+      "candidate_missed_win": {
+        "misses": 0,
+        "opportunities": 164,
+        "rate": 0.0
+      },
+      "candidate_missed_block": {
+        "misses": 0,
+        "opportunities": 202,
+        "rate": 0.0
+      }
+    },
+    {
+      "comparison": "impossible-hard-default",
+      "games_per_run": 200,
+      "original_wdl": [
+        121,
+        1,
+        78
+      ],
+      "replica_wdl": [
+        127,
+        0,
+        73
+      ],
+      "replica_win_rate_wilson95": [
+        0.566317026527406,
+        0.698594735350732
+      ],
+      "replica_score_opening_bootstrap95": [
+        0.5741758241758241,
+        0.6923076923076923
+      ],
+      "original_cpu": "AMD EPYC 9V74 80-Core Processor",
+      "replica_cpu": "AMD EPYC 9V74 80-Core Processor",
+      "python": "3.11.18",
+      "artifact_id": 13571928386,
+      "archive_sha256": "19046791c54977d645f6c892bae3d3eb9f1bdb9b1d406cc97ec427a10a2a3e4d",
+      "artifact_url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13571928386",
+      "candidate_missed_win": {
+        "misses": 0,
+        "opportunities": 127,
+        "rate": 0.0
+      },
+      "candidate_missed_block": {
+        "misses": 0,
+        "opportunities": 538,
+        "rate": 0.0
+      }
+    },
+    {
+      "comparison": "impossible-hard-screen25",
+      "games_per_run": 400,
+      "original_wdl": [
+        211,
+        0,
+        189
+      ],
+      "replica_wdl": [
+        182,
+        0,
+        218
+      ],
+      "replica_win_rate_wilson95": [
+        0.4068585729397347,
+        0.503997533550352
+      ],
+      "replica_score_opening_bootstrap95": [
+        0.4238505747126437,
+        0.5201149425287356
+      ],
+      "original_cpu": "AMD EPYC 9V74 80-Core Processor",
+      "replica_cpu": "AMD EPYC 7763 64-Core Processor",
+      "python": "3.11.18",
+      "artifact_id": 13571920975,
+      "archive_sha256": "a71cbe0d36961d11bad71f4994b3669e5ac5fb6ac9c18d887f64a9b85aaed127",
+      "artifact_url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13571920975",
+      "candidate_missed_win": {
+        "misses": 0,
+        "opportunities": 182,
+        "rate": 0.0
+      },
+      "candidate_missed_block": {
+        "misses": 0,
+        "opportunities": 760,
+        "rate": 0.0
+      }
+    },
+    {
+      "comparison": "impossible-greedy-default",
+      "games_per_run": 200,
+      "original_wdl": [
+        189,
+        0,
+        11
+      ],
+      "replica_wdl": [
+        181,
+        0,
+        19
+      ],
+      "replica_win_rate_wilson95": [
+        0.8563983883518006,
+        0.9383368972826135
+      ],
+      "replica_score_opening_bootstrap95": [
+        0.8681318681318682,
+        0.9505494505494505
+      ],
+      "original_cpu": "AMD EPYC 9V74 80-Core Processor",
+      "replica_cpu": "AMD EPYC 7763 64-Core Processor",
+      "python": "3.11.18",
+      "artifact_id": 13571897296,
+      "archive_sha256": "9556ffa8c4afb23a1870766355dccc54b06edfcb1e926de4f355370521671542",
+      "artifact_url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13571897296",
+      "candidate_missed_win": {
+        "misses": 0,
+        "opportunities": 181,
+        "rate": 0.0
+      },
+      "candidate_missed_block": {
+        "misses": 0,
+        "opportunities": 279,
+        "rate": 0.0
+      }
+    },
+    {
+      "comparison": "medium-easy-default",
+      "games_per_run": 200,
+      "original_wdl": [
+        138,
+        1,
+        61
+      ],
+      "replica_wdl": [
+        138,
+        1,
+        61
+      ],
+      "replica_win_rate_wilson95": [
+        0.6228282243374195,
+        0.750010551639219
+      ],
+      "replica_score_opening_bootstrap95": [
+        0.6373626373626373,
+        0.7527472527472527
+      ],
+      "original_cpu": "AMD EPYC 7763 64-Core Processor",
+      "replica_cpu": "AMD EPYC 7763 64-Core Processor",
+      "python": "3.11.18",
+      "artifact_id": 13571294817,
+      "archive_sha256": "8a221a8f493de267bdcc4c7c5df248db7a4f3805d8d8581215413d0f5e32a8db",
+      "artifact_url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13571294817",
+      "candidate_missed_win": {
+        "misses": 0,
+        "opportunities": 138,
+        "rate": 0.0
+      },
+      "candidate_missed_block": {
+        "misses": 0,
+        "opportunities": 425,
+        "rate": 0.0
+      }
+    },
+    {
+      "comparison": "medium-easy-screen25",
+      "games_per_run": 200,
+      "original_wdl": [
+        104,
+        0,
+        96
+      ],
+      "replica_wdl": [
+        11,
+        0,
+        189
+      ],
+      "replica_win_rate_wilson95": [
+        0.03098534170345884,
+        0.0957869987723084
+      ],
+      "replica_score_opening_bootstrap95": [
+        0.027472527472527472,
+        0.09340659340659341
+      ],
+      "original_cpu": "AMD EPYC 9V45 96-Core Processor",
+      "replica_cpu": "AMD EPYC 7763 64-Core Processor",
+      "python": "3.11.18",
+      "artifact_id": 13570983608,
+      "archive_sha256": "6d67889f98855e4ce7324401c792f48d5c186f6a3e263b0f18087e98908278f5",
+      "artifact_url": "https://github.com/emt0147t/caroAI/actions/runs/42365889564/artifacts/13570983608",
+      "candidate_missed_win": {
+        "misses": 0,
+        "opportunities": 11,
+        "rate": 0.0
+      },
+      "candidate_missed_block": {
+        "misses": 0,
+        "opportunities": 105,
+        "rate": 0.0
+      }
+    }
+  ]
+}

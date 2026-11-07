@@ -10,8 +10,10 @@ Audit date: 2026-11-07 (Asia/Bangkok). Production source baseline:
 The main SHA matches the supplied production baseline. Develop is behind main's
 QA security and automatic shutdown fixes; new work starts from main. No production
 writes, QA activation, configuration changes, merge, or deployment are authorized
-by this plan. Public health/readiness and release-job evidence are audited separately
-from Render platform state. Render access requires workspace confirmation.
+by this plan. The user identified Render project `prj-dbkcvvflk1mc73fcrlh0`;
+read-only platform inspection confirmed the live image matches this main SHA.
+Health/readiness are 200 and QA routes are 404. CPU/RAM samples exist; HTTP latency
+metrics are empty, so production latency remains unmeasured.
 
 The baseline uses minimax with alpha-beta, deterministic move ordering, radius-two
 candidate generation, cached line scoring, and incremental four-line move evaluation.
@@ -63,9 +65,9 @@ latency/concurrency 1/2/4/8 or production latency measurement exists.
   of forcing moves before quiet pruning; deterministic tie-breaking.
 - Iterative deepening alpha-beta with exact horizon/extension-aware per-search TT;
   candidate selection before TT ordering, full board/player key, bounded memory.
-- HARD: narrow radius, direct forcing attacks and bounded tactical extension.
-  IMPOSSIBLE: wider radius, deeper extension and a separate bounded continuous-four
-  proof search. Differences are search policy, not only milliseconds.
+- HARD: narrow radius, direct forcing attacks, one tactical extension and proofs
+  of up to three continuous-four attacks. IMPOSSIBLE: wider radius, three extensions
+  and proofs of up to five attacks. Differences are search policy, not only milliseconds.
 - A clock starting at engine entry, mandatory constant-size win/block scan, safe
   fallback and last completed iteration, separate search/engine timing and counters.
 - No claim of perfect or unbeatable play; forcing proof is restricted to its model.
@@ -85,3 +87,6 @@ A small-budget screening tournament cannot establish default-budget superiority.
 No truncated game is silently counted as a draw; record incomplete/error separately.
 Persist seeds, openings, all moves, terminal reason, missed-win/block opportunities,
 source SHAs, working-tree hashes, Python/package/CPU metadata and raw timing rows.
+
+This document records the audit and plan. Current measured acceptance, CI runs,
+limitations and artifact provenance are in [REVIEW.md](../../reports/competitive/REVIEW.md).
