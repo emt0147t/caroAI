@@ -12,10 +12,13 @@ import json
 import os
 import secrets
 import sys
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from app.api.qa_security import create_qa_capability
+# Direct execution sets sys.path[0] to scripts/, so add the repository root.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from app.api.qa_security import create_qa_capability  # noqa: E402
 
 
 TIMEOUT_SECONDS = 20
