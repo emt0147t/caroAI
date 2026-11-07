@@ -1,0 +1,1754 @@
+{
+  "run_id": "phaseb-20261107T102054Z-00c30eae",
+  "captured_at_utc": "2026-11-07T10:23:35.754646+00:00",
+  "source_sha": "14abd856492f0ff2a5daf61968f8463aa3a39aae",
+  "branch": "",
+  "python_version": "3.11.18 (main, Oct 26 2026, 02:48:34) [GCC 13.3.0]",
+  "python_executable": "/opt/hostedtoolcache/Python/3.11.18/x64/bin/python",
+  "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+  "cpu_count": 4,
+  "database_url_host": "localhost:5432/caroai_competitive",
+  "api_worker_count": 1,
+  "sqlalchemy_pool_default": "QueuePool defaults (pool_size=5, max_overflow=10)",
+  "fixture_manifest_sha256": null,
+  "fixture_definition": [
+    [
+      7,
+      7
+    ],
+    [
+      7,
+      8
+    ],
+    [
+      6,
+      7
+    ],
+    [
+      8,
+      8
+    ],
+    [
+      6,
+      6
+    ]
+  ],
+  "fixture_definition_sha256": "06e1663adcdbbff309b5368d16a311467e53f70fbbadd85fc92ed4d0595756e4",
+  "benchmark_harness_sha256": "8246fe83e157ce92e127ec53bc253710445b9019faca4c83813ea21f5b1dc4ac",
+  "instrumentation_sha256": "b5fb466ddde688db0b457842768a3a11910931859241afabcdad1e1b30f520c5",
+  "working_tree_dirty": false,
+  "postgres_version": "PostgreSQL 15.19 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "postgres_max_connections": "100",
+  "postgres_shared_buffers": "128MB",
+  "postgres_image": "postgres:15-alpine (Docker image digest recorded separately in execution notes)",
+  "active_db_connections_peak": 6,
+  "database_correctness_checks": 801,
+  "database_correctness_failures": 0,
+  "samples_per_group": 10,
+  "warmup_count": 1,
+  "difficulties": [
+    "easy",
+    "medium",
+    "hard",
+    "impossible"
+  ],
+  "concurrency_levels": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "monitor_interval_ms": 10.0,
+  "environment": {
+    "python_version": "3.11.18 (main, Oct 26 2026, 02:48:34) [GCC 13.3.0]",
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+    "cpu_count": 4,
+    "api_worker_count": 1,
+    "database_host": "localhost:5432/caroai_competitive"
+  },
+  "notes": [
+    "API-side timing includes middleware stack; client timing is wall-clock.",
+    "Database fixture is history-backed and is seeded through public endpoints.",
+    "No production endpoint/database was used.",
+    "Same-game HTTP 400 responses after the first committed move are expected by-turn outcomes."
+  ],
+  "group_summary": [
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "easy",
+      "concurrency": 1,
+      "sample_count": 10,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 77.70626823907648,
+      "api_p50_ms": 12.843067999999999,
+      "api_p95_ms": 13.3344,
+      "api_max_ms": 13.3344,
+      "engine_search_ms": {
+        "p50": 3.8608705,
+        "p95": 4.049039,
+        "max": 4.049039
+      },
+      "row_lock_query_ms": {
+        "p50": 0.4567115,
+        "p95": 0.534964,
+        "max": 0.534964
+      },
+      "transaction_duration_ms": {
+        "p50": 4.747653,
+        "p95": 5.1358880000000005,
+        "max": 5.1358880000000005
+      },
+      "db_connection_hold_ms": {
+        "p50": 4.8014145,
+        "p95": 5.164312000000001,
+        "max": 5.164312000000001
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "easy",
+      "concurrency": 2,
+      "sample_count": 20,
+      "success_count": 20,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 77.19156253765966,
+      "api_p50_ms": 21.395701000000003,
+      "api_p95_ms": 60.699223,
+      "api_max_ms": 61.96013,
+      "engine_search_ms": {
+        "p50": 3.7883335000000002,
+        "p95": 4.51311,
+        "max": 4.635132
+      },
+      "row_lock_query_ms": {
+        "p50": 0.731572,
+        "p95": 1.669132,
+        "max": 4.341903
+      },
+      "transaction_duration_ms": {
+        "p50": 10.5433185,
+        "p95": 46.620834,
+        "max": 50.462404
+      },
+      "db_connection_hold_ms": {
+        "p50": 10.606936000000001,
+        "p95": 46.672821,
+        "max": 50.502667
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "easy",
+      "concurrency": 4,
+      "sample_count": 40,
+      "success_count": 40,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 95.03219328397208,
+      "api_p50_ms": 39.586723,
+      "api_p95_ms": 41.63062,
+      "api_max_ms": 42.672489,
+      "engine_search_ms": {
+        "p50": 3.778128,
+        "p95": 4.340911,
+        "max": 4.543458
+      },
+      "row_lock_query_ms": {
+        "p50": 1.538829,
+        "p95": 6.094984,
+        "max": 16.463903
+      },
+      "transaction_duration_ms": {
+        "p50": 15.44614,
+        "p95": 22.602436,
+        "max": 24.952974
+      },
+      "db_connection_hold_ms": {
+        "p50": 15.4762405,
+        "p95": 22.626402,
+        "max": 25.02467
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "easy",
+      "concurrency": 8,
+      "sample_count": 80,
+      "success_count": 80,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 82.80320024805403,
+      "api_p50_ms": 86.991435,
+      "api_p95_ms": 104.719965,
+      "api_max_ms": 106.576065,
+      "engine_search_ms": {
+        "p50": 3.899236,
+        "p95": 8.884938,
+        "max": 15.973021
+      },
+      "row_lock_query_ms": {
+        "p50": 3.2173675,
+        "p95": 13.423306,
+        "max": 20.610019
+      },
+      "transaction_duration_ms": {
+        "p50": 32.689421,
+        "p95": 52.751003,
+        "max": 66.759724
+      },
+      "db_connection_hold_ms": {
+        "p50": 32.4613005,
+        "p95": 51.892151,
+        "max": 66.490759
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "hard",
+      "concurrency": 1,
+      "sample_count": 10,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 10.40783943111744,
+      "api_p50_ms": 95.22828100000001,
+      "api_p95_ms": 100.39086,
+      "api_max_ms": 100.39086,
+      "engine_search_ms": {
+        "p50": 85.0458255,
+        "p95": 89.957616,
+        "max": 89.957616
+      },
+      "row_lock_query_ms": {
+        "p50": 0.4326005,
+        "p95": 0.549742,
+        "max": 0.549742
+      },
+      "transaction_duration_ms": {
+        "p50": 5.1544815,
+        "p95": 10.525291,
+        "max": 10.525291
+      },
+      "db_connection_hold_ms": {
+        "p50": 5.209853,
+        "p95": 10.572503999999999,
+        "max": 10.572503999999999
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "hard",
+      "concurrency": 2,
+      "sample_count": 20,
+      "success_count": 20,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 10.410524121261908,
+      "api_p50_ms": 192.981101,
+      "api_p95_ms": 194.543656,
+      "api_max_ms": 194.700521,
+      "engine_search_ms": {
+        "p50": 173.4978465,
+        "p95": 180.66436,
+        "max": 181.060779
+      },
+      "row_lock_query_ms": {
+        "p50": 1.1277845,
+        "p95": 4.856384,
+        "max": 5.582268
+      },
+      "transaction_duration_ms": {
+        "p50": 10.6091135,
+        "p95": 15.950555999999999,
+        "max": 16.056453
+      },
+      "db_connection_hold_ms": {
+        "p50": 10.685226499999999,
+        "p95": 16.010703,
+        "max": 16.111667
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "hard",
+      "concurrency": 4,
+      "sample_count": 40,
+      "success_count": 40,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 11.727509082984367,
+      "api_p50_ms": 334.085055,
+      "api_p95_ms": 357.867591,
+      "api_max_ms": 363.077709,
+      "engine_search_ms": {
+        "p50": 243.72481349999998,
+        "p95": 262.237073,
+        "max": 283.970367
+      },
+      "row_lock_query_ms": {
+        "p50": 4.121065,
+        "p95": 26.160536,
+        "max": 45.714606
+      },
+      "transaction_duration_ms": {
+        "p50": 42.614792,
+        "p95": 112.990153,
+        "max": 203.966018
+      },
+      "db_connection_hold_ms": {
+        "p50": 42.692485000000005,
+        "p95": 113.067431,
+        "max": 204.023872
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "hard",
+      "concurrency": 8,
+      "sample_count": 80,
+      "success_count": 80,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 13.858155369015442,
+      "api_p50_ms": 553.640666,
+      "api_p95_ms": 627.746186,
+      "api_max_ms": 652.619251,
+      "engine_search_ms": {
+        "p50": 250.437138,
+        "p95": 316.433424,
+        "max": 389.39751
+      },
+      "row_lock_query_ms": {
+        "p50": 6.422017500000001,
+        "p95": 78.542665,
+        "max": 150.594157
+      },
+      "transaction_duration_ms": {
+        "p50": 101.75182050000001,
+        "p95": 217.697185,
+        "max": 286.06962000000004
+      },
+      "db_connection_hold_ms": {
+        "p50": 98.9270475,
+        "p95": 217.63588099999998,
+        "max": 286.124317
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "impossible",
+      "concurrency": 1,
+      "sample_count": 10,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 1.4078805641530647,
+      "api_p50_ms": 710.072546,
+      "api_p95_ms": 710.900599,
+      "api_max_ms": 710.900599,
+      "engine_search_ms": {
+        "p50": 700.4071125,
+        "p95": 700.469746,
+        "max": 700.469746
+      },
+      "row_lock_query_ms": {
+        "p50": 0.48158100000000004,
+        "p95": 0.633677,
+        "max": 0.633677
+      },
+      "transaction_duration_ms": {
+        "p50": 5.010294,
+        "p95": 5.408119,
+        "max": 5.408119
+      },
+      "db_connection_hold_ms": {
+        "p50": 5.0546015,
+        "p95": 5.493367,
+        "max": 5.493367
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "impossible",
+      "concurrency": 2,
+      "sample_count": 20,
+      "success_count": 20,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 2.7754853810466464,
+      "api_p50_ms": 718.6501774999999,
+      "api_p95_ms": 724.446538,
+      "api_max_ms": 724.513799,
+      "engine_search_ms": {
+        "p50": 700.3023045,
+        "p95": 702.915847,
+        "max": 704.660043
+      },
+      "row_lock_query_ms": {
+        "p50": 0.7681445,
+        "p95": 1.365907,
+        "max": 5.899656
+      },
+      "transaction_duration_ms": {
+        "p50": 11.538677499999999,
+        "p95": 17.398111,
+        "max": 17.422369
+      },
+      "db_connection_hold_ms": {
+        "p50": 11.619786,
+        "p95": 17.427353,
+        "max": 17.489015000000002
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "impossible",
+      "concurrency": 4,
+      "sample_count": 40,
+      "success_count": 40,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 4.873949545222761,
+      "api_p50_ms": 787.73156,
+      "api_p95_ms": 880.108643,
+      "api_max_ms": 907.576293,
+      "engine_search_ms": {
+        "p50": 701.1040195,
+        "p95": 735.134063,
+        "max": 746.929585
+      },
+      "row_lock_query_ms": {
+        "p50": 3.0742265,
+        "p95": 11.634955,
+        "max": 33.988437
+      },
+      "transaction_duration_ms": {
+        "p50": 43.8742145,
+        "p95": 154.227521,
+        "max": 197.13773500000002
+      },
+      "db_connection_hold_ms": {
+        "p50": 43.925815,
+        "p95": 154.302679,
+        "max": 197.15243800000002
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "impossible",
+      "concurrency": 8,
+      "sample_count": 80,
+      "success_count": 80,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 6.648420936929809,
+      "api_p50_ms": 1038.7839625000001,
+      "api_p95_ms": 1213.427727,
+      "api_max_ms": 1556.511612,
+      "engine_search_ms": {
+        "p50": 705.7477545,
+        "p95": 815.092993,
+        "max": 904.598178
+      },
+      "row_lock_query_ms": {
+        "p50": 7.2398074999999995,
+        "p95": 61.284995,
+        "max": 97.902867
+      },
+      "transaction_duration_ms": {
+        "p50": 103.03368549999999,
+        "p95": 262.928419,
+        "max": 594.846197
+      },
+      "db_connection_hold_ms": {
+        "p50": 103.0769895,
+        "p95": 262.97364500000003,
+        "max": 497.947954
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "medium",
+      "concurrency": 1,
+      "sample_count": 10,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 35.340191361344566,
+      "api_p50_ms": 25.9252215,
+      "api_p95_ms": 49.988645,
+      "api_max_ms": 49.988645,
+      "engine_search_ms": {
+        "p50": 16.023303499999997,
+        "p95": 16.61095,
+        "max": 16.61095
+      },
+      "row_lock_query_ms": {
+        "p50": 0.517972,
+        "p95": 0.688901,
+        "max": 0.688901
+      },
+      "transaction_duration_ms": {
+        "p50": 5.1081595,
+        "p95": 28.800316000000002,
+        "max": 28.800316000000002
+      },
+      "db_connection_hold_ms": {
+        "p50": 5.15718,
+        "p95": 28.852739,
+        "max": 28.852739
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "medium",
+      "concurrency": 2,
+      "sample_count": 20,
+      "success_count": 20,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 41.82436281263092,
+      "api_p50_ms": 46.9681085,
+      "api_p95_ms": 48.376843,
+      "api_max_ms": 49.13535,
+      "engine_search_ms": {
+        "p50": 29.0595085,
+        "p95": 34.34293,
+        "max": 35.508589
+      },
+      "row_lock_query_ms": {
+        "p50": 0.776445,
+        "p95": 1.374008,
+        "max": 1.842492
+      },
+      "transaction_duration_ms": {
+        "p50": 9.6215745,
+        "p95": 16.956991,
+        "max": 17.009818000000003
+      },
+      "db_connection_hold_ms": {
+        "p50": 9.6940295,
+        "p95": 17.038732,
+        "max": 17.041437
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "medium",
+      "concurrency": 4,
+      "sample_count": 40,
+      "success_count": 40,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 41.44683730437387,
+      "api_p50_ms": 94.17325199999999,
+      "api_p95_ms": 95.820133,
+      "api_max_ms": 98.622718,
+      "engine_search_ms": {
+        "p50": 31.057958,
+        "p95": 49.542166,
+        "max": 60.70137
+      },
+      "row_lock_query_ms": {
+        "p50": 2.3293660000000003,
+        "p95": 11.650452,
+        "max": 56.181297
+      },
+      "transaction_duration_ms": {
+        "p50": 30.187388,
+        "p95": 46.446244,
+        "max": 67.32368
+      },
+      "db_connection_hold_ms": {
+        "p50": 30.229708000000002,
+        "p95": 46.470799,
+        "max": 67.386607
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "different_game_concurrent",
+      "difficulty": "medium",
+      "concurrency": 8,
+      "sample_count": 80,
+      "success_count": 80,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 38.992673109054444,
+      "api_p50_ms": 199.092921,
+      "api_p95_ms": 211.569328,
+      "api_max_ms": 215.421641,
+      "engine_search_ms": {
+        "p50": 37.026219999999995,
+        "p95": 72.529514,
+        "max": 86.953169
+      },
+      "row_lock_query_ms": {
+        "p50": 5.540183000000001,
+        "p95": 38.279305,
+        "max": 90.953051
+      },
+      "transaction_duration_ms": {
+        "p50": 55.6940735,
+        "p95": 103.31487,
+        "max": 137.274491
+      },
+      "db_connection_hold_ms": {
+        "p50": 52.936783500000004,
+        "p95": 103.365811,
+        "max": 136.785583
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "read_api_under_ai_load",
+      "difficulty": "impossible",
+      "concurrency": 1,
+      "sample_count": 1,
+      "success_count": 1,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": null,
+      "api_p50_ms": 710.731948,
+      "api_p95_ms": 710.731948,
+      "api_max_ms": 710.731948,
+      "engine_search_ms": {
+        "p50": 700.379297,
+        "p95": 700.379297,
+        "max": 700.379297
+      },
+      "row_lock_query_ms": {
+        "p50": 0.434956,
+        "p95": 0.434956,
+        "max": 0.434956
+      },
+      "transaction_duration_ms": {
+        "p50": 5.826603,
+        "p95": 5.826603,
+        "max": 5.826603
+      },
+      "db_connection_hold_ms": {
+        "p50": 5.885962,
+        "p95": 5.885962,
+        "max": 5.885962
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "read_api_under_ai_load",
+      "difficulty": "n/a",
+      "concurrency": 2,
+      "sample_count": 2,
+      "success_count": 2,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 9.242053507950104,
+      "api_p50_ms": 190.507615,
+      "api_p95_ms": 216.402123,
+      "api_max_ms": 216.402123,
+      "engine_search_ms": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "row_lock_query_ms": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "transaction_duration_ms": {
+        "p50": 27.365366,
+        "p95": 37.584719,
+        "max": 37.584719
+      },
+      "db_connection_hold_ms": {
+        "p50": 27.403165,
+        "p95": 37.612833,
+        "max": 37.612833
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "easy",
+      "concurrency": 1,
+      "sample_count": 10,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 82.08234302012576,
+      "api_p50_ms": 12.037213999999999,
+      "api_p95_ms": 12.550611,
+      "api_max_ms": 12.550611,
+      "engine_search_ms": {
+        "p50": 3.703894,
+        "p95": 3.871539,
+        "max": 3.871539
+      },
+      "row_lock_query_ms": {
+        "p50": 0.387087,
+        "p95": 0.417523,
+        "max": 0.417523
+      },
+      "transaction_duration_ms": {
+        "p50": 4.346429,
+        "p95": 4.632073,
+        "max": 4.632073
+      },
+      "db_connection_hold_ms": {
+        "p50": 4.3862025,
+        "p95": 4.689224,
+        "max": 4.689224
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "easy",
+      "concurrency": 2,
+      "sample_count": 20,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 10,
+      "expected_conflict_count": 10,
+      "error_rate": 0.5,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 94.14962514514943,
+      "api_p50_ms": 20.379106999999998,
+      "api_p95_ms": 21.564253,
+      "api_max_ms": 22.238404,
+      "engine_search_ms": {
+        "p50": 3.7808254999999997,
+        "p95": 4.213398,
+        "max": 4.388087
+      },
+      "row_lock_query_ms": {
+        "p50": 1.847986,
+        "p95": 3.310091,
+        "max": 3.403159
+      },
+      "transaction_duration_ms": {
+        "p50": 8.2839445,
+        "p95": 11.149445,
+        "max": 11.295431
+      },
+      "db_connection_hold_ms": {
+        "p50": 8.3276395,
+        "p95": 11.168054999999999,
+        "max": 11.368168
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "easy",
+      "concurrency": 4,
+      "sample_count": 40,
+      "success_count": 10,
+      "http_400_count": 1,
+      "http_409_count": 29,
+      "expected_conflict_count": 30,
+      "error_rate": 0.75,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 102.04015384645096,
+      "api_p50_ms": 37.06192849999999,
+      "api_p95_ms": 39.581138,
+      "api_max_ms": 40.387061,
+      "engine_search_ms": {
+        "p50": 3.762412,
+        "p95": 4.524421,
+        "max": 4.543793
+      },
+      "row_lock_query_ms": {
+        "p50": 3.746699,
+        "p95": 12.388304,
+        "max": 14.510693
+      },
+      "transaction_duration_ms": {
+        "p50": 16.3020405,
+        "p95": 21.66472,
+        "max": 24.284175
+      },
+      "db_connection_hold_ms": {
+        "p50": 16.3261415,
+        "p95": 21.706193,
+        "max": 24.320554
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 10.0,
+        "max": 10.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "easy",
+      "concurrency": 8,
+      "sample_count": 80,
+      "success_count": 10,
+      "http_400_count": 53,
+      "http_409_count": 17,
+      "expected_conflict_count": 70,
+      "error_rate": 0.875,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 149.33456926605012,
+      "api_p50_ms": 41.7055855,
+      "api_p95_ms": 71.750112,
+      "api_max_ms": 72.748496,
+      "engine_search_ms": {
+        "p50": 3.958865,
+        "p95": 12.367632,
+        "max": 19.043581
+      },
+      "row_lock_query_ms": {
+        "p50": 3.809764,
+        "p95": 11.350579,
+        "max": 30.202176
+      },
+      "transaction_duration_ms": {
+        "p50": 8.7238145,
+        "p95": 32.785486,
+        "max": 45.880007
+      },
+      "db_connection_hold_ms": {
+        "p50": 8.723000500000001,
+        "p95": 32.811388,
+        "max": 45.93187
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 10.0,
+        "max": 10.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "hard",
+      "concurrency": 1,
+      "sample_count": 10,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 9.949255008789105,
+      "api_p50_ms": 94.9690065,
+      "api_p95_ms": 138.776577,
+      "api_max_ms": 138.776577,
+      "engine_search_ms": {
+        "p50": 84.8838715,
+        "p95": 128.847868,
+        "max": 128.847868
+      },
+      "row_lock_query_ms": {
+        "p50": 0.48380999999999996,
+        "p95": 0.615143,
+        "max": 0.615143
+      },
+      "transaction_duration_ms": {
+        "p50": 5.1959365,
+        "p95": 10.63278,
+        "max": 10.63278
+      },
+      "db_connection_hold_ms": {
+        "p50": 5.2380835,
+        "p95": 10.685826,
+        "max": 10.685826
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "hard",
+      "concurrency": 2,
+      "sample_count": 20,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 10,
+      "expected_conflict_count": 10,
+      "error_rate": 0.5,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 10.416158515458566,
+      "api_p50_ms": 190.0967365,
+      "api_p95_ms": 203.144878,
+      "api_max_ms": 203.561027,
+      "engine_search_ms": {
+        "p50": 168.23780349999998,
+        "p95": 183.592046,
+        "max": 185.533399
+      },
+      "row_lock_query_ms": {
+        "p50": 2.7843035,
+        "p95": 6.648579,
+        "max": 14.416823
+      },
+      "transaction_duration_ms": {
+        "p50": 11.1540805,
+        "p95": 19.998086999999998,
+        "max": 25.398294
+      },
+      "db_connection_hold_ms": {
+        "p50": 11.224695,
+        "p95": 20.052345000000003,
+        "max": 25.461153
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 10.0,
+        "max": 10.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "hard",
+      "concurrency": 4,
+      "sample_count": 40,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 30,
+      "expected_conflict_count": 30,
+      "error_rate": 0.75,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 11.778862984383244,
+      "api_p50_ms": 333.88975400000004,
+      "api_p95_ms": 377.811022,
+      "api_max_ms": 380.081032,
+      "engine_search_ms": {
+        "p50": 239.64241800000002,
+        "p95": 268.924871,
+        "max": 286.527917
+      },
+      "row_lock_query_ms": {
+        "p50": 5.7079415000000004,
+        "p95": 27.719266,
+        "max": 46.94892
+      },
+      "transaction_duration_ms": {
+        "p50": 41.112119500000006,
+        "p95": 151.33703899999998,
+        "max": 189.120043
+      },
+      "db_connection_hold_ms": {
+        "p50": 41.172827500000004,
+        "p95": 151.410312,
+        "max": 189.191231
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 30.0,
+        "max": 30.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "hard",
+      "concurrency": 8,
+      "sample_count": 80,
+      "success_count": 10,
+      "http_400_count": 4,
+      "http_409_count": 66,
+      "expected_conflict_count": 70,
+      "error_rate": 0.875,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 14.434628243871128,
+      "api_p50_ms": 547.097813,
+      "api_p95_ms": 611.096917,
+      "api_max_ms": 616.142541,
+      "engine_search_ms": {
+        "p50": 255.1558805,
+        "p95": 333.428501,
+        "max": 354.992109
+      },
+      "row_lock_query_ms": {
+        "p50": 27.2570525,
+        "p95": 123.585345,
+        "max": 241.429812
+      },
+      "transaction_duration_ms": {
+        "p50": 112.0424225,
+        "p95": 256.994883,
+        "max": 333.59096
+      },
+      "db_connection_hold_ms": {
+        "p50": 112.1021695,
+        "p95": 257.072568,
+        "max": 333.507266
+      },
+      "observed_lock_wait_ms": {
+        "p50": 50.0,
+        "p95": 210.0,
+        "max": 280.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "impossible",
+      "concurrency": 1,
+      "sample_count": 10,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 1.4073791558658861,
+      "api_p50_ms": 710.1255195,
+      "api_p95_ms": 714.020888,
+      "api_max_ms": 714.020888,
+      "engine_search_ms": {
+        "p50": 700.409669,
+        "p95": 700.488178,
+        "max": 700.488178
+      },
+      "row_lock_query_ms": {
+        "p50": 0.4710305,
+        "p95": 0.505095,
+        "max": 0.505095
+      },
+      "transaction_duration_ms": {
+        "p50": 5.1394210000000005,
+        "p95": 9.131874,
+        "max": 9.131874
+      },
+      "db_connection_hold_ms": {
+        "p50": 5.1991295,
+        "p95": 9.176565,
+        "max": 9.176565
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "impossible",
+      "concurrency": 2,
+      "sample_count": 20,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 10,
+      "expected_conflict_count": 10,
+      "error_rate": 0.5,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 2.7817078205621164,
+      "api_p50_ms": 718.2188085,
+      "api_p95_ms": 719.779708,
+      "api_max_ms": 720.810741,
+      "engine_search_ms": {
+        "p50": 700.3161915,
+        "p95": 703.162415,
+        "max": 703.804758
+      },
+      "row_lock_query_ms": {
+        "p50": 1.9148085,
+        "p95": 3.76866,
+        "max": 3.804746
+      },
+      "transaction_duration_ms": {
+        "p50": 9.1422135,
+        "p95": 12.789273000000001,
+        "max": 12.827408
+      },
+      "db_connection_hold_ms": {
+        "p50": 9.180928,
+        "p95": 12.842459999999999,
+        "max": 12.851447
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 10.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "impossible",
+      "concurrency": 4,
+      "sample_count": 40,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 30,
+      "expected_conflict_count": 30,
+      "error_rate": 0.75,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 4.766877270343328,
+      "api_p50_ms": 822.963204,
+      "api_p95_ms": 869.700678,
+      "api_max_ms": 924.341274,
+      "engine_search_ms": {
+        "p50": 700.3574080000001,
+        "p95": 731.555141,
+        "max": 750.440156
+      },
+      "row_lock_query_ms": {
+        "p50": 11.171219,
+        "p95": 41.343236,
+        "max": 44.05234
+      },
+      "transaction_duration_ms": {
+        "p50": 57.554677,
+        "p95": 137.45873,
+        "max": 214.318876
+      },
+      "db_connection_hold_ms": {
+        "p50": 57.5883355,
+        "p95": 137.501193,
+        "max": 214.350267
+      },
+      "observed_lock_wait_ms": {
+        "p50": 10.0,
+        "p95": 30.0,
+        "max": 60.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "impossible",
+      "concurrency": 8,
+      "sample_count": 80,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 70,
+      "expected_conflict_count": 70,
+      "error_rate": 0.875,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 6.73804354580647,
+      "api_p50_ms": 1081.375994,
+      "api_p95_ms": 1350.987135,
+      "api_max_ms": 1470.251,
+      "engine_search_ms": {
+        "p50": 705.449458,
+        "p95": 791.373696,
+        "max": 838.451917
+      },
+      "row_lock_query_ms": {
+        "p50": 42.2644735,
+        "p95": 149.071673,
+        "max": 211.145564
+      },
+      "transaction_duration_ms": {
+        "p50": 141.5526385,
+        "p95": 290.045616,
+        "max": 554.359287
+      },
+      "db_connection_hold_ms": {
+        "p50": 141.58889,
+        "p95": 290.105464,
+        "max": 554.4580080000001
+      },
+      "observed_lock_wait_ms": {
+        "p50": 80.0,
+        "p95": 180.0,
+        "max": 180.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "medium",
+      "concurrency": 1,
+      "sample_count": 10,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 38.73953665453079,
+      "api_p50_ms": 25.146725500000002,
+      "api_p95_ms": 28.95247,
+      "api_max_ms": 28.95247,
+      "engine_search_ms": {
+        "p50": 15.6747525,
+        "p95": 17.448312,
+        "max": 17.448312
+      },
+      "row_lock_query_ms": {
+        "p50": 0.471267,
+        "p95": 0.57084,
+        "max": 0.57084
+      },
+      "transaction_duration_ms": {
+        "p50": 5.008027,
+        "p95": 8.138753,
+        "max": 8.138753
+      },
+      "db_connection_hold_ms": {
+        "p50": 5.0678355,
+        "p95": 8.219617,
+        "max": 8.219617
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "medium",
+      "concurrency": 2,
+      "sample_count": 20,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 10,
+      "expected_conflict_count": 10,
+      "error_rate": 0.5,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 42.00960163472887,
+      "api_p50_ms": 46.8423815,
+      "api_p95_ms": 48.14656,
+      "api_max_ms": 48.684702,
+      "engine_search_ms": {
+        "p50": 29.0732925,
+        "p95": 32.538362,
+        "max": 33.417086
+      },
+      "row_lock_query_ms": {
+        "p50": 2.4057,
+        "p95": 3.771431,
+        "max": 5.641767
+      },
+      "transaction_duration_ms": {
+        "p50": 10.211368499999999,
+        "p95": 12.871285,
+        "max": 13.058555
+      },
+      "db_connection_hold_ms": {
+        "p50": 10.261626,
+        "p95": 12.912644,
+        "max": 13.097059
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 10.0,
+        "max": 10.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "medium",
+      "concurrency": 4,
+      "sample_count": 40,
+      "success_count": 10,
+      "http_400_count": 1,
+      "http_409_count": 29,
+      "expected_conflict_count": 30,
+      "error_rate": 0.75,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 44.50958258654291,
+      "api_p50_ms": 88.62378799999999,
+      "api_p95_ms": 92.376509,
+      "api_max_ms": 93.752595,
+      "engine_search_ms": {
+        "p50": 28.446858,
+        "p95": 46.259545,
+        "max": 46.57279
+      },
+      "row_lock_query_ms": {
+        "p50": 4.785678,
+        "p95": 30.783256,
+        "max": 38.49259
+      },
+      "transaction_duration_ms": {
+        "p50": 23.1616255,
+        "p95": 48.949377999999996,
+        "max": 59.074522
+      },
+      "db_connection_hold_ms": {
+        "p50": 23.2092545,
+        "p95": 48.981815999999995,
+        "max": 59.130281000000004
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 20.0,
+        "max": 40.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "same_game_concurrent",
+      "difficulty": "medium",
+      "concurrency": 8,
+      "sample_count": 80,
+      "success_count": 10,
+      "http_400_count": 30,
+      "http_409_count": 40,
+      "expected_conflict_count": 70,
+      "error_rate": 0.875,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 59.54028335445504,
+      "api_p50_ms": 108.7840475,
+      "api_p95_ms": 191.998558,
+      "api_max_ms": 198.147851,
+      "engine_search_ms": {
+        "p50": 31.926256000000002,
+        "p95": 68.25215,
+        "max": 68.968635
+      },
+      "row_lock_query_ms": {
+        "p50": 7.9860475,
+        "p95": 56.745163,
+        "max": 69.338484
+      },
+      "transaction_duration_ms": {
+        "p50": 29.463598,
+        "p95": 96.70187499999999,
+        "max": 149.047711
+      },
+      "db_connection_hold_ms": {
+        "p50": 28.1377285,
+        "p95": 96.72499699999999,
+        "max": 149.11344400000002
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 50.0,
+        "max": 90.0
+      },
+      "expected_same_game_conflicts": true
+    },
+    {
+      "scenario": "single_request",
+      "difficulty": "easy",
+      "concurrency": 1,
+      "sample_count": 10,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 58.940368638058565,
+      "api_p50_ms": 12.0908785,
+      "api_p95_ms": 43.229399,
+      "api_max_ms": 43.229399,
+      "engine_search_ms": {
+        "p50": 3.859645,
+        "p95": 34.542773,
+        "max": 34.542773
+      },
+      "row_lock_query_ms": {
+        "p50": 0.38427900000000004,
+        "p95": 0.473409,
+        "max": 0.473409
+      },
+      "transaction_duration_ms": {
+        "p50": 4.4803405000000005,
+        "p95": 21.340394,
+        "max": 21.340394
+      },
+      "db_connection_hold_ms": {
+        "p50": 4.5050815,
+        "p95": 21.369436,
+        "max": 21.369436
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "single_request",
+      "difficulty": "hard",
+      "concurrency": 1,
+      "sample_count": 10,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 10.338135978153913,
+      "api_p50_ms": 95.230622,
+      "api_p95_ms": 107.398714,
+      "api_max_ms": 107.398714,
+      "engine_search_ms": {
+        "p50": 85.37534149999999,
+        "p95": 89.829312,
+        "max": 89.829312
+      },
+      "row_lock_query_ms": {
+        "p50": 0.4630105,
+        "p95": 0.59508,
+        "max": 0.59508
+      },
+      "transaction_duration_ms": {
+        "p50": 5.15502,
+        "p95": 17.062234,
+        "max": 17.062234
+      },
+      "db_connection_hold_ms": {
+        "p50": 5.20326,
+        "p95": 17.146929,
+        "max": 17.146929
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "single_request",
+      "difficulty": "impossible",
+      "concurrency": 1,
+      "sample_count": 10,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 1.407685254352147,
+      "api_p50_ms": 710.376225,
+      "api_p95_ms": 711.004866,
+      "api_max_ms": 711.004866,
+      "engine_search_ms": {
+        "p50": 700.4045095,
+        "p95": 700.457138,
+        "max": 700.457138
+      },
+      "row_lock_query_ms": {
+        "p50": 0.46674499999999997,
+        "p95": 0.532909,
+        "max": 0.532909
+      },
+      "transaction_duration_ms": {
+        "p50": 5.2627765,
+        "p95": 5.726333,
+        "max": 5.726333
+      },
+      "db_connection_hold_ms": {
+        "p50": 5.3144945,
+        "p95": 5.797276,
+        "max": 5.797276
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    },
+    {
+      "scenario": "single_request",
+      "difficulty": "medium",
+      "concurrency": 1,
+      "sample_count": 10,
+      "success_count": 10,
+      "http_400_count": 0,
+      "http_409_count": 0,
+      "expected_conflict_count": 0,
+      "error_rate": 0.0,
+      "unexpected_error_count": 0,
+      "unexpected_error_rate": 0.0,
+      "invalid_success_count": 0,
+      "throughput_rps": 37.318398271505984,
+      "api_p50_ms": 26.13733,
+      "api_p95_ms": 34.396745,
+      "api_max_ms": 34.396745,
+      "engine_search_ms": {
+        "p50": 15.877606,
+        "p95": 18.209846,
+        "max": 18.209846
+      },
+      "row_lock_query_ms": {
+        "p50": 0.48958,
+        "p95": 0.599593,
+        "max": 0.599593
+      },
+      "transaction_duration_ms": {
+        "p50": 5.1395865,
+        "p95": 11.684033,
+        "max": 11.684033
+      },
+      "db_connection_hold_ms": {
+        "p50": 5.188995500000001,
+        "p95": 11.725946,
+        "max": 11.725946
+      },
+      "observed_lock_wait_ms": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
+      "expected_same_game_conflicts": false
+    }
+  ],
+  "postgres_monitor_error": null,
+  "postgres_observation_interval_ms": 10.0,
+  "postgres_observation_samples": 13990,
+  "raw_request_count": 1243,
+  "server_metric_count": 6654
+}

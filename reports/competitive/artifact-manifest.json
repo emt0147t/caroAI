@@ -1,0 +1,113 @@
+{
+  "source_sha": "14abd856492f0ff2a5daf61968f8463aa3a39aae",
+  "workflow_run_id": 42363497808,
+  "artifacts": [
+    {
+      "id": 13570492231,
+      "archive_sha256": "07309461ee07c5d4ab220f207b30857548359d84d5f651bd6c5e5c785d277789",
+      "files": [
+        "medium-easy-default.json",
+        "medium-easy-default.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42363497808/artifacts/13570492231"
+    },
+    {
+      "id": 13570428803,
+      "archive_sha256": "a6fe5eb9f083e93f2b52438d38920e0eaa6702cef08dc187edd0d6e69263ac05",
+      "files": [
+        "medium-easy-screen25.json",
+        "medium-easy-screen25.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42363497808/artifacts/13570428803"
+    },
+    {
+      "id": 13570418913,
+      "archive_sha256": "7ab9d1bbe3f3e7f93bd33b4e8d6f21107363967aa5464ed15c16fbdb9d209795",
+      "files": [
+        "hard-medium-screen25.json",
+        "hard-medium-screen25.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42363497808/artifacts/13570418913"
+    },
+    {
+      "id": 13571290526,
+      "archive_sha256": "433306020dba5f33f67a732e116e664955be332ed95bed177b2bf7e0ee6a7c25",
+      "files": [
+        "impossible-hard-screen25.json",
+        "impossible-hard-screen25.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42363497808/artifacts/13571290526"
+    },
+    {
+      "id": 13571151110,
+      "archive_sha256": "acb2f842dda8a5088475e66bcda9388f3bbc84022968a915bd4f7e7e3a8b4482",
+      "files": [
+        "engine-default.json",
+        "engine-screen25-contention.json",
+        "engine-default.jsonl",
+        "engine-screen25-contention.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42363497808/artifacts/13571151110"
+    },
+    {
+      "id": 13571205790,
+      "archive_sha256": "dd5ca431131593079707c17c1e3c4dc7720a530e6bcbfdb50ee8f65871f93819",
+      "files": [
+        "benchmark-report.md",
+        "benchmark-summary.json",
+        "api-requests.csv",
+        "correctness-checks.json",
+        "environment.json",
+        "postgres-observations.csv",
+        "server-metrics.csv",
+        "server-metrics.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42363497808/artifacts/13571205790"
+    },
+    {
+      "id": 13571136332,
+      "archive_sha256": "89c079b6f9da2e140d6beed6d300af4a1a6aaa4f89431bb2233d74fb31ba80a3",
+      "files": [
+        "hard-medium-default.json",
+        "hard-medium-default.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42363497808/artifacts/13571136332"
+    },
+    {
+      "id": 13570966554,
+      "archive_sha256": "aec734c64a4a8af52cffbc4fc7a6b528cbcd11f20cdf75ead93c1172d8b1c5f9",
+      "files": [
+        "hard-baseline-default.json",
+        "hard-baseline-default.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42363497808/artifacts/13570966554"
+    },
+    {
+      "id": 13570552842,
+      "archive_sha256": "2b4f48f285ff9a00cfe9fdf051fbe5bfaa7f80f5c20cea459e671be6c307c41a",
+      "files": [
+        "impossible-greedy-default.json",
+        "impossible-greedy-default.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42363497808/artifacts/13570552842"
+    },
+    {
+      "id": 13571178447,
+      "archive_sha256": "b765c713b7dafd73d3cb6f7ae584ce7b3eb214a18ba5a70f764b5fcc1dd79a96",
+      "files": [
+        "impossible-hard-default.json",
+        "impossible-hard-default.jsonl"
+      ],
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42363497808/artifacts/13571178447"
+    }
+  ],
+  "independent_replay": {
+    "complete_games": 1800,
+    "legal_logged_moves": 44660,
+    "failures": 0
+  },
+  "api_correctness_checks": 801,
+  "api_invalid_successes": 0,
+  "api_unexpected_errors": 0,
+  "retention_days": 30
+}
