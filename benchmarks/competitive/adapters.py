@@ -22,6 +22,8 @@ def baseline(board, player, difficulty, budget_ms, seed=0):
 
 
 def candidate(board, player, difficulty, budget_ms, seed=0):
+    if difficulty in ('EASY', 'MEDIUM'):
+        return baseline(board, player, difficulty, budget_ms, seed)
     from app.ai.competitive import choose_move, POLICIES
     return choose_move(board, player, POLICIES[difficulty], time_budget_ms=budget_ms)
 
