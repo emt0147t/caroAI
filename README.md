@@ -1,422 +1,123 @@
-# CaroAI — Gomoku 15×15 AI Gaming Platform
+# CaroAI — Cờ Caro 15×15 với AI
 
-CaroAI is a full-stack 15 × 15 Gomoku (Cờ Caro) competitive gaming application featuring an authoritative FastAPI backend, a Python Minimax AI engine with alpha-beta pruning, a responsive modern web dashboard, persistent PostgreSQL storage, reproducible Docker containerization, and automated GitHub Actions CI/CD.
+CaroAI là dự án cuối kỳ xây dựng ứng dụng Cờ Caro (Gomoku) 15×15, kết hợp **FastAPI**, **AI tìm kiếm nước đi**, **PostgreSQL**, **Docker**, **GitHub Actions CI/CD** và triển khai qua **Render**.
 
----
+Dự án đã chốt phạm vi học phần. Thông tin phát hành bên dưới phản ánh **lần nghiệm thu production ngày 07/11/2026**, không phải cam kết dịch vụ luôn trực tuyến tại thời điểm truy cập.
 
-## 1. Project Overview
-- **Repository**: [https://github.com/emt0147t/caroAI](https://github.com/emt0147t/caroAI)
-- **Target Platform**: Render Web Service & Neon PostgreSQL
-- **Production Application URL**: [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com) (current production release live; verified 2026-11-06)
-- **Docker Hub Repository**: `docker.io/emt0147/caroai` (Release image: `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83`)
-- **Application Core**: 15 × 15 standard grid, zero client-side game logic authority, persistent game state, and move history.
+| Tài nguyên | Liên kết |
+|---|---|
+| Ứng dụng trực tuyến | [Mở CaroAI](https://caroai-bootstrap-a9e753b33198.onrender.com) |
+| Mã nguồn | [emt0147t/caroAI](https://github.com/emt0147t/caroAI) |
+| CI/CD và bằng chứng triển khai cuối | [GitHub Actions — run 42389707953](https://github.com/emt0147t/caroAI/actions/runs/42389707953) |
+| Docker image | [Docker Hub — emt0147/caroai](https://hub.docker.com/r/emt0147/caroai) |
 
----
+## 1. Tính năng đã hoàn thành
 
-## 2. Key Features
-- **Human vs Human (PvP)**: Two players competing on the same device with alternating turns (X starts first).
-- **Human vs AI (PvAI)**: Single-player mode against the intelligent CaroAI Minimax engine.
-- **Four AI Difficulty Levels**:
-  - `easy`: Basic heuristic evaluation for rapid casual play.
-  - `medium`: Balanced positional scoring and threat detection.
-  - `hard`: Deep Minimax search with alpha-beta pruning, tactical open-four / open-three pattern weighting.
-  - `impossible`: Higher-budget Minimax search (depth 4 / candidate limit 20); a stronger heuristic opponent, not a guarantee of optimal or unbeatable play.
-- **Backend-Authoritative Rule Engine**: Turn transitions, move validation, 5-in-a-row victory detection, and 225-cell board draw calculations are 100% computed and verified by the backend.
-- **Persistent Game History**: Real-time recording of games, moves, timestamps, and terminal results in PostgreSQL.
-- **System Health & Readiness**: Separate `/health` (container liveness) and `/ready` (database connectivity probe) endpoints.
-- **Modern Responsive Dashboard**: Interactive match center, real-time backend health pill, recent games preview widget, and 4-step game rules guide. Fully verified at 320px, 360px, 390px, 768px, and 1280px viewports.
+- **PvP cùng thiết bị:** Hai người chơi luân phiên trên một bàn cờ 15×15.
+- **PvAI:** Chơi với AI ở bốn mức `easy`, `medium`, `hard`, `impossible`.
+- **AI Engine:** `easy`/`medium` sử dụng Minimax/alpha-beta; `hard`/`impossible` sử dụng bộ tìm kiếm chiến thuật cải tiến với kiểm tra thắng/chặn, tìm kiếm có giới hạn và bảng chuyển vị.
+- **Luật chơi phía backend:** Kiểm tra lượt, nước đi hợp lệ, thắng năm quân liên tiếp và hòa khi hết ô.
+- **PostgreSQL:** Lưu trận đấu, các nước đi và kết quả; có trang xem lịch sử và mở lại trạng thái bàn cờ.
+- **Giao diện web:** HTML/CSS/JavaScript thuần, hỗ trợ màn hình nhỏ và giao diện sáng/tối.
+- **Vận hành:** Docker, Docker Compose, endpoint kiểm tra sức khỏe và quy trình kiểm thử/triển khai bằng GitHub Actions.
 
----
+**Giới hạn phạm vi:** PvP hiện là chơi trên cùng thiết bị, **không** phải phòng chơi online. Trang lịch sử **không** có chức năng phát lại từng nước đi. Chưa có tính năng gợi ý/phân tích thế cờ dành cho người dùng. Mức `impossible` **không** có nghĩa AI bất bại. Mô hình học máy trong [PR #71](https://github.com/emt0147t/caroAI/pull/71) chỉ là thử nghiệm offline, **chưa đưa vào production**.
 
-## 3. Technology Stack
-- **Backend**: Python 3.11, FastAPI, Uvicorn, SQLAlchemy 2.0, Psycopg2-binary, Pydantic v2.
-- **AI Engine**: Python Minimax with Alpha-Beta Pruning and Gomoku heuristic evaluation.
-- **Frontend**: Semantic HTML5, CSS3 with unified design tokens (`tokens.css`), Vanilla JavaScript (zero heavy framework dependencies).
-- **Database**: PostgreSQL 15+, versioned SQL migrations tracked via `schema_migrations`.
-- **Containerization**: Multi-stage Dockerfile (`python:3.11-slim`), non-root `appuser` (UID 10001), Docker Compose.
-- **Reverse Proxy & Serving**: Unified FastAPI `StaticFiles` mounting for single-container cloud environments, optional Nginx reverse proxy for multi-container topologies.
-- **CI/CD & Security**: GitHub Actions, Gitleaks secret scanning, Playwright E2E browser automation, pytest, flake8.
-
----
-
-## 4. Architecture
+## 2. Kiến trúc
 
 ```text
-User Browser (Desktop / Mobile)
-       |
-       | HTTPS (TLS 1.3)
-       v
-Cloud Web Service (Render / Docker)
-       |
-       +---> Port ${PORT:-8000}
-       |
-       +---> Uvicorn ASGI Server
-       |        |
-       |        +---> FastAPI Application
-       |                 |
-       |                 +---> Static Frontend Mount (/, /history.html, /tokens.css, /trong_tran/*)
-       |                 |
-       |                 +---> REST API (/api/games, /api/history, /health, /ready)
-       |                 |
-       |                 +---> Minimax AI Engine (Alpha-Beta Pruning)
-       |                 |
-       |                 +---> SQLAlchemy Unit of Work & Repository
-       |
-       +---> PostgreSQL Production Database (Connection Pooling, Migrations, ACID Storage)
+Trình duyệt ── HTTPS ──► Render (Docker)
+                            │
+                            └─ FastAPI: frontend + REST API
+                                 ├─ Game Service / kiểm tra luật
+                                 ├─ Python AI Engine
+                                 └─ SQLAlchemy ──► Neon PostgreSQL
 ```
 
----
+**Công nghệ chính:** Python 3.11, FastAPI, SQLAlchemy, PostgreSQL, JavaScript thuần, Docker, GitHub Actions và Render.
 
-## 5. Repository Structure
+Mã nguồn chính nằm trong `app/` (API, luật chơi, AI, dịch vụ, truy cập DB), `frontend/Caro_AI/` (giao diện), `database/migrations/` (các migration `000`–`003`), `tests/` (kiểm thử), `.github/workflows/` (CI/CD).
 
-```text
-caroAI/
-├── .github/workflows/      # CI/CD pipelines (ci-cd.yml, frontend-e2e.yml)
-├── app/                    # Backend application source
-│   ├── ai/                 # Minimax search engine and heuristic evaluators
-│   ├── api/                # FastAPI routing (games, history, health, dependencies)
-│   ├── db/                 # SQLAlchemy models, session management, and repository
-│   ├── domain/             # Game rules, board representation, win/draw state
-│   ├── schemas/            # Pydantic request/response validation schemas
-│   └── services/           # GameService transactional orchestration
-├── database/
-│   └── migrations/         # Versioned SQL migration files (000, 001)
-├── deploy/                 # Nginx proxy configuration
-├── docs/                   # Architectural specs, QA matrices, and audit reports
-│   └── final-project/      # Final project audits, conflict evidence, acceptance report
-├── frontend/Caro_AI/       # Responsive frontend assets (welcome.html, history.html, trong_tran/)
-├── scripts/                # Database migration and operational runner scripts
-├── tests/                  # Pytest unit, API, postgres suites, and Playwright E2E specs
-├── Dockerfile              # Multi-stage production container definition
-├── docker-compose.yml      # Local development and multi-container Compose stack
-└── requirements.txt        # Production dependency manifest
-```
+## 3. Chạy thử bằng Docker Compose
 
----
+**Yêu cầu:** Git, Docker và Docker Compose.
 
-## 6. Local Setup (Without Docker)
-
-### Prerequisites
-- Python 3.11 installed (`python --version` -> `Python 3.11.x`)
-- PostgreSQL 15+ running locally
-
-### Installation Steps
-```powershell
-# 1. Clone repository and navigate to root
+```bash
 git clone https://github.com/emt0147t/caroAI.git
 cd caroAI
-
-# 2. Create and activate Python virtual environment
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-
-# 3. Install production and development dependencies
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt -r requirements-dev.txt
-```
-
----
-
-## 7. Environment Variables
-
-Create a `.env` file in the repository root (based on `.env.example`):
-
-| Variable | Description | Local Default | Production Requirement |
-|---|---|---|---|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://caroai_user:local_pass@localhost:5432/caroai_db` | Managed PostgreSQL URL (`postgres://...` auto-normalized) |
-| `PORT` | Listening port for Uvicorn | `8000` | Injected dynamically by Render (e.g. `10000`) |
-| `APP_ENV` | Application environment identifier | `development` | `production` |
-| `CAROAI_API_BASE_URL` | Optional API origin for frontend | `""` (Same-origin default) | Omit / Leave empty for same-origin deployment |
-
----
-
-## 8. Docker Setup (Single Container)
-
-To build and run the production image independently:
-
-```powershell
-# Build image with candidate tag
-docker build -t caroai:local .
-
-# Run container with dynamic port and database URL
-docker run -d `
-  --name caroai-app `
-  -p 8000:8000 `
-  -e PORT=8000 `
-  -e DATABASE_URL="postgresql://user:pass@host.docker.internal:5432/caroai_db" `
-  caroai:local
-
-# Inspect logs
-docker logs -f caroai-app
-```
-
----
-
-## 9. Docker Compose Setup (Multi-Container Local Stack)
-
-The recommended local development workflow uses Docker Compose:
-
-```powershell
-# 1. Configure environment file
-Copy-Item .env.example .env
-
-# 2. Build and launch services in background
+cp .env.example .env
+# Đổi POSTGRES_PASSWORD trong .env thành mật khẩu dùng cho máy của bạn.
 docker compose up --build -d
-
-# 3. Verify container statuses
 docker compose ps
-
-# 4. Check application health
-curl.exe http://localhost:8000/health
-curl.exe http://localhost:8000/ready
 ```
 
-Access services:
-- **Application Frontend**: `http://localhost:8080` (or `http://localhost:8000` via FastAPI mount)
-- **API Swagger Documentation**: `http://localhost:8000/docs`
-- **Database**: Port `5432` / `5433`
+Nếu dùng PowerShell, thay `cp .env.example .env` bằng `Copy-Item .env.example .env`.
 
-To stop containers while safely preserving database volumes:
-```powershell
-docker compose down
-```
-*(Do not pass `-v` unless you explicitly intend to delete local database data).*
+- Giao diện: http://localhost:8080
+- FastAPI / Swagger: http://localhost:8000/docs
+- Kiểm tra ứng dụng: http://localhost:8000/health
+- Kiểm tra kết nối DB: http://localhost:8000/ready
 
----
+Dừng môi trường bằng `docker compose down`. **Không** dùng `down -v` nếu muốn giữ dữ liệu trong volume PostgreSQL.
 
-## 10. PostgreSQL Setup
-CaroAI uses standard PostgreSQL. In production or local setups:
-1. Ensure the database user has rights to create tables and execute transactions.
-2. The application handles connection URL forms `postgres://` and `postgresql://` by transparently normalizing them to `postgresql+psycopg2://`.
-3. Connection pooling is enabled with `pool_pre_ping=True` to immediately recover from dropped cloud connections.
+## 4. API chính
 
----
+| Phương thức | Endpoint | Mục đích |
+|---|---|---|
+| `GET` | `/health`, `/ready` | Kiểm tra ứng dụng và kết nối DB |
+| `POST` | `/api/games` | Tạo trận PvP/PvAI |
+| `GET` | `/api/games/{game_id}` | Lấy trạng thái bàn cờ |
+| `POST` | `/api/games/{game_id}/moves` | Đánh một nước đi |
+| `POST` | `/api/games/{game_id}/ai-move` | Yêu cầu AI đánh |
+| `GET` | `/api/history` | Danh sách lịch sử trận đấu |
 
-## 11. Database Migrations
-Migrations are managed via explicit, versioned SQL files located in `database/migrations/`:
-- `000_initial_schema.sql`: Base tables for `games`, `moves`, and `game_analysis`.
-- `001_games_public_id.sql`: Generates and enforces unique `public_id` UUID strings for games.
+Tài liệu OpenAPI tự động có tại `/docs`.
 
-Migrations are applied automatically on application startup via:
-```powershell
-python -m scripts.migrate_database
-```
-Execution is tracked in the `schema_migrations` table, ensuring idempotency and zero duplicate executions.
+## 5. Kiểm thử và CI/CD
 
----
+Chạy kiểm thử Python tại thư mục gốc (cần Python 3.11):
 
-## 12. API Documentation
-
-### Liveness & Readiness
-- `GET /health`: Returns `{"status": "ok"}` when the ASGI application is alive.
-- `GET /ready`: Returns `{"status": "ready", "database": "ok"}` when database `SELECT 1` succeeds; returns HTTP 503 if unavailable.
-
-### Gameplay
-- `POST /api/games`: Create a game. Body: `{"mode": "HUMAN_VS_HUMAN"}` or `{"mode": "HUMAN_VS_AI"}`. Returns HTTP 201 with `id` and initial board.
-- `GET /api/games/{game_id}`: Returns authoritative game state, board matrix, move count, and status.
-- `POST /api/games/{game_id}/moves`: Submit a human move. Body: `{"row": 7, "col": 7}`. Returns HTTP 200 with updated game state.
-- `POST /api/games/{game_id}/ai-move`: Trigger an AI response. Body: `{"difficulty": "hard"}`. Returns HTTP 200 with AI move coordinates and new game state.
-
-### History
-- `GET /api/history?limit=20&offset=0`: Retrieves paginated list of completed and in-progress games from PostgreSQL.
-
-Interactive OpenAPI UI is available at `/docs`.
-
----
-
-## 13. Testing Commands
-
-### Python Unit & API Tests
-```powershell
-py -3.11 -m pytest -q tests/
+```bash
+python -m pip install -r requirements.txt -r requirements-dev.txt
+python -m pytest -q tests/
 ```
 
-### PostgreSQL Acceptance & Rollback Test
-```powershell
-$env:TEST_DATABASE_URL = "postgresql+psycopg2://caroai_test:caroai_test_password@localhost:5432/caroai_test"
-$env:CAROAI_TEST_DATABASE_CONFIRMED = "disposable-test-database"
-$env:CAROAI_TEST_POSTGRES_ALLOWLIST = "localhost:5432/caroai_test"
-py -3.11 -m pytest -q tests/test_database_postgres.py tests/postgres_suite.py
-```
+Kiểm thử giao diện:
 
-### Code Style & Linting
-```powershell
-py -3.11 -m flake8 app tests scripts --count --max-complexity=10 --max-line-length=127 --statistics
-```
-
-### Frontend Syntax & Regression Tests
-```powershell
-node --check frontend/Caro_AI/trong_tran/script.js
+```bash
 node --test tests/frontend-regression.test.cjs
-```
-
-### Playwright Browser E2E Suite
-```powershell
+npm ci
+# Cần chuẩn bị browser/runtime phù hợp trước khi chạy Playwright.
 npm run test:e2e
 ```
 
-### Visual Regression & Mutation Testing
-Automated visual regression compares candidate UI screenshots against PR base evidence (`evidence/before` vs `evidence/candidate`) across light/dark themes on desktop (1280×800) and mobile (390×844):
-```powershell
-# Execute visual comparison pipeline
-npm run test:visual
+Workflow `.github/workflows/ci-cd.yml` kiểm tra mã nguồn, frontend, PostgreSQL, Docker Compose, bảo mật và build image. Phát hành production được kích hoạt thủ công trên `main`, qua môi trường phê duyệt, rồi kiểm chứng deployment và gameplay.
 
-# Run deliberate visual mutation test (validates mismatch & dimension detection)
-npm run test:visual:mutation
-```
-> [!NOTE]
-> Approved visual baselines represent production specifications. Baselines are never silently overwritten by automated scripts. Any intentional visual update requires design review and approval of CI visual artifacts.
+**Kết quả đã ghi nhận trong [workflow ngày 07/11/2026](https://github.com/emt0147t/caroAI/actions/runs/42389707953):**
 
----
+- Bộ kiểm thử Python: **829 passed, 14 skipped**; bộ PostgreSQL chuyên biệt: **18 passed**.
+- Docker image được xuất bản và Render xác nhận triển khai thành công đúng SHA.
+- Endpoint `/health`, `/ready`, `/`, `/history.html`, `/api/history`, `/tokens.css` trả HTTP 200 tại thời điểm nghiệm thu.
+- Kiểm thử **PvP thắng trận**, **PvAI ra nước đi**, đọc trạng thái và lịch sử trên production **PASS**; dữ liệu QA được dọn dẹp và endpoint QA bị vô hiệu hóa sau nghiệm thu.
 
-## 14. CI/CD Pipeline
-GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) automates verification on pushes and PRs:
-1. **Frontend Job**: Syntax validation and regression checks.
-2. **Python Test Job**: Flake8 linting, pytest unit suites, docker compose config validation.
-3. **PostgreSQL Integration Job**: Spawns ephemeral PostgreSQL 15 service, verifies schema migrations, transactional atomicity, and rollback integrity.
-4. **Compose Smoke Job**: Boots full Compose stack, executes PvP/PvAI move sequences, restarts container, and verifies game state persistence.
-5. **Secret Scan Job**: Gitleaks PR check and full repository history audit.
-6. **Candidate Build Job**: Multi-stage build producing SHA-tagged image candidate without registry push.
-7. **Production Release Job**: Triggered manually via `workflow_dispatch` on `main` when approved. Publishes traceable commit-SHA-tagged images (tracked by image content digest) to Docker Hub, calls the Render Deploy Hook, and verifies live public HTTPS endpoints. Note: Promotion from `develop` to `main` requires a Pull Request with at least 1 approval (branch protection on `main`), followed by dispatching this workflow on `main`.
+## 6. Bản phát hành production đã kiểm chứng
 
----
-
-## 15. Docker Hub Image Reference
-- **Docker Hub Account**: `emt0147`
-- **Repository**: `docker.io/emt0147/caroai`
-- **Bootstrap Image (historical bootstrap artifact)**:
-  - **Tag**: `docker.io/emt0147/caroai:bootstrap-a9e753b33198`
-  - **Status**: **PUBLISHED / HISTORICAL** (Original bootstrap image; the service now runs the commit-pinned production image)
-  - **Pull command**:
-    ```bash
-    docker pull emt0147/caroai:bootstrap-a9e753b33198
-    ```
-- **Production Release Image (current verified release)**:
-  - **Status**: **LIVE / VERIFIED** (Built, verified, and running on Render Web Service)
-  - **Release Commit SHA**: `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`
-  - **Tag**: `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83`
-  - **Pull command**:
-    ```bash
-    docker pull emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83
-    ```
-
----
-
-## 16. Deployment Instructions (Render Web Service & Neon PostgreSQL)
-
-### 16.1 Neon Database Setup
-1. Create a project in [Neon Console](https://neon.tech) (e.g. `caroai-demo`, AWS Singapore `ap-southeast-1`, PostgreSQL 18, database `neondb`, branch `production`).
-2. Copy the **direct (non-pooler)** PostgreSQL connection string.
-   - **Connection Mode**: The deployed CaroAI production service uses Neon's direct connection rather than the pooled connection (`-pooler` endpoint on port 5432/6543).
-   - **Internal Pooling Distinction**: CaroAI's FastAPI application manages its own internal connection pooling via SQLAlchemy (`pool_pre_ping=True`, pool recycling), so it connects directly to Neon without an external transaction pooler.
-   - **TLS & Channel Binding**: The deployed connection string requires TLS (`sslmode=require`) and channel binding (`channel_binding=require`).
-   - **Security Policy**: Never print, commit, or document the actual hostname, username, password, or `DATABASE_URL` in documentation or source code.
-
-### 16.2 Render Web Service Setup
-1. **Create Web Service**:
-   - Choose **Deploy an existing image from a registry**.
-   - Image URL: `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83` (or automated release tag `docker.io/emt0147/caroai:<sha>`).
-   - Instance Type: **Free**.
-2. **Environment Variables**:
-   - `DATABASE_URL`: Connection string from your Neon PostgreSQL instance (configured in Render environment settings).
-   - `APP_ENV`: `production`
-   - `PORT`: Automatically assigned by Render (e.g. `10000`).
-3. **Health Check Path**:
-   - Set to `/ready` (validates both container liveness and database `SELECT 1` connectivity).
-4. **Deploy & Verification**:
-   - Save changes. Render pulls the image, runs migrations on startup (`000_initial_schema`, `001_games_public_id`), and exposes the public HTTPS URL.
-
----
-
-## 17. Public HTTPS Application URL & Production Release Status
-
-**Status: LIVE / VERIFIED**
-
-- **Production Service**: Render Web Service, Free plan, Singapore region, one instance.
-- **Public URL**: [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com)
-- **Render Service ID**: `srv-dbkd2dflk1mc73fd2ukg`
-- **Live Deployment ID**: `dep-dbn02vrncjis73am3dhg`
-- **Release branch / commit**: `main` / `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`
-- **Production image**: `docker.io/emt0147/caroai:42ee035ab42cd4c0bc934699f4d5433ff4b12a83`
-- **Image digest**: `sha256:a80c48d0f1433f600ef5d5e2a5dc124f3057cebe716ab9782f238a614f7f35a7`
-- **Health check path**: `/ready`
-- **Release evidence**: [GitHub Actions production release run](https://github.com/emt0147t/caroAI/actions/runs/42253079008); Render confirmed the exact commit-SHA image as `live`.
-
-### Verified public endpoints from release workflow
-
-| Endpoint | Result |
+| Thuộc tính | Giá trị |
 |---|---|
-| `/health` | HTTP 200 |
-| `/ready` | HTTP 200 |
-| `/` | HTTP 200 |
-| `/history.html` | HTTP 200 |
-| `/api/history` | HTTP 200 |
-| `/tokens.css` | HTTP 200 |
+| Ngày nghiệm thu | 07/11/2026 |
+| Commit ứng dụng | [`c10ee2739b6577ea0004f86e91126dd176132319`](https://github.com/emt0147t/caroAI/commit/c10ee2739b6577ea0004f86e91126dd176132319) |
+| Image | `docker.io/emt0147/caroai:c10ee2739b6577ea0004f86e91126dd176132319` |
+| Digest đã xuất bản | `sha256:36660bc3c4db73f28b676c3cb3cdaf821f6cba02102e3f4723fa8c888a0e8b75` |
+| Render deploy nghiệm thu | `dep-dbnkr6h5efls73bkhsi0` |
+| Render deploy sau khi tắt QA | `dep-dbnkrjgu01pc73d1s8sg` |
 
-These checks confirm route availability and database readiness at release time. They are not a substitute for a full interactive PvP/PvAI acceptance run against the live website.
+Đây là **bằng chứng tại thời điểm phát hành**, không phải kết quả giám sát uptime hay tải đồng thời dài hạn. Các kết quả benchmark AI trong `reports/` được đo trong môi trường kiểm soát, không nên suy diễn thành cam kết độ trễ production.
 
-### Rollback
+## 7. Tài liệu và bằng chứng
 
-Open Render Dashboard → service `srv-dbkd2dflk1mc73fd2ukg` → **Deploys** → select the previous healthy deployment and choose **Rollback to this deploy**. The immediately preceding deployment was `dep-dbljvg61egvs73fgovdg` (image `7abed07...`); confirm health and data compatibility before rollback.
+- [Báo cáo nghiệm thu học phần](docs/final-project/FINAL_ACCEPTANCE_REPORT.md) — tài liệu lịch sử, có thể phản ánh snapshot trước bản phát hành cuối.
+- [Kiểm toán cộng tác Git](docs/final-project/GIT_COLLABORATION_AUDIT.md) và [bằng chứng xử lý merge conflict](docs/final-project/MERGE_CONFLICT_EVIDENCE.md).
+- [Báo cáo benchmark AI](reports/competitive/) và [benchmark API/PostgreSQL](reports/benchmark-phase-c/).
+- [Lịch sử workflow GitHub Actions](https://github.com/emt0147t/caroAI/actions).
 
----
-
-## 18. Production PostgreSQL Configuration Overview (Neon PostgreSQL)
-- **Database Provider**: Neon Serverless PostgreSQL
-- **Project**: `caroai-demo`
-- **Region**: AWS Singapore (`ap-southeast-1`)
-- **Plan**: Free
-- **PostgreSQL Version**: 18
-- **Database Name**: `neondb`
-- **Branch**: `production`
-- **Configuration**: `DATABASE_URL` is configured in Render Web Service environment settings using Neon direct (non-pooler) connection with `sslmode=require` and `channel_binding=require` (actual hostname, username, password, and connection string are never written into documentation).
-- **Driver**: Psycopg2-binary with SQLAlchemy internal connection pooling (`pool_pre_ping=True`).
-- **Migrations**: `000_initial_schema.sql` and `001_games_public_id.sql` applied successfully on startup; Render startup logs confirmed schema up to date.
-- **Persistence Verification**: **PASS**.
-  - Verified on live cloud infrastructure via Render Web Service restart.
-  - Interactive PvP and PvAI matches created and verified; AI engine move returned player O.
-  - Full game details and histories retrievable from Neon PostgreSQL via `/api/history`.
-  - Both PvP and PvAI games remained fully accessible after Render Web Service restart (`POST-RESTART PERSISTENCE: PASS`).
-- **Fail-Safe**: Zero client-side state is trusted; database is the single source of truth.
-
----
-
-## 19. Troubleshooting
-
-| Symptom | Cause | Solution |
-|---|---|---|
-| Container exits with code 1 | Missing or invalid `DATABASE_URL` | Ensure `DATABASE_URL` is set and PostgreSQL is reachable. |
-| Container fails health check on Render | Port mismatch | Verify `Dockerfile` uses `${PORT:-8000}`. |
-| `ModuleNotFoundError: sqlalchemy` locally | Wrong Python environment | Use Python 3.11 with dependencies installed from `requirements.txt`. |
-| 503 Service Unavailable on move | Database connection dropped | Verify PostgreSQL service status; check `/ready` endpoint. |
-| CORS errors in browser | Calling cross-origin API | Serve frontend and API from same origin (default container setup). |
-
----
-
-## 20. Demonstration Instructions
-
-### 20.1 Local Environment Demonstration
-1. Start the application locally using Docker Compose:
-   ```powershell
-   docker compose up --build -d
-   ```
-   *(Or run locally with Python: `uvicorn app.main:app --host 0.0.0.0 --port 8000`).*
-2. Open the web interface in your browser at `http://localhost:8000` (or `http://localhost:8080` if accessing via Nginx).
-3. Observe the green **Hệ thống sẵn sàng** status pill in the top navigation bar (verifying backend liveness and database readiness).
-4. Select **Người vs AI**, choose difficulty **Khó (Minimax)**, and click **Bắt đầu ván đấu →**.
-5. Play alternating moves on the 15 × 15 board; observe real-time AI responses calculated server-side by the Minimax engine.
-6. Complete a game with a 5-in-a-row alignment; observe the backend-authoritative victory dialog and win state.
-7. Click **Lịch sử** in the top navigation bar; verify the finished game appears in the list with move count, duration, and result.
-8. Click **Mở bàn cờ →**; verify the full board and move sequence reload exactly from PostgreSQL persistence.
-
-### 20.2 Online Demonstration (Current Production Service)
-The current production deployment is available for online evaluation:
-- **Live Demo URL**: [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com)
-- **Evaluation Steps**:
-  1. Open [https://caroai-bootstrap-a9e753b33198.onrender.com](https://caroai-bootstrap-a9e753b33198.onrender.com) in your web browser.
-  2. Confirm the green **Hệ thống sẵn sàng** status pill in the top navigation bar (verifying backend `/health` and Neon PostgreSQL `/ready`).
-  3. Play **Người vs Người (PvP)**: Click **Người vs Người**, take alternating moves on the 15 × 15 grid, verify coordinates, turn transitions, and 5-in-a-row victory detection.
-  4. Play **Người vs AI (PvAI)**: Click **Người vs AI**, select difficulty, and make your move; observe server-side Minimax calculation returning player O moves.
-  5. Check Match History: Click **Lịch sử** (`/history.html`) to view persisted matches from Neon PostgreSQL; click **Mở bàn cờ →** to reload exact move history.
-  6. Persistence Verification: Cloud database persistence has been verified across Render Web Service restarts (`POST-RESTART PERSISTENCE: PASS`).
-- **Production Release Note**: The current production release is live on Render via commit `42ee035ab42cd4c0bc934699f4d5433ff4b12a83`.
+**Bảo mật:** Không đưa mật khẩu, `DATABASE_URL` thật, token hay khóa triển khai vào repository; dùng biến môi trường và secrets của nền tảng.
