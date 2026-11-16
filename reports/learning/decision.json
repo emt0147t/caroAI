@@ -1,0 +1,21 @@
+{
+  "model_sha256": "4370e36660dd41a7ebd81c96a0e552bd44d165ca5f7d40d9d873307ec79182aa",
+  "checks": {
+    "tactical_480": true,
+    "human_plan_48": null,
+    "beats_production_700": false,
+    "learning_beats_untrained_algorithm": false,
+    "hard_noninferior_5points": true,
+    "serial_p95_within_770ms": true,
+    "zero_serial_fallbacks": true,
+    "no_missed_immediate_tactics": true
+  },
+  "decision": "NOT_PROMOTED",
+  "failed_gates": [
+    "human_plan_48",
+    "beats_production_700",
+    "learning_beats_untrained_algorithm"
+  ],
+  "production_changes": false,
+  "scope": "No deployment. Human-play balance and candidate API/capacity remain unmeasured."
+}

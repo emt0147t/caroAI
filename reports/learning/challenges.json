@@ -1,0 +1,20 @@
+{
+  "scope": "Observed-plan refutations, not guaranteed game wins; no human positions used for gradient training.",
+  "model_sha256": "4370e36660dd41a7ebd81c96a0e552bd44d165ca5f7d40d9d873307ec79182aa",
+  "human_cases": [],
+  "tactical": [
+    {
+      "level": "HARD",
+      "n": 240,
+      "candidate_pass": 240
+    },
+    {
+      "level": "IMPOSSIBLE",
+      "n": 240,
+      "candidate_pass": 240
+    }
+  ],
+  "all_challenges_pass": null,
+  "human_validation_scope": "NOT_RUN_PUBLIC_CI",
+  "all_tactics_pass": true
+}

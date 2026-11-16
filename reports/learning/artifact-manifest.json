@@ -1,0 +1,60 @@
+{
+  "source_sha": "0204bc5b12f6ec27058e220d5a14ca023ea598ee",
+  "production_sha": "c10ee2739b6577ea0004f86e91126dd176132319",
+  "workflow_run_id": 42395577075,
+  "model_sha256": "4370e36660dd41a7ebd81c96a0e552bd44d165ca5f7d40d9d873307ec79182aa",
+  "artifacts": [
+    {
+      "id": 13582588676,
+      "name": "offline-training",
+      "archive_sha256": "cb46f4b7e87ecaec5a964f3fb96085e83e4dc88b505831ce1273a4faedee9715",
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42395577075/artifacts/13582588676"
+    },
+    {
+      "id": 13583049566,
+      "name": "production-impossible-25",
+      "archive_sha256": "3c6c229cc92c3d7884a94f4acf7ef06b47fa230c2e6b4c6dc5b0fc28dd184c29",
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42395577075/artifacts/13583049566"
+    },
+    {
+      "id": 13583720798,
+      "name": "offline-latency",
+      "archive_sha256": "01353fd82f2623e7c8fc725fd0be89688ee62057e0be92343accb1997b944835",
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42395577075/artifacts/13583720798"
+    },
+    {
+      "id": 13582654318,
+      "name": "production-hard-250",
+      "archive_sha256": "c7b1046f688eea12908039db96505eff9be96aec699c1abd947ae53d997aac4e",
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42395577075/artifacts/13582654318"
+    },
+    {
+      "id": 13584660909,
+      "name": "production-impossible-700",
+      "archive_sha256": "49cfaab5426b72fca1933db5f0dcb5a74415b73a1ef051855c11d66195429281",
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42395577075/artifacts/13584660909"
+    },
+    {
+      "id": 13584184455,
+      "name": "initial-impossible-700",
+      "archive_sha256": "e828a6f5fe8839833912be20d29438a84f1677970947bd687f6f86653803fbfd",
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42395577075/artifacts/13584184455"
+    },
+    {
+      "id": 13584208014,
+      "name": "offline-decision",
+      "archive_sha256": "77daa546fe3f73c6d9c835ead4027a61ff81d69d452f42afa49c271f67cd6025",
+      "url": "https://github.com/emt0147t/caroAI/actions/runs/42395577075/artifacts/13584208014"
+    }
+  ],
+  "privacy": "Artifacts include generated self-play and synthetic fixtures only; no private human histories/positions.",
+  "model_file_sha256": "abe3d124ae7777ee61549050aa7c75f4ec296e6777904e1fee89349749891c1f",
+  "independent_replay": {
+    "training_games": 4000,
+    "evaluation_games": 800,
+    "generated_moves_after_opening": 65429,
+    "failures": 0,
+    "note": "The evaluation opening set is reused across four opponents/budgets; these are not independent new opening samples."
+  },
+  "decision": "NOT_PROMOTED"
+}
