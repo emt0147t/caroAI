@@ -62,3 +62,12 @@ test('welcome dashboard includes health indicator, metrics grid, and rules refer
   assert.match(welcome, /loadDashboardStats\(\)/);
 });
 
+
+test('dashboard shows the full game count and refreshes status and preview', () => {
+  assert.match(welcome, /api\/history\?limit=3&offset=0/);
+  assert.match(welcome, /Number\.isInteger\(data\?\.total\)/);
+  assert.doesNotMatch(welcome, /String\(valid\.length\)/);
+  assert.match(welcome, /fetch\(API \+ "\/ready"/);
+  assert.match(welcome, /visibilitychange/);
+  assert.match(welcome, /setInterval\(refreshDashboard, 30000\)/);
+});
