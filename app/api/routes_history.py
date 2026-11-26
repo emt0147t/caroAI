@@ -19,7 +19,7 @@ def list_history(
 ):
     """List newest games first; fetch the board through the game detail route."""
     try:
-        records = service.list_history(limit=limit, offset=offset)
+        records, total = service.list_history_with_total(limit=limit, offset=offset)
     except GamePersistenceError as exc:
         raise HTTPException(
             status_code=503,
@@ -38,4 +38,4 @@ def list_history(
         )
         for record in records
     ]
-    return GameHistoryResponse(items=items, limit=limit, offset=offset)
+    return GameHistoryResponse(items=items, limit=limit, offset=offset, total=total)

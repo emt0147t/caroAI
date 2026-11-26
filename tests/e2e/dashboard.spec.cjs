@@ -32,11 +32,23 @@ test('dashboard displays game metrics and features showcase', async ({ page }) =
   await expect(rules).toHaveCount(4);
 });
 
-test('dashboard handles system health offline state gracefully', async ({ page }) => {
-  await page.route('**/health', route => route.abort('failed'));
+test('dashboard handles backend readiness network failures gracefully', async ({ page }) => {
+  // The dashboard checks /ready, which includes PostgreSQL connectivity.
+  await page.route('**/ready', route => route.abort('failed'));
   await page.goto('/');
   await expect(page.locator('#systemStatus')).toHaveClass(/status-offline/);
-  await expect(page.locator('#statusText')).toHaveText('Mất kết nối Backend');
+  await expect(page.locator('#statusText')).toContainText('Mất kết nối Backend');
+});
+
+test('dashboard reports database not ready when readiness returns 503', async ({ page }) => {
+  await page.route('**/ready', route => route.fulfill({
+    status: 503,
+    contentType: 'application/json',
+    body: JSON.stringify({ detail: 'Database is not ready' }),
+  }));
+  await page.goto('/');
+  await expect(page.locator('#systemStatus')).toHaveClass(/status-offline/);
+  await expect(page.locator('#statusText')).toHaveText('Database chưa sẵn sàng');
 });
 
 test('dashboard recent games widget renders persisted backend matches', async ({ page, request }) => {

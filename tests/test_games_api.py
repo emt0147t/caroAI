@@ -346,3 +346,30 @@ def test_impossible_admission_limit_returns_429_and_retry_after(monkeypatch):
             assert response.headers["retry-after"] == "1"
     finally:
         app.dependency_overrides.pop(get_game_service, None)
+
+
+def test_history_total_counts_all_games_not_just_the_first_page():
+    """The dashboard needs a database-wide total but only three recent items."""
+    empty = client.get("/api/history?limit=3&offset=0")
+    assert empty.status_code == 200
+    assert empty.json()["total"] == 0
+    assert empty.json()["items"] == []
+
+    for _ in range(5):
+        created = client.post("/api/games", json={"mode": "HUMAN_VS_HUMAN"})
+        assert created.status_code == 201
+
+    first = client.get("/api/history?limit=3&offset=0")
+    assert first.status_code == 200
+    assert first.json()["total"] == 5
+    assert len(first.json()["items"]) == 3
+
+    second = client.get("/api/history?limit=3&offset=3")
+    assert second.status_code == 200
+    assert second.json()["total"] == 5
+    assert len(second.json()["items"]) == 2
+
+    beyond = client.get("/api/history?limit=3&offset=100")
+    assert beyond.status_code == 200
+    assert beyond.json()["total"] == 5
+    assert beyond.json()["items"] == []

@@ -295,6 +295,7 @@ def test_history_api_returns_persisted_metadata_and_move_count(database):
             payload = history.json()
             assert payload["limit"] == 10
             assert payload["offset"] == 0
+            assert payload["total"] == 1
             assert len(payload["items"]) == 1
             item = payload["items"][0]
             assert item["id"] == game_id
@@ -466,3 +467,31 @@ def test_qa_cleanup_deletes_only_tagged_game_and_all_dependents(database):
         remaining_moves = session.scalars(select(Move)).all()
         assert len(remaining_moves) == 2
         assert {move.row for move in remaining_moves} == {1, 2}
+
+
+def test_sql_history_total_is_independent_of_pagination(database):
+    """SQL-backed dashboard statistics must count beyond the preview size."""
+    _engine, session_factory = database
+
+    def sql_game_service():
+        with session_factory() as session:
+            yield GameService(SQLAlchemyGameRepository(session))
+
+    app.dependency_overrides[get_game_service] = sql_game_service
+    try:
+        with TestClient(app) as client:
+            for _ in range(5):
+                assert client.post(
+                    "/api/games", json={"mode": "HUMAN_VS_HUMAN"}
+                ).status_code == 201
+            first = client.get("/api/history?limit=3&offset=0")
+            assert first.status_code == 200
+            assert first.json()["total"] == 5
+            assert len(first.json()["items"]) == 3
+
+            second = client.get("/api/history?limit=3&offset=3")
+            assert second.status_code == 200
+            assert second.json()["total"] == 5
+            assert len(second.json()["items"]) == 2
+    finally:
+        app.dependency_overrides.pop(get_game_service, None)

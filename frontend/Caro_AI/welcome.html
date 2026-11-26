@@ -1076,17 +1076,19 @@
       const textEl = document.getElementById("statusText");
       if (!statusEl || !textEl) return;
       try {
-        const res = await fetch(API + "/health");
+        const res = await fetch(API + "/ready", { cache: "no-store" });
         if (res.ok) {
           statusEl.className = "status-pill status-online";
           textEl.textContent = "Hệ thống sẵn sàng";
         } else {
           statusEl.className = "status-pill status-offline";
-          textEl.textContent = "HTTP " + res.status;
+          textEl.textContent = res.status === 503
+            ? "Database chưa sẵn sàng"
+            : "Backend HTTP " + res.status;
         }
       } catch (_) {
         statusEl.className = "status-pill status-offline";
-        textEl.textContent = "Mất kết nối Backend";
+        textEl.textContent = "Mất kết nối Backend — đang thử lại";
       }
     }
 
@@ -1097,7 +1099,8 @@
       if (!totalCountEl || !recentListEl) return;
       try {
         const res = await fetch(API + "/api/history?limit=3&offset=0", {
-          headers: { Accept: "application/json" }
+          headers: { Accept: "application/json" },
+          cache: "no-store"
         });
         let data = null;
         try { data = await res.json(); } catch (_) {}
@@ -1105,7 +1108,9 @@
         const items = Array.isArray(data) ? data : (data?.items || data?.games || []);
         const valid = items.filter(g => g && typeof g.id === "string" && g.id.trim());
 
-        totalCountEl.textContent = (typeof data?.total === "number") ? String(data.total) : String(valid.length);
+        totalCountEl.textContent = (Number.isInteger(data?.total) && data.total >= 0)
+          ? String(data.total)
+          : "—";
         recentListEl.replaceChildren();
 
         if (valid.length === 0) {
@@ -1152,13 +1157,29 @@
         recentListEl.replaceChildren();
         const fallback = document.createElement("p");
         fallback.className = "recent-empty";
-        fallback.textContent = "Lịch sử khả dụng tại trang Lịch sử.";
+        fallback.textContent = "Không tải được lịch sử từ Backend — đang thử lại.";
         recentListEl.append(fallback);
       }
     }
 
-    checkSystemHealth();
-    loadDashboardStats();
+    // Refresh on return to the tab and periodically while it is visible.
+    // A transient Render startup or network failure must not leave a stale indicator.
+    let dashboardRefreshing = false;
+    async function refreshDashboard() {
+      if (document.hidden || dashboardRefreshing) return;
+      dashboardRefreshing = true;
+      try {
+        await Promise.all([checkSystemHealth(), loadDashboardStats()]);
+      } finally {
+        dashboardRefreshing = false;
+      }
+    }
+    refreshDashboard();
+    window.setInterval(refreshDashboard, 30000);
+    window.addEventListener("focus", refreshDashboard);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) refreshDashboard();
+    });
   </script>
 </body>
 </html>

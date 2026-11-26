@@ -253,6 +253,10 @@ class SQLAlchemyGameUnitOfWork:
         )
         return public_ids
 
+    def count_games(self) -> int:
+        """Count every persisted game, independently of history pagination."""
+        return int(self.session.scalar(select(func.count()).select_from(GameRecord)) or 0)
+
     def list_history(
         self, *, limit: int = 50, offset: int = 0
     ) -> list[GameHistoryRecord]:
@@ -375,6 +379,10 @@ class InMemoryGameUnitOfWork:
             self._ended_at.pop(game_id, None)
         else:
             self._ended_at[game_id] = datetime.now(timezone.utc)
+
+    def count_games(self) -> int:
+        """Match the production repository's total-count behavior."""
+        return len(self._games)
 
     def list_history(
         self, *, limit: int = 50, offset: int = 0
