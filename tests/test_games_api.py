@@ -347,6 +347,7 @@ def test_impossible_admission_limit_returns_429_and_retry_after(monkeypatch):
     finally:
         app.dependency_overrides.pop(get_game_service, None)
 
+
 def test_history_total_counts_all_games_not_just_the_first_page():
     """The dashboard needs a database-wide total but only three recent items."""
     empty = client.get("/api/history?limit=3&offset=0")
