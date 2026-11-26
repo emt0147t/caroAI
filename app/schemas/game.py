@@ -61,8 +61,9 @@ class GameHistoryItem(BaseModel):
 
 
 class GameHistoryResponse(BaseModel):
-    """Paginated Game History API response."""
+    """Paginated Game History API response, including the full game count."""
 
     items: list[GameHistoryItem]
     limit: int
     offset: int
+    total: int = Field(ge=0)
