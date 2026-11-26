@@ -468,6 +468,7 @@ def test_qa_cleanup_deletes_only_tagged_game_and_all_dependents(database):
         assert len(remaining_moves) == 2
         assert {move.row for move in remaining_moves} == {1, 2}
 
+
 def test_sql_history_total_is_independent_of_pagination(database):
     """SQL-backed dashboard statistics must count beyond the preview size."""
     _engine, session_factory = database
