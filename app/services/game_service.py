@@ -114,6 +114,12 @@ class GameService:
         with self._repository.transaction() as uow:
             return uow.list_history(limit=limit, offset=offset)
 
+    def list_history_with_total(self, *, limit: int = 50, offset: int = 0):
+        """Return a page and the full game count in one repository transaction."""
+        with self._repository.transaction() as uow:
+            records = uow.list_history(limit=limit, offset=offset)
+            return records, uow.count_games()
+
     def _choose_ai_coordinates(
         self, state: GameState, difficulty: str
     ) -> tuple[int, int]:
