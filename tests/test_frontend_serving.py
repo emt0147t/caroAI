@@ -11,7 +11,7 @@ def test_root_serves_frontend_homepage():
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "<title>CaroAI 2026 · Đấu trường Cờ Caro 15 × 15</title>" in response.text
+    assert "<title>caroAI 2026 · Đấu trường Cờ Caro 15 × 15</title>" in response.text
 
 
 def test_frontend_history_page_is_served():
