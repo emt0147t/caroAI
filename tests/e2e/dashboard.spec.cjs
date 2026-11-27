@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 test('dashboard displays brand header, system health status, and quick nav', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('.brand-name')).toContainText('CaroAI');
+  await expect(page.locator('.brand-name')).toContainText('Cờ Caro AI 2026');
   await expect(page.locator('#systemStatus')).toBeVisible();
   await expect(page.locator('#statusText')).toHaveText('Hệ thống sẵn sàng', { timeout: 10000 });
   await expect(page.locator('#systemStatus')).toHaveClass(/status-online/);
